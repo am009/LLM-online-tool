@@ -1,3 +1,9 @@
+/* CSS 变量定义 */
+:root {
+    --original-width: 45%;
+    --translate-button-width: 60px;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -20,11 +26,68 @@ body {
 /* 左侧设置栏 */
 .settings-panel {
     width: 300px;
+    min-width: 40px;
     background: #fff;
     border-right: 1px solid #e0e0e0;
-    padding: 20px;
     overflow-y: auto;
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.settings-panel.collapsed {
+    width: 40px;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 20px 0 20px;
+    margin-bottom: 20px;
+}
+
+.settings-panel.collapsed .settings-header {
+    padding: 10px 5px 0 5px;
+    margin-bottom: 10px;
+    flex-direction: column;
+}
+
+.settings-panel.collapsed .settings-header h2 {
+    display: none;
+}
+
+.collapse-btn {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    color: #666;
+    transition: all 0.3s;
+}
+
+.collapse-btn:hover {
+    background: #e9ecef;
+    color: #333;
+}
+
+.settings-panel.collapsed .collapse-btn {
+    transform: rotate(180deg);
+}
+
+.settings-panel .setting-group {
+    padding: 0 20px;
+}
+
+.settings-panel.collapsed .setting-group {
+    display: none;
 }
 
 .settings-panel h2 {
@@ -118,32 +181,31 @@ body {
     cursor: not-allowed;
 }
 
-/* 中间和右侧面板 */
-.original-panel,
-.translation-panel {
+/* 主内容面板 */
+.main-content-panel {
     flex: 1;
     display: flex;
     flex-direction: column;
     background: #fff;
-    border-right: 1px solid #e0e0e0;
 }
 
-.translation-panel {
-    border-right: none;
-}
-
-.panel-header {
-    padding: 15px 20px;
+.content-header {
     background: #f8f9fa;
     border-bottom: 1px solid #e0e0e0;
+    padding: 15px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.panel-header h3 {
-    color: #2c3e50;
-    font-size: 1.2em;
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.header-right {
+    display: flex;
+    gap: 10px;
 }
 
 .file-info {
@@ -151,14 +213,72 @@ body {
     color: #666;
 }
 
-.translation-actions {
+.column-resizer {
+    position: absolute;
+    top: 100%;
+    left: 20px;
+    right: 20px;
+    height: 40px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
     display: flex;
-    gap: 10px;
+    align-items: center;
+    z-index: 10;
 }
 
-.content-area {
+.column-labels {
+    display: flex;
+    width: 100%;
+    position: relative;
+}
+
+.original-label {
+    font-weight: 500;
+    color: #2c3e50;
+    font-size: 14px;
+    width: var(--original-width, 45%);
+    padding-left: 5px;
+}
+
+.translation-label {
+    font-weight: 500;
+    color: #2c3e50;
+    font-size: 14px;
+    position: absolute;
+    right: 0;
+    padding-right: 5px;
+}
+
+.resize-handle {
+    position: absolute;
+    left: var(--original-width, 45%);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 60px;
+    height: 20px;
+    background: #3498db;
+    border-radius: 10px;
+    cursor: col-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 10px;
+    user-select: none;
+}
+
+.resize-handle:hover {
+    background: #2980b9;
+}
+
+.resize-handle::after {
+    content: '⟷';
+    font-weight: bold;
+}
+
+.content-container {
     flex: 1;
-    padding: 20px;
+    padding: 60px 20px 20px;
     overflow-y: auto;
     background: #fff;
 }
@@ -169,35 +289,80 @@ body {
     margin-top: 50px;
 }
 
-/* 文本块样式 */
-.text-block {
+/* 文本块样式 - 新的并排布局 */
+.text-block-pair {
     margin-bottom: 20px;
+    display: flex;
+    align-items: stretch;
+    min-height: 80px;
+    gap: 0;
+}
+
+.original-block {
+    width: var(--original-width, 45%);
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px 0 0 4px;
+    background: #fafafa;
+    transition: all 0.3s;
     position: relative;
 }
 
-.block-content {
+.translate-button {
+    width: 60px;
+    height: auto;
+    background: #3498db;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.translate-button:hover:not(:disabled) {
+    background: #2980b9;
+}
+
+.translate-button:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+}
+
+.translate-button.loading {
+    animation: spin 1s linear infinite;
+}
+
+.translation-block {
+    flex: 1;
     padding: 15px;
     border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    background: #fafafa;
+    border-radius: 0 4px 4px 0;
+    background: #fff;
     min-height: 60px;
     transition: all 0.3s;
 }
 
-.block-content:hover {
+.original-block:hover,
+.translation-block:hover {
     border-color: #3498db;
 }
 
-.block-content.editable {
+.original-block.editable {
     cursor: text;
 }
 
-.block-content.editing {
+.original-block.editing,
+.translation-block.editing {
     background: #fff;
     border-color: #3498db;
 }
 
-.block-content textarea {
+.original-block textarea,
+.translation-block textarea {
     width: 100%;
     border: none;
     outline: none;
@@ -208,42 +373,16 @@ body {
     line-height: inherit;
 }
 
-/* 翻译按钮 */
-.translate-btn {
-    position: absolute;
-    right: -40px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: #3498db;
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.3s;
-    z-index: 10;
+.original-block[contenteditable="true"],
+.translation-block[contenteditable="true"] {
+    outline: none;
 }
 
-.translate-btn:hover {
-    background: #2980b9;
-    transform: translateY(-50%) scale(1.1);
-}
-
-.translate-btn:disabled {
-    background: #bdc3c7;
-    cursor: not-allowed;
-    transform: translateY(-50%);
-}
-
-.translate-btn.loading {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: translateY(-50%) rotate(0deg); }
-    100% { transform: translateY(-50%) rotate(360deg); }
+.original-block[contenteditable="true"]:focus,
+.translation-block[contenteditable="true"]:focus {
+    background: #fff;
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
 }
 
 /* 模态框 */
@@ -297,29 +436,54 @@ body {
 /* 响应式设计 */
 @media (max-width: 768px) {
     .app-container {
-        flex-direction: column;
+        position: relative;
     }
     
     .settings-panel {
-        width: 100%;
-        height: auto;
-        border-right: none;
-        border-bottom: 1px solid #e0e0e0;
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
     }
     
-    .original-panel,
-    .translation-panel {
-        height: 50vh;
+    .settings-panel.show-mobile {
+        transform: translateX(0);
     }
     
-    .translate-btn {
-        position: relative;
-        right: auto;
-        top: auto;
-        transform: none;
-        margin: 10px 0;
-        display: block;
+    .main-content-panel {
+        margin-left: 0;
+    }
+    
+    .text-block-pair {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .original-block {
         width: 100%;
+        border-radius: 4px;
+    }
+    
+    .translate-button {
+        width: 100%;
+        height: 40px;
+        border-radius: 0;
+    }
+    
+    .translation-block {
+        width: 100%;
+        border-radius: 4px;
+    }
+    
+    .column-resizer {
+        display: none;
+    }
+    
+    .content-container {
+        padding-top: 20px;
     }
 }
 

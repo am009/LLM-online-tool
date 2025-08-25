@@ -9,8 +9,11 @@
 <body>
     <div class="app-container">
         <!-- 左侧设置栏 -->
-        <div class="settings-panel">
-            <h2>设置</h2>
+        <div class="settings-panel" id="settings-panel">
+            <div class="settings-header">
+                <h2>设置</h2>
+                <button class="collapse-btn" id="collapse-btn">‹</button>
+            </div>
             
             <div class="setting-group">
                 <label for="api-provider">API提供商:</label>
@@ -49,30 +52,26 @@
             </div>
         </div>
         
-        <!-- 中间原文区域 -->
-        <div class="original-panel">
-            <div class="panel-header">
-                <h3>原文</h3>
-                <div class="file-info" id="file-info"></div>
-            </div>
-            <div class="content-area" id="original-content">
-                <div class="placeholder">
-                    <p>请上传Markdown文件开始翻译</p>
+        <!-- 主内容区域 -->
+        <div class="main-content-panel">
+            <div class="content-header">
+                <div class="header-left">
+                    <div class="file-info" id="file-info"></div>
                 </div>
-            </div>
-        </div>
-        
-        <!-- 右侧翻译区域 -->
-        <div class="translation-panel">
-            <div class="panel-header">
-                <h3>翻译</h3>
-                <div class="translation-actions">
+                <div class="header-right">
                     <button id="translate-all-btn" class="btn btn-primary" disabled>全部翻译</button>
                 </div>
+                <div class="column-resizer">
+                    <div class="column-labels">
+                        <div class="original-label" id="original-label">原文</div>
+                        <div class="translation-label">翻译</div>
+                    </div>
+                    <div class="resize-handle" id="resize-handle"></div>
+                </div>
             </div>
-            <div class="content-area" id="translation-content">
+            <div class="content-container" id="content-container">
                 <div class="placeholder">
-                    <p>翻译结果将显示在这里</p>
+                    <p>请上传Markdown文件开始翻译</p>
                 </div>
             </div>
         </div>

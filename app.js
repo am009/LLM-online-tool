@@ -3,6 +3,9 @@ class MarkdownTranslator {
         this.originalBlocks = [];
         this.translationBlocks = [];
         this.currentFile = null;
+        this.originalWidth = 45; // percentage
+        this.isResizing = false;
+        this.sidebarCollapsed = false;
         this.init();
     }
 
@@ -10,6 +13,8 @@ class MarkdownTranslator {
         this.setupEventListeners();
         this.loadSettings();
         this.setupModal();
+        this.setupResizer();
+        this.setupSidebar();
     }
 
     setupEventListeners() {
@@ -31,6 +36,9 @@ class MarkdownTranslator {
         document.getElementById('api-key').addEventListener('input', () => this.saveSettings());
         document.getElementById('api-provider').addEventListener('change', () => this.saveSettings());
         document.getElementById('allow-edit-original').addEventListener('change', () => this.toggleOriginalEdit());
+        
+        // 侧边栏折叠
+        document.getElementById('collapse-btn').addEventListener('click', () => this.toggleSidebar());
     }
 
     setupModal() {
@@ -63,6 +71,11 @@ class MarkdownTranslator {
             document.getElementById('api-key').value = parsed.apiKey || '';
             document.getElementById('api-provider').value = parsed.apiProvider || 'openai';
             document.getElementById('allow-edit-original').checked = parsed.allowEditOriginal || false;
+            
+            // 加载布局设置
+            this.originalWidth = parsed.originalWidth || 45;
+            this.sidebarCollapsed = parsed.sidebarCollapsed || false;
+            this.applyLayoutSettings();
         }
     }
 
@@ -71,7 +84,9 @@ class MarkdownTranslator {
             prompt: document.getElementById('translation-prompt').value,
             apiKey: document.getElementById('api-key').value,
             apiProvider: document.getElementById('api-provider').value,
-            allowEditOriginal: document.getElementById('allow-edit-original').checked
+            allowEditOriginal: document.getElementById('allow-edit-original').checked,
+            originalWidth: this.originalWidth,
+            sidebarCollapsed: this.sidebarCollapsed
         };
         localStorage.setItem('markdown-translator-settings', JSON.stringify(settings));
     }
@@ -79,7 +94,7 @@ class MarkdownTranslator {
     toggleOriginalEdit() {
         this.saveSettings();
         const allowEdit = document.getElementById('allow-edit-original').checked;
-        const originalBlocks = document.querySelectorAll('#original-content .block-content');
+        const originalBlocks = document.querySelectorAll('.original-block');
         
         originalBlocks.forEach(block => {
             if (allowEdit) {
@@ -159,57 +174,49 @@ class MarkdownTranslator {
     }
 
     renderBlocks() {
-        const originalContainer = document.getElementById('original-content');
-        const translationContainer = document.getElementById('translation-content');
+        const contentContainer = document.getElementById('content-container');
         
-        originalContainer.innerHTML = '';
-        translationContainer.innerHTML = '';
+        contentContainer.innerHTML = '';
         
         this.originalBlocks.forEach((block, index) => {
-            // 创建原文块
-            const originalDiv = this.createTextBlock(block, index, 'original');
-            originalContainer.appendChild(originalDiv);
-            
-            // 创建翻译块
-            const translationDiv = this.createTextBlock(this.translationBlocks[index], index, 'translation');
-            translationContainer.appendChild(translationDiv);
+            const pairDiv = this.createTextBlockPair(block, this.translationBlocks[index], index);
+            contentContainer.appendChild(pairDiv);
         });
         
-        this.toggleOriginalEdit(); // 应用编辑权限
+        this.toggleOriginalEdit();
     }
 
-    createTextBlock(content, index, type) {
-        const blockDiv = document.createElement('div');
-        blockDiv.className = 'text-block';
-        blockDiv.dataset.index = index;
+    createTextBlockPair(originalContent, translationContent, index) {
+        const pairDiv = document.createElement('div');
+        pairDiv.className = 'text-block-pair';
+        pairDiv.dataset.index = index;
         
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'block-content';
+        // 原文块
+        const originalDiv = document.createElement('div');
+        originalDiv.className = 'original-block';
+        originalDiv.innerHTML = this.renderMarkdownToHtml(originalContent || '');
         
-        if (type === 'translation') {
-            contentDiv.classList.add('editable');
-            contentDiv.setAttribute('contenteditable', 'true');
-            contentDiv.addEventListener('input', () => {
-                this.translationBlocks[index] = contentDiv.textContent;
-            });
-        }
+        // 翻译按钮
+        const translateBtn = document.createElement('button');
+        translateBtn.className = 'translate-button';
+        translateBtn.innerHTML = '→';
+        translateBtn.title = '翻译此段';
+        translateBtn.addEventListener('click', () => this.translateBlock(index));
         
-        // 处理Markdown格式的简单渲染
-        contentDiv.innerHTML = this.renderMarkdownToHtml(content || (type === 'translation' ? '点击左侧翻译按钮进行翻译' : ''));
+        // 翻译块
+        const translationDiv = document.createElement('div');
+        translationDiv.className = 'translation-block';
+        translationDiv.setAttribute('contenteditable', 'true');
+        translationDiv.innerHTML = this.renderMarkdownToHtml(translationContent || '');
+        translationDiv.addEventListener('input', () => {
+            this.translationBlocks[index] = translationDiv.textContent;
+        });
         
-        blockDiv.appendChild(contentDiv);
+        pairDiv.appendChild(originalDiv);
+        pairDiv.appendChild(translateBtn);
+        pairDiv.appendChild(translationDiv);
         
-        // 为原文块添加翻译按钮
-        if (type === 'original') {
-            const translateBtn = document.createElement('button');
-            translateBtn.className = 'translate-btn';
-            translateBtn.innerHTML = '→';
-            translateBtn.title = '翻译此段';
-            translateBtn.addEventListener('click', () => this.translateBlock(index));
-            blockDiv.appendChild(translateBtn);
-        }
-        
-        return blockDiv;
+        return pairDiv;
     }
 
     renderMarkdownToHtml(markdown) {
@@ -245,7 +252,7 @@ class MarkdownTranslator {
     }
 
     async translateBlock(index) {
-        const translateBtn = document.querySelector(`[data-index="${index}"] .translate-btn`);
+        const translateBtn = document.querySelector(`[data-index="${index}"] .translate-button`);
         const originalContent = this.originalBlocks[index];
         
         if (!originalContent) return;
@@ -268,7 +275,7 @@ class MarkdownTranslator {
             this.translationBlocks[index] = translation;
             
             // 更新翻译块的显示
-            const translationBlock = document.querySelector(`#translation-content [data-index="${index}"] .block-content`);
+            const translationBlock = document.querySelector(`[data-index="${index}"] .translation-block`);
             translationBlock.innerHTML = this.renderMarkdownToHtml(translation);
             
         } catch (error) {
@@ -397,6 +404,81 @@ class MarkdownTranslator {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+    }
+
+    // 设置调整大小功能
+    setupResizer() {
+        const resizeHandle = document.getElementById('resize-handle');
+        const contentContainer = document.getElementById('content-container');
+        
+        if (!resizeHandle) return;
+        
+        resizeHandle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            this.isResizing = true;
+            document.addEventListener('mousemove', this.handleResize.bind(this));
+            document.addEventListener('mouseup', this.stopResize.bind(this));
+        });
+        
+        // 应用保存的宽度设置
+        this.applyLayoutSettings();
+    }
+    
+    handleResize(e) {
+        if (!this.isResizing) return;
+        
+        const contentContainer = document.getElementById('content-container');
+        const rect = contentContainer.getBoundingClientRect();
+        const containerWidth = rect.width - 60; // 减去翻译按钮的宽度
+        const mouseX = e.clientX - rect.left;
+        
+        // 计算新的原文栏宽度百分比
+        const newWidth = Math.max(20, Math.min(70, (mouseX / containerWidth) * 100));
+        this.originalWidth = newWidth;
+        
+        this.applyLayoutSettings();
+    }
+    
+    stopResize() {
+        this.isResizing = false;
+        document.removeEventListener('mousemove', this.handleResize.bind(this));
+        document.removeEventListener('mouseup', this.stopResize.bind(this));
+        this.saveSettings();
+    }
+    
+    applyLayoutSettings() {
+        document.documentElement.style.setProperty('--original-width', `${this.originalWidth}%`);
+        
+        const originalLabel = document.getElementById('original-label');
+        if (originalLabel) {
+            originalLabel.style.width = `${this.originalWidth}%`;
+        }
+        
+        const resizeHandle = document.getElementById('resize-handle');
+        if (resizeHandle) {
+            resizeHandle.style.left = `${this.originalWidth}%`;
+        }
+    }
+    
+    // 设置侧边栏功能
+    setupSidebar() {
+        const settingsPanel = document.getElementById('settings-panel');
+        if (this.sidebarCollapsed) {
+            settingsPanel.classList.add('collapsed');
+        }
+    }
+    
+    toggleSidebar() {
+        const settingsPanel = document.getElementById('settings-panel');
+        this.sidebarCollapsed = !this.sidebarCollapsed;
+        
+        if (this.sidebarCollapsed) {
+            settingsPanel.classList.add('collapsed');
+        } else {
+            settingsPanel.classList.remove('collapsed');
+        }
+        
+        this.saveSettings();
     }
 }
 
