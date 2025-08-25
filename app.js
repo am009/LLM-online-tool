@@ -194,7 +194,7 @@ class MarkdownTranslator {
         // 原文块
         const originalDiv = document.createElement('div');
         originalDiv.className = 'original-block';
-        originalDiv.innerHTML = this.renderMarkdownToHtml(originalContent || '');
+        originalDiv.innerHTML = originalContent || '';
         
         // 翻译按钮
         const translateBtn = document.createElement('button');
@@ -207,7 +207,7 @@ class MarkdownTranslator {
         const translationDiv = document.createElement('div');
         translationDiv.className = 'translation-block';
         translationDiv.setAttribute('contenteditable', 'true');
-        translationDiv.innerHTML = this.renderMarkdownToHtml(translationContent || '');
+        translationDiv.innerHTML = translationContent || originalContent;
         translationDiv.addEventListener('input', () => {
             this.translationBlocks[index] = translationDiv.textContent;
         });
@@ -217,31 +217,6 @@ class MarkdownTranslator {
         pairDiv.appendChild(translationDiv);
         
         return pairDiv;
-    }
-
-    renderMarkdownToHtml(markdown) {
-        if (!markdown) return '';
-        
-        // 简单的Markdown到HTML转换
-        let html = markdown
-            // 粗体
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/__(.*?)__/g, '<strong>$1</strong>')
-            // 斜体
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/_(.*?)_/g, '<em>$1</em>')
-            // 代码
-            .replace(/`(.*?)`/g, '<code>$1</code>')
-            // 链接
-            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
-            // 标题
-            .replace(/^### (.*)/gm, '<h3>$1</h3>')
-            .replace(/^## (.*)/gm, '<h2>$1</h2>')
-            .replace(/^# (.*)/gm, '<h1>$1</h1>')
-            // 换行
-            .replace(/\n/g, '<br>');
-            
-        return html;
     }
 
     updateFileInfo() {
@@ -276,7 +251,7 @@ class MarkdownTranslator {
             
             // 更新翻译块的显示
             const translationBlock = document.querySelector(`[data-index="${index}"] .translation-block`);
-            translationBlock.innerHTML = this.renderMarkdownToHtml(translation);
+            translationBlock.innerHTML = translation;
             
         } catch (error) {
             this.showError('翻译失败：' + error.message);
