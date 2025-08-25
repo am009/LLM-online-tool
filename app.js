@@ -35,6 +35,7 @@ class MarkdownTranslator {
         document.getElementById('translation-prompt').addEventListener('input', () => this.saveSettings());
         document.getElementById('api-key').addEventListener('input', () => this.saveSettings());
         document.getElementById('api-endpoint').addEventListener('input', () => this.saveSettings());
+        document.getElementById('model-name').addEventListener('input', () => this.saveSettings());
         document.getElementById('api-provider').addEventListener('change', () => this.onProviderChange());
         document.getElementById('allow-edit-original').addEventListener('change', () => this.toggleOriginalEdit());
         
@@ -77,22 +78,30 @@ class MarkdownTranslator {
             // 加载对应提供商的API端点
             this.loadApiEndpoint(provider);
             
+            // 加载对应提供商的模型名称
+            this.loadModelName(provider);
+            
             // 加载布局设置
             this.originalWidth = parsed.originalWidth || 45;
             this.sidebarCollapsed = parsed.sidebarCollapsed || false;
             this.applyLayoutSettings();
         } else {
-            // 初次使用时加载默认端点
+            // 初次使用时加载默认端点和模型
             this.loadApiEndpoint('openai');
+            this.loadModelName('openai');
         }
     }
 
     saveSettings() {
         const provider = document.getElementById('api-provider').value;
         const endpoint = document.getElementById('api-endpoint').value;
+        const modelName = document.getElementById('model-name').value;
         
         // 保存当前提供商的API端点
         this.saveApiEndpoint(provider, endpoint);
+        
+        // 保存当前提供商的模型名称
+        this.saveModelName(provider, modelName);
         
         const settings = {
             prompt: document.getElementById('translation-prompt').value,
@@ -108,6 +117,7 @@ class MarkdownTranslator {
     onProviderChange() {
         const provider = document.getElementById('api-provider').value;
         this.loadApiEndpoint(provider);
+        this.loadModelName(provider);
         this.saveSettings();
     }
 
@@ -116,6 +126,7 @@ class MarkdownTranslator {
         const defaultEndpoints = {
             'openai': 'https://api.openai.com/v1/chat/completions',
             'anthropic': 'https://api.anthropic.com/v1/messages',
+            'ollama': 'http://localhost:11434/api/chat',
             'custom': ''
         };
         
@@ -131,6 +142,30 @@ class MarkdownTranslator {
 
     getStoredEndpoints() {
         const stored = localStorage.getItem('markdown-translator-endpoints');
+        return stored ? JSON.parse(stored) : {};
+    }
+
+    loadModelName(provider) {
+        const models = this.getStoredModels();
+        const defaultModels = {
+            'openai': 'gpt-3.5-turbo',
+            'anthropic': 'claude-3-sonnet-20240229',
+            'ollama': 'llama2',
+            'custom': ''
+        };
+        
+        const model = models[provider] || defaultModels[provider] || '';
+        document.getElementById('model-name').value = model;
+    }
+
+    saveModelName(provider, modelName) {
+        const models = this.getStoredModels();
+        models[provider] = modelName;
+        localStorage.setItem('markdown-translator-models', JSON.stringify(models));
+    }
+
+    getStoredModels() {
+        const stored = localStorage.getItem('markdown-translator-models');
         return stored ? JSON.parse(stored) : {};
     }
 
@@ -280,9 +315,15 @@ class MarkdownTranslator {
         const prompt = settings.prompt;
         const provider = settings.apiProvider || 'openai';
         const customEndpoint = document.getElementById('api-endpoint').value;
+        const modelName = document.getElementById('model-name').value;
         
-        if (!apiKey) {
+        if (!apiKey && provider !== 'ollama') {
             this.showError('请先设置API Key');
+            return;
+        }
+        
+        if (!modelName) {
+            this.showError('请先设置模型名称');
             return;
         }
         
@@ -290,7 +331,7 @@ class MarkdownTranslator {
         translateBtn.classList.add('loading');
         
         try {
-            const translation = await this.callTranslationAPI(originalContent, prompt, apiKey, provider, customEndpoint);
+            const translation = await this.callTranslationAPI(originalContent, prompt, apiKey, provider, customEndpoint, modelName);
             this.translationBlocks[index] = translation;
             
             // 更新翻译块的显示
@@ -305,7 +346,7 @@ class MarkdownTranslator {
         }
     }
 
-    async callTranslationAPI(text, prompt, apiKey, provider, customEndpoint) {
+    async callTranslationAPI(text, prompt, apiKey, provider, customEndpoint, modelName) {
         const fullPrompt = `${prompt}\n\n原文：\n${text}`;
         
         let apiUrl, headers, body;
@@ -322,6 +363,9 @@ class MarkdownTranslator {
                 case 'anthropic':
                     apiUrl = 'https://api.anthropic.com/v1/messages';
                     break;
+                case 'ollama':
+                    apiUrl = 'http://localhost:11434/api/chat';
+                    break;
                 default:
                     throw new Error('不支持的API提供商');
             }
@@ -336,7 +380,7 @@ class MarkdownTranslator {
                     'Authorization': `Bearer ${apiKey}`
                 };
                 body = {
-                    model: 'gpt-3.5-turbo',
+                    model: modelName || 'gpt-3.5-turbo',
                     messages: [
                         { role: 'user', content: fullPrompt }
                     ],
@@ -352,11 +396,24 @@ class MarkdownTranslator {
                     'anthropic-version': '2023-06-01'
                 };
                 body = {
-                    model: 'claude-3-sonnet-20240229',
+                    model: modelName || 'claude-3-sonnet-20240229',
                     max_tokens: 2000,
                     messages: [
                         { role: 'user', content: fullPrompt }
                     ]
+                };
+                break;
+                
+            case 'ollama':
+                headers = {
+                    'Content-Type': 'application/json'
+                };
+                body = {
+                    model: modelName || 'llama2',
+                    messages: [
+                        { role: 'user', content: fullPrompt }
+                    ],
+                    stream: false
                 };
                 break;
                 
@@ -382,6 +439,8 @@ class MarkdownTranslator {
             return data.choices[0]?.message?.content || '翻译失败';
         } else if (provider === 'anthropic') {
             return data.content[0]?.text || '翻译失败';
+        } else if (provider === 'ollama') {
+            return data.message?.content || '翻译失败';
         }
         
         throw new Error('无法解析API响应');
@@ -390,9 +449,16 @@ class MarkdownTranslator {
     async translateAll() {
         const settings = JSON.parse(localStorage.getItem('markdown-translator-settings') || '{}');
         const apiKey = settings.apiKey;
+        const provider = settings.apiProvider || 'openai';
+        const modelName = document.getElementById('model-name').value;
         
-        if (!apiKey) {
+        if (!apiKey && provider !== 'ollama') {
             this.showError('请先设置API Key');
+            return;
+        }
+        
+        if (!modelName) {
+            this.showError('请先设置模型名称');
             return;
         }
         
