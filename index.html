@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown在线翻译工具</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧设置栏 -->
+        <div class="settings-panel">
+            <h2>设置</h2>
+            
+            <div class="setting-group">
+                <label for="api-provider">API提供商:</label>
+                <select id="api-provider">
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                    <option value="custom">自定义</option>
+                </select>
+            </div>
+            
+            <div class="setting-group">
+                <label for="api-key">API Key:</label>
+                <input type="password" id="api-key" placeholder="请输入您的API Key">
+            </div>
+            
+            <div class="setting-group">
+                <label for="translation-prompt">翻译提示词:</label>
+                <textarea id="translation-prompt" rows="6" placeholder="请将以下文本翻译成中文，保持原文的格式和结构...">请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。</textarea>
+            </div>
+            
+            <div class="setting-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="allow-edit-original">
+                    <span class="checkmark"></span>
+                    允许修改原文
+                </label>
+            </div>
+            
+            <div class="setting-group">
+                <button id="upload-btn" class="btn btn-primary">上传Markdown文件</button>
+                <input type="file" id="file-input" accept=".md,.markdown" style="display: none;">
+            </div>
+            
+            <div class="setting-group">
+                <button id="export-btn" class="btn btn-secondary" disabled>导出翻译结果</button>
+            </div>
+        </div>
+        
+        <!-- 中间原文区域 -->
+        <div class="original-panel">
+            <div class="panel-header">
+                <h3>原文</h3>
+                <div class="file-info" id="file-info"></div>
+            </div>
+            <div class="content-area" id="original-content">
+                <div class="placeholder">
+                    <p>请上传Markdown文件开始翻译</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧翻译区域 -->
+        <div class="translation-panel">
+            <div class="panel-header">
+                <h3>翻译</h3>
+                <div class="translation-actions">
+                    <button id="translate-all-btn" class="btn btn-primary" disabled>全部翻译</button>
+                </div>
+            </div>
+            <div class="content-area" id="translation-content">
+                <div class="placeholder">
+                    <p>翻译结果将显示在这里</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 模态框用于显示错误信息 -->
+    <div id="error-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>错误</h3>
+            <p id="error-message"></p>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

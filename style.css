@@ -1,0 +1,368 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+    line-height: 1.6;
+}
+
+.app-container {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* 左侧设置栏 */
+.settings-panel {
+    width: 300px;
+    background: #fff;
+    border-right: 1px solid #e0e0e0;
+    padding: 20px;
+    overflow-y: auto;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.settings-panel h2 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+    font-size: 1.4em;
+}
+
+.setting-group {
+    margin-bottom: 20px;
+}
+
+.setting-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #555;
+}
+
+.setting-group input,
+.setting-group select,
+.setting-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.setting-group input:focus,
+.setting-group select:focus,
+.setting-group textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+.setting-group textarea {
+    resize: vertical;
+    min-height: 100px;
+    font-family: inherit;
+}
+
+/* 复选框样式 */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin-right: 10px;
+}
+
+/* 按钮样式 */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s;
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: #3498db;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #2980b9;
+}
+
+.btn-secondary {
+    background: #95a5a6;
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #7f8c8d;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* 中间和右侧面板 */
+.original-panel,
+.translation-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-right: 1px solid #e0e0e0;
+}
+
+.translation-panel {
+    border-right: none;
+}
+
+.panel-header {
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.panel-header h3 {
+    color: #2c3e50;
+    font-size: 1.2em;
+}
+
+.file-info {
+    font-size: 12px;
+    color: #666;
+}
+
+.translation-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.content-area {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background: #fff;
+}
+
+.placeholder {
+    text-align: center;
+    color: #999;
+    margin-top: 50px;
+}
+
+/* 文本块样式 */
+.text-block {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.block-content {
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background: #fafafa;
+    min-height: 60px;
+    transition: all 0.3s;
+}
+
+.block-content:hover {
+    border-color: #3498db;
+}
+
+.block-content.editable {
+    cursor: text;
+}
+
+.block-content.editing {
+    background: #fff;
+    border-color: #3498db;
+}
+
+.block-content textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    resize: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+/* 翻译按钮 */
+.translate-btn {
+    position: absolute;
+    right: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #3498db;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s;
+    z-index: 10;
+}
+
+.translate-btn:hover {
+    background: #2980b9;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.translate-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    transform: translateY(-50%);
+}
+
+.translate-btn.loading {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: translateY(-50%) rotate(0deg); }
+    100% { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* 模态框 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 15% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 500px;
+    position: relative;
+}
+
+.close {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #aaa;
+}
+
+.close:hover {
+    color: #000;
+}
+
+/* 加载动画 */
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+    
+    .settings-panel {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .original-panel,
+    .translation-panel {
+        height: 50vh;
+    }
+    
+    .translate-btn {
+        position: relative;
+        right: auto;
+        top: auto;
+        transform: none;
+        margin: 10px 0;
+        display: block;
+        width: 100%;
+    }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #2c3e50;
+        color: #ecf0f1;
+    }
+    
+    .settings-panel,
+    .original-panel,
+    .translation-panel,
+    .content-area {
+        background: #34495e;
+        border-color: #4a5c6a;
+    }
+    
+    .panel-header {
+        background: #2c3e50;
+        border-color: #4a5c6a;
+    }
+    
+    .block-content {
+        background: #2c3e50;
+        border-color: #4a5c6a;
+        color: #ecf0f1;
+    }
+    
+    .block-content:hover {
+        border-color: #3498db;
+    }
+    
+    .setting-group input,
+    .setting-group select,
+    .setting-group textarea {
+        background: #2c3e50;
+        color: #ecf0f1;
+        border-color: #4a5c6a;
+    }
+    
+    .modal-content {
+        background-color: #34495e;
+        color: #ecf0f1;
+    }
+}
