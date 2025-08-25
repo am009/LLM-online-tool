@@ -25,8 +25,9 @@ body {
 
 /* 左侧设置栏 */
 .settings-panel {
-    width: 300px;
-    min-width: 40px;
+    width: 25%;
+    min-width: 250px;
+    max-width: 400px;
     background: #fff;
     border-right: 1px solid #e0e0e0;
     overflow-y: auto;
@@ -37,6 +38,7 @@ body {
 
 .settings-panel.collapsed {
     width: 40px;
+    min-width: 40px;
 }
 
 .settings-header {
@@ -183,10 +185,14 @@ body {
 
 /* 主内容面板 */
 .main-content-panel {
-    flex: 1;
+    width: 75%;
     display: flex;
     flex-direction: column;
     background: #fff;
+}
+
+.settings-panel.collapsed + .main-content-panel {
+    width: calc(100% - 40px);
 }
 
 .content-header {
@@ -206,6 +212,7 @@ body {
 .header-right {
     display: flex;
     gap: 10px;
+    align-items: center;
 }
 
 .file-info {
@@ -434,6 +441,21 @@ body {
 }
 
 /* 响应式设计 */
+@media (max-width: 1024px) {
+    .settings-panel {
+        width: 30%;
+        min-width: 200px;
+    }
+    
+    .main-content-panel {
+        width: 70%;
+    }
+    
+    .settings-panel.collapsed + .main-content-panel {
+        width: calc(100% - 40px);
+    }
+}
+
 @media (max-width: 768px) {
     .app-container {
         position: relative;
@@ -444,9 +466,11 @@ body {
         left: 0;
         top: 0;
         height: 100vh;
+        width: 280px;
         z-index: 1000;
         transform: translateX(-100%);
         transition: transform 0.3s ease;
+        min-width: 280px;
     }
     
     .settings-panel.show-mobile {
@@ -454,6 +478,7 @@ body {
     }
     
     .main-content-panel {
+        width: 100%;
         margin-left: 0;
     }
     
