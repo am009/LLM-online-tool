@@ -34,7 +34,8 @@ class MarkdownTranslator {
         // 设置变更
         document.getElementById('translation-prompt').addEventListener('input', () => this.saveSettings());
         document.getElementById('api-key').addEventListener('input', () => this.saveSettings());
-        document.getElementById('api-provider').addEventListener('change', () => this.saveSettings());
+        document.getElementById('api-endpoint').addEventListener('input', () => this.saveSettings());
+        document.getElementById('api-provider').addEventListener('change', () => this.onProviderChange());
         document.getElementById('allow-edit-original').addEventListener('change', () => this.toggleOriginalEdit());
         
         // 侧边栏折叠
@@ -69,26 +70,68 @@ class MarkdownTranslator {
             const parsed = JSON.parse(settings);
             document.getElementById('translation-prompt').value = parsed.prompt || '请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。';
             document.getElementById('api-key').value = parsed.apiKey || '';
-            document.getElementById('api-provider').value = parsed.apiProvider || 'openai';
+            const provider = parsed.apiProvider || 'openai';
+            document.getElementById('api-provider').value = provider;
             document.getElementById('allow-edit-original').checked = parsed.allowEditOriginal || false;
+            
+            // 加载对应提供商的API端点
+            this.loadApiEndpoint(provider);
             
             // 加载布局设置
             this.originalWidth = parsed.originalWidth || 45;
             this.sidebarCollapsed = parsed.sidebarCollapsed || false;
             this.applyLayoutSettings();
+        } else {
+            // 初次使用时加载默认端点
+            this.loadApiEndpoint('openai');
         }
     }
 
     saveSettings() {
+        const provider = document.getElementById('api-provider').value;
+        const endpoint = document.getElementById('api-endpoint').value;
+        
+        // 保存当前提供商的API端点
+        this.saveApiEndpoint(provider, endpoint);
+        
         const settings = {
             prompt: document.getElementById('translation-prompt').value,
             apiKey: document.getElementById('api-key').value,
-            apiProvider: document.getElementById('api-provider').value,
+            apiProvider: provider,
             allowEditOriginal: document.getElementById('allow-edit-original').checked,
             originalWidth: this.originalWidth,
             sidebarCollapsed: this.sidebarCollapsed
         };
         localStorage.setItem('markdown-translator-settings', JSON.stringify(settings));
+    }
+
+    onProviderChange() {
+        const provider = document.getElementById('api-provider').value;
+        this.loadApiEndpoint(provider);
+        this.saveSettings();
+    }
+
+    loadApiEndpoint(provider) {
+        const endpoints = this.getStoredEndpoints();
+        const defaultEndpoints = {
+            'openai': 'https://api.openai.com/v1/chat/completions',
+            'anthropic': 'https://api.anthropic.com/v1/messages',
+            'custom': ''
+        };
+        
+        const endpoint = endpoints[provider] || defaultEndpoints[provider] || '';
+        document.getElementById('api-endpoint').value = endpoint;
+    }
+
+    saveApiEndpoint(provider, endpoint) {
+        const endpoints = this.getStoredEndpoints();
+        endpoints[provider] = endpoint;
+        localStorage.setItem('markdown-translator-endpoints', JSON.stringify(endpoints));
+    }
+
+    getStoredEndpoints() {
+        const stored = localStorage.getItem('markdown-translator-endpoints');
+        return stored ? JSON.parse(stored) : {};
     }
 
     toggleOriginalEdit() {
@@ -236,6 +279,7 @@ class MarkdownTranslator {
         const apiKey = settings.apiKey;
         const prompt = settings.prompt;
         const provider = settings.apiProvider || 'openai';
+        const customEndpoint = document.getElementById('api-endpoint').value;
         
         if (!apiKey) {
             this.showError('请先设置API Key');
@@ -246,7 +290,7 @@ class MarkdownTranslator {
         translateBtn.classList.add('loading');
         
         try {
-            const translation = await this.callTranslationAPI(originalContent, prompt, apiKey, provider);
+            const translation = await this.callTranslationAPI(originalContent, prompt, apiKey, provider, customEndpoint);
             this.translationBlocks[index] = translation;
             
             // 更新翻译块的显示
@@ -261,14 +305,32 @@ class MarkdownTranslator {
         }
     }
 
-    async callTranslationAPI(text, prompt, apiKey, provider) {
+    async callTranslationAPI(text, prompt, apiKey, provider, customEndpoint) {
         const fullPrompt = `${prompt}\n\n原文：\n${text}`;
         
         let apiUrl, headers, body;
         
+        // 如果有自定义端点，使用自定义端点，否则使用默认端点
+        if (customEndpoint && customEndpoint.trim()) {
+            apiUrl = customEndpoint.trim();
+        } else {
+            // 使用默认端点
+            switch (provider) {
+                case 'openai':
+                    apiUrl = 'https://api.openai.com/v1/chat/completions';
+                    break;
+                case 'anthropic':
+                    apiUrl = 'https://api.anthropic.com/v1/messages';
+                    break;
+                default:
+                    throw new Error('不支持的API提供商');
+            }
+        }
+        
+        // 设置请求头和请求体
         switch (provider) {
             case 'openai':
-                apiUrl = 'https://api.openai.com/v1/chat/completions';
+            case 'custom': // 自定义端点也可以使用OpenAI格式
                 headers = {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${apiKey}`
@@ -284,7 +346,6 @@ class MarkdownTranslator {
                 break;
                 
             case 'anthropic':
-                apiUrl = 'https://api.anthropic.com/v1/messages';
                 headers = {
                     'Content-Type': 'application/json',
                     'x-api-key': apiKey,
@@ -316,7 +377,8 @@ class MarkdownTranslator {
         
         const data = await response.json();
         
-        if (provider === 'openai') {
+        // 根据提供商类型解析响应
+        if (provider === 'openai' || provider === 'custom') {
             return data.choices[0]?.message?.content || '翻译失败';
         } else if (provider === 'anthropic') {
             return data.content[0]?.text || '翻译失败';
