@@ -247,6 +247,9 @@ class MarkdownTranslator {
         // 过滤掉太短的块（比如只有一两个字符的）
         this.originalBlocks = blocks.filter(block => block.length > 3);
         this.translationBlocks = new Array(this.originalBlocks.length).fill('');
+        for (let i = 0; i < this.originalBlocks.length; i++) {
+            this.translationBlocks[i] = this.originalBlocks[i]
+        }
         
         this.renderBlocks();
     }
