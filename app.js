@@ -505,7 +505,9 @@ class MarkdownTranslator {
         
         const a = document.createElement('a');
         a.href = url;
-        a.download = `translated_${this.currentFile.name}`;
+        a.download = this.currentFile.name.startsWith('translated_') 
+            ? this.currentFile.name 
+            : `translated_${this.currentFile.name}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

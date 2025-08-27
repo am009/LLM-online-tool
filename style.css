@@ -457,58 +457,73 @@ body {
 }
 
 @media (max-width: 768px) {
-    .app-container {
-        position: relative;
-    }
-    
     .settings-panel {
-        position: fixed;
-        left: 0;
-        top: 0;
-        height: 100vh;
-        width: 280px;
-        z-index: 1000;
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
-        min-width: 280px;
-    }
-    
-    .settings-panel.show-mobile {
-        transform: translateX(0);
+        width: 25%;
+        min-width: 180px;
     }
     
     .main-content-panel {
-        width: 100%;
-        margin-left: 0;
+        width: 75%;
     }
     
-    .text-block-pair {
-        flex-direction: column;
+    .settings-panel.collapsed + .main-content-panel {
+        width: calc(100% - 40px);
+    }
+    
+    .settings-panel .setting-group {
+        padding: 0 10px;
+    }
+    
+    .settings-header {
+        padding: 15px 10px 0 10px;
+    }
+    
+    .setting-group input,
+    .setting-group select,
+    .setting-group textarea {
+        font-size: 12px;
+        padding: 8px;
+    }
+    
+    .btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+    
+    .content-header {
+        padding: 10px 15px;
+        flex-wrap: wrap;
         gap: 10px;
     }
     
-    .original-block {
-        width: 100%;
-        border-radius: 4px;
-    }
-    
-    .translate-button {
-        width: 100%;
-        height: 40px;
-        border-radius: 0;
-    }
-    
-    .translation-block {
-        width: 100%;
-        border-radius: 4px;
+    .header-right {
+        gap: 5px;
     }
     
     .column-resizer {
-        display: none;
+        left: 15px;
+        right: 15px;
+        height: 35px;
     }
     
     .content-container {
-        padding-top: 20px;
+        padding: 55px 15px 15px;
+    }
+    
+    .text-block-pair {
+        margin-bottom: 15px;
+        min-height: 60px;
+    }
+    
+    .original-block,
+    .translation-block {
+        padding: 10px;
+        font-size: 14px;
+    }
+    
+    .translate-button {
+        width: 50px;
+        font-size: 10px;
     }
 }
 
