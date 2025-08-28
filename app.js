@@ -328,6 +328,7 @@ class MarkdownTranslator {
             this.translationBlocks[index] = translationMarkdown.textContent;
             // 同步更新mathjax版本的内容
             translationMathjax.innerHTML = translationMarkdown.innerHTML;
+            MathJax.typesetClear([translationMathjax]);
             // 重新渲染MathJax版本
             if (typeof MathJax !== 'undefined') {
                 MathJax.typesetPromise([translationMathjax]).catch((err) => console.log(err.message));
@@ -419,8 +420,9 @@ class MarkdownTranslator {
             const mathjaxDiv = translationBlock.querySelector('.content-mathjax');
             
             markdownDiv.innerHTML = translation;
+            MathJax.typesetClear([markdownDiv]);
             mathjaxDiv.innerHTML = translation;
-            
+
             // 重新渲染MathJax版本（无论当前显示的是哪个版本）
             if (typeof MathJax !== 'undefined') {
                 MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
