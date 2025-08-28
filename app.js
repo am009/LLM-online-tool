@@ -6,6 +6,7 @@ class MarkdownTranslator {
         this.originalWidth = 45; // percentage
         this.isResizing = false;
         this.sidebarCollapsed = false;
+        this.hasExported = false; // 标记是否已导出
         this.init();
     }
 
@@ -15,6 +16,7 @@ class MarkdownTranslator {
         this.setupModal();
         this.setupResizer();
         this.setupSidebar();
+        this.setupBeforeUnloadWarning();
     }
 
     setupEventListeners() {
@@ -38,6 +40,9 @@ class MarkdownTranslator {
         document.getElementById('model-name').addEventListener('input', () => this.saveSettings());
         document.getElementById('api-provider').addEventListener('change', () => this.onProviderChange());
         document.getElementById('allow-edit-original').addEventListener('change', () => this.toggleOriginalEdit());
+        
+        // 上下文数量控制
+        document.getElementById('context-count').addEventListener('input', () => this.saveSettings());
         
         // 侧边栏折叠
         document.getElementById('collapse-btn').addEventListener('click', () => this.toggleSidebar());
@@ -74,6 +79,7 @@ class MarkdownTranslator {
             const provider = parsed.apiProvider || 'openai';
             document.getElementById('api-provider').value = provider;
             document.getElementById('allow-edit-original').checked = parsed.allowEditOriginal || false;
+            document.getElementById('context-count').value = parsed.contextCount || 1;
             
             // 加载对应提供商的API端点
             this.loadApiEndpoint(provider);
@@ -108,6 +114,7 @@ class MarkdownTranslator {
             apiKey: document.getElementById('api-key').value,
             apiProvider: provider,
             allowEditOriginal: document.getElementById('allow-edit-original').checked,
+            contextCount: parseInt(document.getElementById('context-count').value) || 1,
             originalWidth: this.originalWidth,
             sidebarCollapsed: this.sidebarCollapsed
         };
@@ -216,6 +223,9 @@ class MarkdownTranslator {
         }
 
         this.currentFile = file;
+        // 重置导出标记
+        this.hasExported = false;
+        
         const reader = new FileReader();
         
         reader.onload = (e) => {
@@ -343,6 +353,26 @@ class MarkdownTranslator {
         }
     }
 
+    getContextBlocks(targetIndex, contextCount) {
+        const beforeBlocks = [];
+        const afterBlocks = [];
+        
+        // 获取前文块
+        for (let i = 1; i <= contextCount && targetIndex - i >= 0; i++) {
+            beforeBlocks.unshift(this.originalBlocks[targetIndex - i]);
+        }
+        
+        // 获取后文块
+        for (let i = 1; i <= contextCount && targetIndex + i < this.originalBlocks.length; i++) {
+            afterBlocks.push(this.originalBlocks[targetIndex + i]);
+        }
+        
+        return {
+            before: beforeBlocks.filter(block => block && block.trim()),
+            after: afterBlocks.filter(block => block && block.trim())
+        };
+    }
+
     async translateBlock(index) {
         const translateBtn = document.querySelector(`[data-index="${index}"] .translate-button`);
         const originalContent = this.originalBlocks[index];
@@ -355,6 +385,7 @@ class MarkdownTranslator {
         const provider = settings.apiProvider || 'openai';
         const customEndpoint = document.getElementById('api-endpoint').value;
         const modelName = document.getElementById('model-name').value;
+        const contextCount = parseInt(document.getElementById('context-count').value) || 1;
         
         if (!apiKey && provider !== 'ollama') {
             this.showError('请先设置API Key');
@@ -370,12 +401,18 @@ class MarkdownTranslator {
         translateBtn.classList.add('loading');
         
         try {
-            const translation = await this.callTranslationAPI(originalContent, prompt, apiKey, provider, customEndpoint, modelName);
+            // 获取上下文块
+            const context = this.getContextBlocks(index, contextCount);
+            
+            const translation = await this.callTranslationAPI(originalContent, prompt, apiKey, provider, customEndpoint, modelName, context);
             this.translationBlocks[index] = translation;
             
             // 更新翻译块的显示
             const translationBlock = document.querySelector(`[data-index="${index}"] .translation-block`);
             translationBlock.innerHTML = translation;
+            
+            // 有新翻译内容时，重置导出标记
+            this.hasExported = false;
             
         } catch (error) {
             this.showError('翻译失败：' + error.message);
@@ -385,8 +422,26 @@ class MarkdownTranslator {
         }
     }
 
-    async callTranslationAPI(text, prompt, apiKey, provider, customEndpoint, modelName) {
-        const fullPrompt = `${prompt}\n\n原文：\n${text}`;
+    async callTranslationAPI(text, prompt, apiKey, provider, customEndpoint, modelName, context = null) {
+        let fullPrompt = prompt;
+        
+        // 构建包含上下文的完整提示
+        if (context && (context.before.length > 0 || context.after.length > 0)) {
+            fullPrompt += '\n\n';
+            
+            if (context.before.length > 0) {
+                fullPrompt += '前文：\n' + context.before.join('\n\n') + '\n\n';
+            }
+            
+            fullPrompt += '原文：\n' + text;
+            
+            // 暂时不加入后文
+            // if (context.after.length > 0) {
+            //     fullPrompt += '\n\n后文：\n' + context.after.join('\n\n');
+            // }
+        } else {
+            fullPrompt += '\n\n原文：\n' + text;
+        }
         
         let apiUrl, headers, body;
         
@@ -548,8 +603,36 @@ class MarkdownTranslator {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        
+        // 标记为已导出
+        this.hasExported = true;
     }
 
+    
+    setupBeforeUnloadWarning() {
+        window.addEventListener('beforeunload', (e) => {
+            // 检查是否有翻译内容且未导出
+            if (this.hasTranslatedContent() && !this.hasExported) {
+                const message = '您有翻译内容尚未下载，确定要离开页面吗？';
+                e.preventDefault();
+                e.returnValue = message;
+                return message;
+            }
+        });
+    }
+    
+    hasTranslatedContent() {
+        if (!this.translationBlocks || this.translationBlocks.length === 0) {
+            return false;
+        }
+        
+        // 检查是否有任何翻译内容与原文不同
+        return this.translationBlocks.some((translation, index) => {
+            const original = this.originalBlocks[index] || '';
+            return translation && translation.trim() !== '' && translation.trim() !== original.trim();
+        });
+    }
+    
     // 设置调整大小功能
     setupResizer() {
         const resizeHandle = document.getElementById('resize-handle');

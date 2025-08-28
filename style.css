@@ -146,6 +146,14 @@ body {
     margin-right: 10px;
 }
 
+.setting-hint {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+    font-style: italic;
+}
+
 /* 按钮样式 */
 .btn {
     padding: 10px 20px;
