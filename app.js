@@ -14,7 +14,6 @@ class MarkdownTranslator {
         this.setupEventListeners();
         this.loadSettings();
         this.setupModal();
-        this.setupResizer();
         this.setupSidebar();
         this.setupBeforeUnloadWarning();
     }
@@ -90,7 +89,6 @@ class MarkdownTranslator {
             // 加载布局设置
             this.originalWidth = parsed.originalWidth || 45;
             this.sidebarCollapsed = parsed.sidebarCollapsed || false;
-            this.applyLayoutSettings();
         } else {
             // 初次使用时加载默认端点和模型
             this.loadApiEndpoint('openai');
@@ -633,61 +631,7 @@ class MarkdownTranslator {
             return translation && translation.trim() !== '' && translation.trim() !== original.trim();
         });
     }
-    
-    // 设置调整大小功能
-    setupResizer() {
-        const resizeHandle = document.getElementById('resize-handle');
-        const contentContainer = document.getElementById('content-container');
-        
-        if (!resizeHandle) return;
-        
-        resizeHandle.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            this.isResizing = true;
-            document.addEventListener('mousemove', this.handleResize.bind(this));
-            document.addEventListener('mouseup', this.stopResize.bind(this));
-        });
-        
-        // 应用保存的宽度设置
-        this.applyLayoutSettings();
-    }
-    
-    handleResize(e) {
-        if (!this.isResizing) return;
-        
-        const contentContainer = document.getElementById('content-container');
-        const rect = contentContainer.getBoundingClientRect();
-        const containerWidth = rect.width - 60; // 减去翻译按钮的宽度
-        const mouseX = e.clientX - rect.left;
-        
-        // 计算新的原文栏宽度百分比
-        const newWidth = Math.max(20, Math.min(70, (mouseX / containerWidth) * 100));
-        this.originalWidth = newWidth;
-        
-        this.applyLayoutSettings();
-    }
-    
-    stopResize() {
-        this.isResizing = false;
-        document.removeEventListener('mousemove', this.handleResize.bind(this));
-        document.removeEventListener('mouseup', this.stopResize.bind(this));
-        this.saveSettings();
-    }
-    
-    applyLayoutSettings() {
-        document.documentElement.style.setProperty('--original-width', `${this.originalWidth}%`);
-        
-        const originalLabel = document.getElementById('original-label');
-        if (originalLabel) {
-            originalLabel.style.width = `${this.originalWidth}%`;
-        }
-        
-        const resizeHandle = document.getElementById('resize-handle');
-        if (resizeHandle) {
-            resizeHandle.style.left = `${this.originalWidth}%`;
-        }
-    }
-    
+
     // 设置侧边栏功能
     setupSidebar() {
         const settingsPanel = document.getElementById('settings-panel');

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +8,9 @@
     <link rel="stylesheet" href="style.css">
     <script>
         window.MathJax = {
-            loader: {load: ['[tex]/bboldx']},
+            loader: { load: ['[tex]/bboldx'] },
             tex: {
-                packages: {'[+]': ['bboldx']},
+                packages: { '[+]': ['bboldx'] },
                 inlineMath: [['$', '$']],
                 displayMath: [['$$', '$$']],
                 processEscapes: true,
@@ -29,6 +30,7 @@
     </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
 </head>
+
 <body>
     <div class="app-container">
         <!-- 左侧设置栏 -->
@@ -37,7 +39,7 @@
                 <h2>设置</h2>
                 <button class="collapse-btn" id="collapse-btn">‹</button>
             </div>
-            
+
             <div class="setting-group">
                 <label for="api-provider">API提供商:</label>
                 <select id="api-provider">
@@ -47,33 +49,34 @@
                     <option value="custom">自定义</option>
                 </select>
             </div>
-            
+
             <div class="setting-group">
                 <label for="model-name">模型名称:</label>
                 <input type="text" id="model-name" placeholder="请输入模型名称">
             </div>
-            
+
             <div class="setting-group">
                 <label for="api-endpoint">API端点:</label>
                 <input type="text" id="api-endpoint" placeholder="请输入API端点URL">
             </div>
-            
+
             <div class="setting-group">
                 <label for="api-key">API Key:</label>
                 <input type="password" id="api-key" placeholder="请输入您的API Key">
             </div>
-            
+
             <div class="setting-group">
                 <label for="translation-prompt">翻译提示词:</label>
-                <textarea id="translation-prompt" rows="6" placeholder="请将以下文本翻译成中文，保持原文的格式和结构...">请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。</textarea>
+                <textarea id="translation-prompt" rows="6"
+                    placeholder="请将以下文本翻译成中文，保持原文的格式和结构...">请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。</textarea>
             </div>
-            
+
             <div class="setting-group">
                 <label for="context-count">上下文数量:</label>
                 <input type="number" id="context-count" min="0" max="5" value="1">
                 <small class="setting-hint">推荐1-3个块，提供前文以提升翻译准确性</small>
             </div>
-            
+
             <div class="setting-group">
                 <label class="checkbox-label">
                     <input type="checkbox" id="allow-edit-original">
@@ -81,12 +84,12 @@
                     允许修改原文
                 </label>
             </div>
-            
+
             <div class="setting-group">
                 <button id="export-btn" class="btn btn-secondary" disabled>导出翻译结果</button>
             </div>
         </div>
-        
+
         <!-- 主内容区域 -->
         <div class="main-content-panel">
             <div class="content-header">
@@ -98,13 +101,6 @@
                     <input type="file" id="file-input" accept=".md,.markdown" style="display: none;">
                     <button id="translate-all-btn" class="btn btn-primary" disabled>全部翻译</button>
                 </div>
-                <div class="column-resizer">
-                    <div class="column-labels">
-                        <div class="original-label" id="original-label">原文</div>
-                        <div class="translation-label">翻译</div>
-                    </div>
-                    <div class="resize-handle" id="resize-handle"></div>
-                </div>
             </div>
             <div class="content-container" id="content-container">
                 <div class="placeholder">
@@ -113,7 +109,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- 模态框用于显示错误信息 -->
     <div id="error-modal" class="modal">
         <div class="modal-content">
@@ -122,7 +118,8 @@
             <p id="error-message"></p>
         </div>
     </div>
-    
+
     <script src="app.js"></script>
 </body>
+
 </html>
