@@ -78,7 +78,7 @@ class MarkdownTranslator {
             document.getElementById('api-key').value = parsed.apiKey || '';
             const provider = parsed.apiProvider || 'openai';
             document.getElementById('api-provider').value = provider;
-            document.getElementById('context-count').value = parsed.contextCount || 1;
+            document.getElementById('context-count').value = (isNaN(parsed.contextCount) ? 1 : parsed.contextCount);
             
             // 加载对应提供商的API端点
             this.loadApiEndpoint(provider);
@@ -107,11 +107,12 @@ class MarkdownTranslator {
         // 保存当前提供商的模型名称
         this.saveModelName(provider, modelName);
         
+        const contextCountValue = parseInt(document.getElementById('context-count').value);
         const settings = {
             prompt: document.getElementById('translation-prompt').value,
             apiKey: document.getElementById('api-key').value,
             apiProvider: provider,
-            contextCount: parseInt(document.getElementById('context-count').value) || 1,
+            contextCount: isNaN(contextCountValue) ? 1 : contextCountValue,
             originalWidth: this.originalWidth,
             sidebarCollapsed: this.sidebarCollapsed
         };
