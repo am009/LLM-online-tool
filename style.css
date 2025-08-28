@@ -273,14 +273,65 @@ body {
     gap: 0;
 }
 
+.original-block,
+.translation-block {
+    position: relative;
+}
+
 .original-block {
     width: var(--original-width, 45%);
-    padding: 15px;
+    padding: 35px 15px 15px;
     border: 1px solid #e0e0e0;
     border-radius: 4px 0 0 4px;
     background: #fafafa;
     transition: all 0.3s;
-    position: relative;
+}
+
+.translation-block {
+    flex: 1;
+    padding: 35px 15px 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 0 4px 4px 0;
+    background: #fff;
+    min-height: 60px;
+    transition: all 0.3s;
+}
+
+/* 渲染切换图标 */
+.render-toggle {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    z-index: 10;
+}
+
+.render-toggle:hover {
+    background: rgba(52, 152, 219, 0.2);
+    transform: scale(1.1);
+}
+
+/* 内容容器 */
+.content-markdown,
+.content-mathjax {
+    width: 100%;
+    min-height: 40px;
+}
+
+.content-markdown[contenteditable="true"]:focus,
+.content-mathjax[contenteditable="true"]:focus {
+    outline: none;
 }
 
 .translate-button {
@@ -309,16 +360,6 @@ body {
 
 .translate-button.loading {
     animation: spin 1s linear infinite;
-}
-
-.translation-block {
-    flex: 1;
-    padding: 15px;
-    border: 1px solid #e0e0e0;
-    border-radius: 0 4px 4px 0;
-    background: #fff;
-    min-height: 60px;
-    transition: all 0.3s;
 }
 
 .original-block:hover,

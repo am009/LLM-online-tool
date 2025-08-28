@@ -7,6 +7,8 @@ class MarkdownTranslator {
         this.isResizing = false;
         this.sidebarCollapsed = false;
         this.hasExported = false; // 标记是否已导出
+        this.originalRenderMode = []; // 存储每个原文块的渲染模式：'markdown' 或 'mathjax'
+        this.translationRenderMode = []; // 存储每个翻译块的渲染模式：'markdown' 或 'mathjax'
         this.init();
     }
 
@@ -38,7 +40,6 @@ class MarkdownTranslator {
         document.getElementById('api-endpoint').addEventListener('input', () => this.saveSettings());
         document.getElementById('model-name').addEventListener('input', () => this.saveSettings());
         document.getElementById('api-provider').addEventListener('change', () => this.onProviderChange());
-        document.getElementById('allow-edit-original').addEventListener('change', () => this.toggleOriginalEdit());
         
         // 上下文数量控制
         document.getElementById('context-count').addEventListener('input', () => this.saveSettings());
@@ -77,7 +78,6 @@ class MarkdownTranslator {
             document.getElementById('api-key').value = parsed.apiKey || '';
             const provider = parsed.apiProvider || 'openai';
             document.getElementById('api-provider').value = provider;
-            document.getElementById('allow-edit-original').checked = parsed.allowEditOriginal || false;
             document.getElementById('context-count').value = parsed.contextCount || 1;
             
             // 加载对应提供商的API端点
@@ -111,7 +111,6 @@ class MarkdownTranslator {
             prompt: document.getElementById('translation-prompt').value,
             apiKey: document.getElementById('api-key').value,
             apiProvider: provider,
-            allowEditOriginal: document.getElementById('allow-edit-original').checked,
             contextCount: parseInt(document.getElementById('context-count').value) || 1,
             originalWidth: this.originalWidth,
             sidebarCollapsed: this.sidebarCollapsed
@@ -172,43 +171,6 @@ class MarkdownTranslator {
     getStoredModels() {
         const stored = localStorage.getItem('markdown-translator-models');
         return stored ? JSON.parse(stored) : {};
-    }
-
-    toggleOriginalEdit() {
-        this.saveSettings();
-        const allowEdit = document.getElementById('allow-edit-original').checked;
-        const originalBlocks = document.querySelectorAll('.original-block');
-        
-        originalBlocks.forEach((block, index) => {
-            if (allowEdit) {
-                // 切换到可编辑模式：清除MathJax渲染，恢复原始文本
-                block.classList.add('editable');
-                block.setAttribute('contenteditable', 'true');
-                block.classList.add('tex2jax_ignore');
-                block.classList.remove('tex2jax_process');
-                
-                // 恢复原始文本内容（清除MathJax渲染）
-                if (this.originalBlocks[index]) {
-                    block.innerHTML = this.originalBlocks[index];
-                }
-            } else {
-                // 切换到只读模式：准备MathJax渲染
-                block.classList.remove('editable');
-                block.removeAttribute('contenteditable');
-                block.classList.remove('tex2jax_ignore');
-                block.classList.add('tex2jax_process');
-                
-                // 确保内容是原始文本
-                if (this.originalBlocks[index]) {
-                    block.innerHTML = this.originalBlocks[index];
-                }
-            }
-        });
-        
-        // 重新渲染 MathJax（仅在非编辑模式下）
-        if (typeof MathJax !== 'undefined' && !allowEdit) {
-            MathJax.typesetPromise(originalBlocks).catch((err) => console.log(err.message));
-        }
     }
 
     handleFileUpload(event) {
@@ -276,6 +238,9 @@ class MarkdownTranslator {
         // 过滤掉太短的块（比如只有一两个字符的）
         this.originalBlocks = blocks.filter(block => block.length > 3);
         this.translationBlocks = new Array(this.originalBlocks.length).fill('');
+        // 初始化渲染模式数组，默认都是markdown模式
+        this.originalRenderMode = new Array(this.originalBlocks.length).fill('markdown');
+        this.translationRenderMode = new Array(this.originalBlocks.length).fill('markdown');
         for (let i = 0; i < this.originalBlocks.length; i++) {
             this.translationBlocks[i] = this.originalBlocks[i]
         }
@@ -293,13 +258,10 @@ class MarkdownTranslator {
             contentContainer.appendChild(pairDiv);
         });
         
-        this.toggleOriginalEdit();
-        
-        // 渲染 MathJax 公式（如果原文不允许编辑）
-        const allowEdit = document.getElementById('allow-edit-original').checked;
-        if (typeof MathJax !== 'undefined' && !allowEdit) {
-            const originalBlocks = document.querySelectorAll('.original-block');
-            MathJax.typesetPromise(originalBlocks).catch((err) => console.log(err.message));
+        // 初始化所有MathJax版本的渲染（但不显示）
+        if (typeof MathJax !== 'undefined') {
+            const mathjaxElements = document.querySelectorAll('.content-mathjax');
+            MathJax.typesetPromise(mathjaxElements).catch((err) => console.log(err.message));
         }
     }
 
@@ -308,18 +270,31 @@ class MarkdownTranslator {
         pairDiv.className = 'text-block-pair';
         pairDiv.dataset.index = index;
         
-        // 原文块
-        const originalDiv = document.createElement('div');
-        originalDiv.className = 'original-block';
-        originalDiv.innerHTML = originalContent || '';
+        // 原文块容器
+        const originalContainer = document.createElement('div');
+        originalContainer.className = 'original-block';
         
-        // 根据是否允许编辑设置 MathJax 处理类
-        const allowEdit = document.getElementById('allow-edit-original').checked;
-        if (allowEdit) {
-            originalDiv.classList.add('tex2jax_ignore');
-        } else {
-            originalDiv.classList.add('tex2jax_process');
-        }
+        // 原文块切换图标
+        const originalToggle = document.createElement('button');
+        originalToggle.className = 'render-toggle';
+        originalToggle.innerHTML = '📝';
+        originalToggle.title = '点击切换到MathJax渲染';
+        originalToggle.addEventListener('click', () => this.toggleOriginalRenderMode(index));
+        
+        // 原文markdown版本
+        const originalMarkdown = document.createElement('div');
+        originalMarkdown.className = 'content-markdown';
+        originalMarkdown.innerHTML = originalContent || '';
+        
+        // 原文mathjax版本
+        const originalMathjax = document.createElement('div');
+        originalMathjax.className = 'content-mathjax tex2jax_process';
+        originalMathjax.innerHTML = originalContent || '';
+        originalMathjax.style.display = 'none';
+        
+        originalContainer.appendChild(originalToggle);
+        originalContainer.appendChild(originalMarkdown);
+        originalContainer.appendChild(originalMathjax);
         
         // 翻译按钮
         const translateBtn = document.createElement('button');
@@ -328,18 +303,45 @@ class MarkdownTranslator {
         translateBtn.title = '翻译此段';
         translateBtn.addEventListener('click', () => this.translateBlock(index));
         
-        // 翻译块
-        const translationDiv = document.createElement('div');
-        translationDiv.className = 'translation-block';
-        translationDiv.setAttribute('contenteditable', 'true');
-        translationDiv.innerHTML = translationContent || originalContent;
-        translationDiv.addEventListener('input', () => {
-            this.translationBlocks[index] = translationDiv.textContent;
+        // 翻译块容器
+        const translationContainer = document.createElement('div');
+        translationContainer.className = 'translation-block';
+        
+        // 翻译块切换图标
+        const translationToggle = document.createElement('button');
+        translationToggle.className = 'render-toggle';
+        translationToggle.innerHTML = '📝';
+        translationToggle.title = '点击切换到MathJax渲染';
+        translationToggle.addEventListener('click', () => this.toggleTranslationRenderMode(index));
+        
+        // 翻译markdown版本
+        const translationMarkdown = document.createElement('div');
+        translationMarkdown.className = 'content-markdown';
+        translationMarkdown.setAttribute('contenteditable', 'true');
+        translationMarkdown.innerHTML = translationContent || originalContent;
+        translationMarkdown.addEventListener('input', () => {
+            this.translationBlocks[index] = translationMarkdown.textContent;
+            // 同步更新mathjax版本的内容
+            translationMathjax.innerHTML = translationMarkdown.innerHTML;
+            // 重新渲染MathJax版本
+            if (typeof MathJax !== 'undefined') {
+                MathJax.typesetPromise([translationMathjax]).catch((err) => console.log(err.message));
+            }
         });
         
-        pairDiv.appendChild(originalDiv);
+        // 翻译mathjax版本
+        const translationMathjax = document.createElement('div');
+        translationMathjax.className = 'content-mathjax tex2jax_process';
+        translationMathjax.innerHTML = translationContent || originalContent;
+        translationMathjax.style.display = 'none';
+        
+        translationContainer.appendChild(translationToggle);
+        translationContainer.appendChild(translationMarkdown);
+        translationContainer.appendChild(translationMathjax);
+        
+        pairDiv.appendChild(originalContainer);
         pairDiv.appendChild(translateBtn);
-        pairDiv.appendChild(translationDiv);
+        pairDiv.appendChild(translationContainer);
         
         return pairDiv;
     }
@@ -408,7 +410,16 @@ class MarkdownTranslator {
             
             // 更新翻译块的显示
             const translationBlock = document.querySelector(`[data-index="${index}"] .translation-block`);
-            translationBlock.innerHTML = translation;
+            const markdownDiv = translationBlock.querySelector('.content-markdown');
+            const mathjaxDiv = translationBlock.querySelector('.content-mathjax');
+            
+            markdownDiv.innerHTML = translation;
+            mathjaxDiv.innerHTML = translation;
+            
+            // 重新渲染MathJax版本（无论当前显示的是哪个版本）
+            if (typeof MathJax !== 'undefined') {
+                MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
+            }
             
             // 有新翻译内容时，重置导出标记
             this.hasExported = false;
@@ -651,6 +662,78 @@ class MarkdownTranslator {
         }
         
         this.saveSettings();
+    }
+
+    // 切换原文块的渲染模式
+    toggleOriginalRenderMode(index) {
+        if (this.originalRenderMode[index] === 'markdown') {
+            this.originalRenderMode[index] = 'mathjax';
+        } else {
+            this.originalRenderMode[index] = 'markdown';
+        }
+        this.updateBlockDisplay(index, 'original');
+    }
+
+    // 切换翻译块的渲染模式
+    toggleTranslationRenderMode(index) {
+        if (this.translationRenderMode[index] === 'markdown') {
+            this.translationRenderMode[index] = 'mathjax';
+        } else {
+            this.translationRenderMode[index] = 'markdown';
+        }
+        this.updateBlockDisplay(index, 'translation');
+    }
+
+    // 更新块的显示模式
+    updateBlockDisplay(index, blockType) {
+        const pair = document.querySelector(`[data-index="${index}"]`);
+        if (!pair) return;
+        
+        if (blockType === 'original') {
+            const container = pair.querySelector('.original-block');
+            const toggle = container.querySelector('.render-toggle');
+            const markdownDiv = container.querySelector('.content-markdown');
+            const mathjaxDiv = container.querySelector('.content-mathjax');
+            const mode = this.originalRenderMode[index];
+            
+            if (mode === 'markdown') {
+                toggle.innerHTML = '📝';
+                toggle.title = '点击切换到MathJax渲染';
+                markdownDiv.style.display = 'block';
+                mathjaxDiv.style.display = 'none';
+            } else {
+                toggle.innerHTML = '∫';
+                toggle.title = '点击切换到Markdown文本';
+                markdownDiv.style.display = 'none';
+                mathjaxDiv.style.display = 'block';
+                // 触发MathJax渲染
+                if (typeof MathJax !== 'undefined') {
+                    MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
+                }
+            }
+        } else {
+            const container = pair.querySelector('.translation-block');
+            const toggle = container.querySelector('.render-toggle');
+            const markdownDiv = container.querySelector('.content-markdown');
+            const mathjaxDiv = container.querySelector('.content-mathjax');
+            const mode = this.translationRenderMode[index];
+            
+            if (mode === 'markdown') {
+                toggle.innerHTML = '📝';
+                toggle.title = '点击切换到MathJax渲染';
+                markdownDiv.style.display = 'block';
+                mathjaxDiv.style.display = 'none';
+            } else {
+                toggle.innerHTML = '∫';
+                toggle.title = '点击切换到Markdown文本';
+                markdownDiv.style.display = 'none';
+                mathjaxDiv.style.display = 'block';
+                // 触发MathJax渲染
+                if (typeof MathJax !== 'undefined') {
+                    MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
+                }
+            }
+        }
     }
 }
 
