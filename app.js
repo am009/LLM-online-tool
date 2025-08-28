@@ -238,8 +238,8 @@ class MarkdownTranslator {
         // 过滤掉太短的块（比如只有一两个字符的）
         this.originalBlocks = blocks.filter(block => block.length > 3);
         this.translationBlocks = new Array(this.originalBlocks.length).fill('');
-        // 初始化渲染模式数组，默认都是markdown模式
-        this.originalRenderMode = new Array(this.originalBlocks.length).fill('markdown');
+        // 初始化渲染模式数组，原文默认为mathjax模式
+        this.originalRenderMode = new Array(this.originalBlocks.length).fill('mathjax');
         this.translationRenderMode = new Array(this.originalBlocks.length).fill('markdown');
         for (let i = 0; i < this.originalBlocks.length; i++) {
             this.translationBlocks[i] = this.originalBlocks[i]
@@ -277,20 +277,24 @@ class MarkdownTranslator {
         // 原文块切换图标
         const originalToggle = document.createElement('button');
         originalToggle.className = 'render-toggle';
-        originalToggle.innerHTML = '📝';
-        originalToggle.title = '点击切换到MathJax渲染';
+        // 根据默认渲染模式设置初始图标
+        originalToggle.innerHTML = this.originalRenderMode[index] === 'mathjax' ? '∫' : '📝';
+        originalToggle.title = this.originalRenderMode[index] === 'mathjax' ? '点击切换到Markdown文本' : '点击切换到MathJax渲染';
         originalToggle.addEventListener('click', () => this.toggleOriginalRenderMode(index));
         
         // 原文markdown版本
         const originalMarkdown = document.createElement('div');
         originalMarkdown.className = 'content-markdown';
         originalMarkdown.innerHTML = originalContent || '';
+        // 根据默认渲染模式决定是否隐藏
+        originalMarkdown.style.display = this.originalRenderMode[index] === 'markdown' ? 'block' : 'none';
         
         // 原文mathjax版本
         const originalMathjax = document.createElement('div');
         originalMathjax.className = 'content-mathjax tex2jax_process';
         originalMathjax.innerHTML = originalContent || '';
-        originalMathjax.style.display = 'none';
+        // 根据默认渲染模式决定是否隐藏
+        originalMathjax.style.display = this.originalRenderMode[index] === 'mathjax' ? 'block' : 'none';
         
         originalContainer.appendChild(originalToggle);
         originalContainer.appendChild(originalMarkdown);
