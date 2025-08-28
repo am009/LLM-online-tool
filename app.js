@@ -385,7 +385,8 @@ class MarkdownTranslator {
         const provider = settings.apiProvider || 'openai';
         const customEndpoint = document.getElementById('api-endpoint').value;
         const modelName = document.getElementById('model-name').value;
-        const contextCount = parseInt(document.getElementById('context-count').value) || 1;
+        const contextCountValue = parseInt(document.getElementById('context-count').value);
+        const contextCount = isNaN(contextCountValue) ? 1 : contextCountValue;
         
         if (!apiKey && provider !== 'ollama') {
             this.showError('请先设置API Key');
