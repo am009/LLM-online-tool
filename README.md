@@ -24,6 +24,10 @@ preorder 翻译为 “前序”
 monotype environment 翻译为单态类型环境
 ```
 
+## 截图
+
+![](screenshot1.png)
+
 ## 功能
 
 - **纯前端解决方案**：无需后端支持，完全在浏览器中运行
