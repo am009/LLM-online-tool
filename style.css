@@ -32,7 +32,7 @@ body {
     border-right: 1px solid #e0e0e0;
     overflow-y: auto;
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-    transition: width 0.3s ease;
+    /* transition: width 0.3s ease; */
     position: relative;
 }
 
@@ -72,7 +72,7 @@ body {
     font-size: 14px;
     font-weight: bold;
     color: #666;
-    transition: all 0.3s;
+    /* transition: all 0.3s; */
 }
 
 .collapse-btn:hover {
@@ -117,7 +117,7 @@ body {
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 14px;
-    transition: border-color 0.3s;
+    /* transition: border-color 0.3s; */
 }
 
 .setting-group input:focus,

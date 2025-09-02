@@ -1,6 +1,14 @@
 # Markdown 在线翻译工具
 
-一个基于大语言模型（LLM）的客户端 Markdown 文件翻译工具。该工具提供简洁直观的界面，可翻译 Markdown 内容同时保持格式和结构完整。
+一个基于大语言模型（LLM）API的 Markdown/Latex 文章翻译工具。逐段翻译 Markdown 内容同时直接校对。支持数学公式
+
+由于HTTP网页仅能发送HTTP请求，HTTPS网页仅能发送HTTPS请求：建议本地OLLAMA等HTTP API使用HTTP链接，其他的HTTPS API使用HTTPS链接。
+
+HTTP： http://wjk.moe/markdown-translate-online/
+
+HTTPS： https://wjk.moe/markdown-translate-online/
+
+推荐的本地模型：OLLAMA的qwen3:30b-a3b-instruct-2507-q4_K_M  （2025年9月2日）
 
 ## 功能
 
@@ -13,10 +21,9 @@
 
 1. **打开应用**：在浏览器中打开 `index.html` 文件
 2. **配置 API 设置**：
-   - 选择 LLM 提供商（OpenAI/Anthropic/自定义）
+   - 选择 LLM 提供商（OpenAI/Anthropic/Ollama/自定义）
    - 输入您的 API 密钥
    - 如需要可自定义翻译提示词
 3. **上传 Markdown 文件**：点击"上传Markdown文件"选择您的 `.md` 文件
 4. **开始翻译**：点击单个翻译按钮或使用"全部翻译"进行批量翻译
 5. **导出结果**：使用导出按钮下载翻译后的 Markdown 文件
-
