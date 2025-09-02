@@ -10,6 +10,20 @@ HTTPS： https://wjk.moe/markdown-translate-online/
 
 推荐的本地模型：OLLAMA的qwen3:30b-a3b-instruct-2507-q4_K_M  （2025年9月2日）
 
+推荐的Prompt形式：（上下文数量设置为0）
+
+```
+你的任务是将以下原文文本翻译成中文，保持latex或者markdown格式和结构，不要输出额外的解释或注释，也不用输出前文和后文的翻译。
+
+术语的处理：
+unification: 需要保留原英文，
+biunifucation: 需要保留原始英文，
+contravariant: 翻译为“逆变”，
+soundness需要保留原英文，
+preorder 翻译为 “前序”
+monotype environment 翻译为单态类型环境
+```
+
 ## 功能
 
 - **纯前端解决方案**：无需后端支持，完全在浏览器中运行
