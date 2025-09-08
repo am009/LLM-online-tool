@@ -288,7 +288,7 @@ class MarkdownTranslator {
             'custom': ''
         };
         
-        const endpoint = endpoints[provider] || defaultEndpoints[provider] ?? '';
+        const endpoint = endpoints[provider] ?? defaultEndpoints[provider] ?? '';
         document.getElementById('api-endpoint').value = endpoint;
     }
 
@@ -312,7 +312,7 @@ class MarkdownTranslator {
             'custom': ''
         };
         
-        const model = models[provider] || defaultModels[provider] ?? '';
+        const model = models[provider] ?? defaultModels[provider] ?? '';
         document.getElementById('model-name').value = model;
     }
 
@@ -336,7 +336,7 @@ class MarkdownTranslator {
             'custom': ''
         };
         
-        const endpoint = endpoints[provider] || defaultEndpoints[provider] ?? '';
+        const endpoint = endpoints[provider] ?? defaultEndpoints[provider] ?? '';
         document.getElementById('proofread-api-endpoint').value = endpoint;
     }
 
@@ -360,7 +360,7 @@ class MarkdownTranslator {
             'custom': ''
         };
         
-        const model = models[provider] || defaultModels[provider] ?? '';
+        const model = models[provider] ?? defaultModels[provider] ?? '';
         document.getElementById('proofread-model-name').value = model;
     }
 
