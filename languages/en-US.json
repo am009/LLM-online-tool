@@ -11,8 +11,8 @@
       "apiKey": "API Key",
       "apiKeyPlaceholder": "Enter your API Key",
       "translationPrompt": "Translation Prompt",
-      "translationPromptPlaceholder": "Please translate the following text to Chinese, maintaining the original format and structure...",
-      "translationPromptDefault": "Please translate the following text to Chinese, maintaining the original format and structure, without adding additional explanations or comments.",
+      "translationPromptPlaceholder": "Please translate the following text to English, maintaining the original format and structure...",
+      "translationPromptDefault": "Please translate the following text to English, maintaining the original format and structure, without adding additional explanations or comments.",
       "contextCount": "Context Count",
       "contextCountHint": "Provide previous text to improve translation accuracy, default is none",
       "temperature": "Temperature",
@@ -63,11 +63,15 @@
     },
     "tooltips": {
       "toggleToMathJax": "Click to switch to MathJax rendering",
-      "toggleToMarkdown": "Click to switch to Markdown text"
+      "toggleToMarkdown": "Click to switch to Markdown text",
+      "proofreadParagraph": "Proofread this paragraph",
+      "translateParagraph": "Translate this paragraph",
+      "stopProofreading": "Stop proofreading"
     }
   },
   "messages": {
     "translating": "Translating...",
+    "proofreading": "Proofreading...",
     "fileInfo": "paragraphs",
     "beforeUnloadWarning": "You have untranslated content that hasn't been downloaded. Are you sure you want to leave?",
     "apiProviders": {
@@ -89,6 +93,28 @@
     "noTranslatedContent": "No translated content to export",
     "unsupportedApiProvider": "Unsupported API provider",
     "apiRequestFailed": "API request failed",
-    "parseApiResponseFailed": "Unable to parse API response"
+    "parseApiResponseFailed": "Unable to parse API response",
+    "proofreadApiKeyRequired": "Please set proofreading API Key",
+    "proofreadModelNameRequired": "Please set proofreading model name",
+    "translateBeforeProofread": "Please translate this paragraph before proofreading",
+    "proofreadingFailed": "Proofreading failed: ",
+    "batchProofreadingFailed": "Batch proofreading failed: ",
+    "noProgressToSave": "No progress to save",
+    "unsupportedProofreadApiProvider": "Unsupported proofreading API provider",
+    "proofreadFailed": "Proofreading failed",
+    "loadProgressInvalidFormat": "Please select a JSON format progress file",
+    "loadProgressInvalidData": "Progress file format error: root element must be an array",
+    "loadProgressInvalidObject": "Progress file format error: object {index} is missing required properties",
+    "loadProgressFailed": "Failed to load progress file: ",
+    "loadProgressReadFailed": "Failed to read progress file",
+    "noOriginalContent": "No original content to export",
+    "noParagraphsToReorganize": "No paragraphs to reorganize",
+    "invalidCharacterLimit": "Please set a character limit greater than 0"
+  },
+  "prompts": {
+    "contextBefore": "Context (before): ",
+    "contextAfter": "Context (after): ",
+    "originalText": "Original text: ",
+    "proofreadingThinking": "Proofreading thinking process: "
   }
 }

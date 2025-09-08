@@ -63,11 +63,15 @@
     },
     "tooltips": {
       "toggleToMathJax": "点击切换到MathJax渲染",
-      "toggleToMarkdown": "点击切换到Markdown文本"
+      "toggleToMarkdown": "点击切换到Markdown文本",
+      "proofreadParagraph": "校对此段",
+      "translateParagraph": "翻译此段", 
+      "stopProofreading": "停止校对"
     }
   },
   "messages": {
     "translating": "翻译中...",
+    "proofreading": "正在校对...",
     "fileInfo": "个段落",
     "beforeUnloadWarning": "您有翻译内容尚未下载，确定要离开页面吗？",
     "apiProviders": {
@@ -89,6 +93,28 @@
     "noTranslatedContent": "没有已翻译的内容可导出",
     "unsupportedApiProvider": "不支持的API提供商",
     "apiRequestFailed": "API请求失败",
-    "parseApiResponseFailed": "无法解析API响应"
+    "parseApiResponseFailed": "无法解析API响应",
+    "proofreadApiKeyRequired": "请设置校对API Key",
+    "proofreadModelNameRequired": "请设置校对模型名称",
+    "translateBeforeProofread": "请先翻译此段落再进行校对",
+    "proofreadingFailed": "校对失败: ",
+    "batchProofreadingFailed": "批量校对失败: ",
+    "noProgressToSave": "没有可保存的进度",
+    "unsupportedProofreadApiProvider": "不支持的校对API提供商",
+    "proofreadFailed": "校对失败",
+    "loadProgressInvalidFormat": "请选择JSON格式的进度文件",
+    "loadProgressInvalidData": "进度文件格式错误：根元素必须是数组",
+    "loadProgressInvalidObject": "进度文件格式错误：第{index}个对象缺少必需的属性",
+    "loadProgressFailed": "加载进度文件失败：",
+    "loadProgressReadFailed": "读取进度文件失败",
+    "noOriginalContent": "没有原文内容可导出", 
+    "noParagraphsToReorganize": "没有可重新划分的段落",
+    "invalidCharacterLimit": "请设置大于0的字符数限制"
+  },
+  "prompts": {
+    "contextBefore": "前文：",
+    "contextAfter": "后文：",
+    "originalText": "原文：",
+    "proofreadingThinking": "校对思考过程："
   }
 }
