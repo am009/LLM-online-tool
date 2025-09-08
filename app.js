@@ -533,7 +533,7 @@ class MarkdownTranslator {
         // 翻译markdown版本
         const translationMarkdown = document.createElement('textarea');
         translationMarkdown.className = 'content-markdown';
-        translationMarkdown.value = translationContent || originalContent;
+        translationMarkdown.value = translationContent ?? '';
         translationMarkdown.setAttribute('oninput', 'this.style.height = "";this.style.height = this.scrollHeight + "px"');
         
         // 初始化高度
@@ -556,7 +556,7 @@ class MarkdownTranslator {
         // 翻译mathjax版本
         const translationMathjax = document.createElement('div');
         translationMathjax.className = 'content-mathjax tex2jax_process';
-        translationMathjax.innerHTML = translationContent || originalContent;
+        translationMathjax.innerHTML = translationContent ?? '';
         translationMathjax.style.display = 'none';
         
         translationContainer.appendChild(translationToggle);
