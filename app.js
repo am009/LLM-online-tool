@@ -3,7 +3,6 @@ class MarkdownTranslator {
         this.originalBlocks = [];
         this.translationBlocks = [];
         this.currentFile = null;
-        this.originalWidth = 45; // percentage
         this.isResizing = false;
         this.sidebarCollapsed = false;
         this.hasExported = false; // 标记是否已导出
@@ -122,14 +121,14 @@ class MarkdownTranslator {
         
         if (settings) {
             const parsed = JSON.parse(settings);
-            document.getElementById('translation-prompt').value = parsed.prompt || languageManager.get('ui.settingsPanel.translationPromptDefault');
+            document.getElementById('translation-prompt').value = parsed.prompt ?? languageManager.get('ui.settingsPanel.translationPromptDefault');
             document.getElementById('api-key').value = parsed.apiKey ?? '';
-            const provider = parsed.apiProvider || 'ollama';
+            const provider = parsed.apiProvider ?? 'ollama';
             document.getElementById('api-provider').value = provider;
             document.getElementById('context-count').value = (isNaN(parsed.contextCount) ? 1 : parsed.contextCount);
             
             // 加载段落字符数限制设置
-            document.getElementById('paragraph-char-limit').value = parsed.paragraphCharLimit || 0;
+            document.getElementById('paragraph-char-limit').value = parsed.paragraphCharLimit ?? 0;
             
             // 加载temperature设置，如果没有设置则留空
             if (parsed.temperature !== undefined && parsed.temperature !== null && parsed.temperature !== '') {
@@ -145,18 +144,17 @@ class MarkdownTranslator {
             this.loadModelName(provider);
             
             // 加载布局设置
-            this.originalWidth = parsed.originalWidth || 45;
-            this.sidebarCollapsed = parsed.sidebarCollapsed || false;
+            this.sidebarCollapsed = parsed.sidebarCollapsed ?? false;
             
             // 加载校对设置
-            this.proofreadingMode = parsed.proofreadingMode || false;
+            this.proofreadingMode = parsed.proofreadingMode ?? false;
             if (parsed.proofreadPrompt) {
                 document.getElementById('proofread-prompt').value = parsed.proofreadPrompt;
             }
             if (parsed.proofreadApiKey) {
                 document.getElementById('proofread-api-key').value = parsed.proofreadApiKey;
             }
-            const proofreadProvider = parsed.proofreadApiProvider || 'ollama';
+            const proofreadProvider = parsed.proofreadApiProvider ?? 'ollama';
             document.getElementById('proofread-api-provider').value = proofreadProvider;
             
             if (parsed.proofreadTemperature !== undefined && parsed.proofreadTemperature !== null && parsed.proofreadTemperature !== '') {
@@ -212,7 +210,6 @@ class MarkdownTranslator {
             apiProvider: provider,
             contextCount: isNaN(contextCountValue) ? 1 : contextCountValue,
             paragraphCharLimit: isNaN(paragraphCharLimitValue) ? 0 : paragraphCharLimitValue,
-            originalWidth: this.originalWidth,
             sidebarCollapsed: this.sidebarCollapsed,
             // 校对设置
             proofreadingMode: this.proofreadingMode,
@@ -490,7 +487,6 @@ class MarkdownTranslator {
             originalMathjax.innerHTML = originalMarkdown.value;
             // 重新渲染MathJax版本
             if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
-                MathJax.typesetClear([originalMathjax]);
                 MathJax.typesetPromise([originalMathjax]).catch((err) => console.log(err.message));
             }
         });
@@ -546,7 +542,6 @@ class MarkdownTranslator {
             this.translationBlocks[index] = translationMarkdown.value;
             // 同步更新mathjax版本的内容
             translationMathjax.innerHTML = translationMarkdown.value;
-            MathJax.typesetClear([translationMathjax]);
             // 重新渲染MathJax版本
             if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
                 MathJax.typesetPromise([translationMathjax]).catch((err) => console.log(err.message));
@@ -614,10 +609,9 @@ class MarkdownTranslator {
             return;
         }
         
-        const settings = JSON.parse(localStorage.getItem('markdown-translator-settings') || '{}');
-        const apiKey = settings.apiKey;
-        const prompt = settings.prompt;
-        const provider = settings.apiProvider || 'ollama';
+        const apiKey = document.getElementById('api-key').value;
+        const prompt = document.getElementById('translation-prompt').value;
+        const provider = document.getElementById('api-provider').value;
         const customEndpoint = document.getElementById('api-endpoint').value;
         const modelName = document.getElementById('model-name').value;
         const contextCountValue = parseInt(document.getElementById('context-count').value);
@@ -673,9 +667,8 @@ class MarkdownTranslator {
                 // 触发自动调整高度
                 markdownDiv.style.height = '';
                 markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
-                MathJax.typesetClear([markdownDiv]);
                 mathjaxDiv.innerHTML = translation;
-
+                
                 // 重新渲染MathJax版本（无论当前显示的是哪个版本）
                 if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
                     MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
@@ -751,7 +744,7 @@ class MarkdownTranslator {
                     'Authorization': `Bearer ${apiKey}`
                 };
                 body = {
-                    model: modelName || 'gpt-3.5-turbo',
+                    model: modelName ?? 'gpt-3.5-turbo',
                     messages: [
                         { role: 'user', content: fullPrompt }
                     ],
@@ -774,7 +767,7 @@ class MarkdownTranslator {
                     'anthropic-version': '2023-06-01'
                 };
                 body = {
-                    model: modelName || 'claude-3-sonnet-20240229',
+                    model: modelName ?? 'claude-3-sonnet-20240229',
                     max_tokens: 2000,
                     messages: [
                         { role: 'user', content: fullPrompt }
@@ -795,7 +788,7 @@ class MarkdownTranslator {
                     'Content-Type': 'application/json'
                 };
                 body = {
-                    model: modelName || 'llama3.2',
+                    model: modelName ?? 'llama3.2',
                     messages: [
                         { role: 'user', content: fullPrompt }
                     ],
@@ -806,7 +799,7 @@ class MarkdownTranslator {
                 if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
                     const tempFloat = parseFloat(temperature);
                     if (!isNaN(tempFloat)) {
-                        body.options = body.options || {};
+                        body.options = body.options ?? {};
                         body.options.temperature = tempFloat;
                     }
                 }
@@ -844,11 +837,11 @@ class MarkdownTranslator {
         
         // 根据提供商类型解析响应
         if (provider === 'openai' || provider === 'custom') {
-            return data.choices[0]?.message?.content || languageManager.get('errors.translationFailed');
+            return data.choices[0]?.message?.content ?? languageManager.get('errors.translationFailed');
         } else if (provider === 'anthropic') {
-            return data.content[0]?.text || languageManager.get('errors.translationFailed');
+            return data.content[0]?.text ?? languageManager.get('errors.translationFailed');
         } else if (provider === 'ollama') {
-            return data.message?.content || languageManager.get('errors.translationFailed');
+            return data.message?.content ?? languageManager.get('errors.translationFailed');
         }
         
         throw new Error(languageManager.get('errors.parseApiResponseFailed'));
@@ -896,7 +889,6 @@ class MarkdownTranslator {
                                 // 同步更新mathjax版本
                                 if (mathjaxDiv) {
                                     mathjaxDiv.innerHTML = result;
-                                    MathJax.typesetClear([mathjaxDiv]);
                                     
                                     // 如果当前显示的是MathJax模式，重新渲染
                                     if (this.translationRenderMode[blockIndex] === 'mathjax') {
@@ -921,7 +913,7 @@ class MarkdownTranslator {
             reader.releaseLock();
         }
         
-        return result || languageManager.get('errors.translationFailed');
+        return result ?? languageManager.get('errors.translationFailed');
     }
 
     switchToProofreadingMode() {
@@ -949,9 +941,8 @@ class MarkdownTranslator {
     }
 
     async translateAll() {
-        const settings = JSON.parse(localStorage.getItem('markdown-translator-settings') || '{}');
-        const apiKey = settings.apiKey;
-        const provider = settings.apiProvider || 'ollama';
+        const apiKey = document.getElementById('api-key').value;
+        const provider = document.getElementById('api-provider').value;
         const modelName = document.getElementById('model-name').value;
         
         if (!apiKey && provider !== 'ollama') {
@@ -970,7 +961,7 @@ class MarkdownTranslator {
         
         try {
             for (let i = 0; i < this.originalBlocks.length; i++) {
-                if (!this.translationBlocks[i]) { // 只翻译未翻译的块
+                if (this.translationBlocks[i].trim().length === 0) { // 只翻译未翻译的块
                     await this.translateBlock(i);
                     // 添加延迟以避免API限制
                     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1004,10 +995,9 @@ class MarkdownTranslator {
             return;
         }
 
-        const settings = JSON.parse(localStorage.getItem('markdown-translator-settings') || '{}');
-        const apiKey = settings.proofreadApiKey;
-        const prompt = settings.proofreadPrompt || document.getElementById('proofread-prompt').value;
-        const provider = settings.proofreadApiProvider || 'ollama';
+        const apiKey = document.getElementById('api-key').value;
+        const prompt = document.getElementById('proofread-prompt').value;
+        const provider = document.getElementById('proofread-api-provider').value ?? 'ollama';
         const customEndpoint = document.getElementById('proofread-api-endpoint').value;
         const modelName = document.getElementById('proofread-model-name').value;
         const temperatureValue = document.getElementById('proofread-temperature').value;
@@ -1062,7 +1052,6 @@ class MarkdownTranslator {
                 // 触发自动调整高度
                 markdownDiv.style.height = '';
                 markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
-                MathJax.typesetClear([markdownDiv]);
                 mathjaxDiv.innerHTML = proofreadResult;
 
                 // 重新渲染MathJax版本
@@ -1128,7 +1117,7 @@ ${text}`;
                     'Authorization': `Bearer ${apiKey}`
                 };
                 body = {
-                    model: modelName || 'gpt-4',
+                    model: modelName ?? 'gpt-4',
                     messages: [
                         { role: 'user', content: fullPrompt }
                     ],
@@ -1152,7 +1141,7 @@ ${text}`;
                     'anthropic-version': '2023-06-01'
                 };
                 body = {
-                    model: modelName || 'claude-3-sonnet-20240229',
+                    model: modelName ?? 'claude-3-sonnet-20240229',
                     max_tokens: 4000,
                     messages: [
                         { role: 'user', content: fullPrompt }
@@ -1186,7 +1175,7 @@ ${text}`;
                 if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
                     const tempFloat = parseFloat(temperature);
                     if (!isNaN(tempFloat)) {
-                        body.options = body.options || {};
+                        body.options = body.options ?? {};
                         body.options.temperature = tempFloat;
                     }
                 }
@@ -1225,11 +1214,11 @@ ${text}`;
         // 根据提供商类型解析响应
         let result = '';
         if (provider === 'openai' || provider === 'custom') {
-            result = data.choices[0]?.message?.content || languageManager.get('errors.proofreadFailed');
+            result = data.choices[0]?.message?.content ?? languageManager.get('errors.proofreadFailed');
         } else if (provider === 'anthropic') {
-            result = data.content[0]?.text || languageManager.get('errors.proofreadFailed');
+            result = data.content[0]?.text ?? languageManager.get('errors.proofreadFailed');
         } else if (provider === 'ollama') {
-            result = data.message?.content || languageManager.get('errors.proofreadFailed');
+            result = data.message?.content ?? languageManager.get('errors.proofreadFailed');
         }
         
         // 提取thinking部分并打印到控制台
@@ -1240,7 +1229,7 @@ ${text}`;
             result = result.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
         }
         
-        return result || languageManager.get('errors.proofreadFailed');
+        return result ?? languageManager.get('errors.proofreadFailed');
     }
 
     async handleProofreadingStreamResponse(response, blockIndex, provider) {
@@ -1294,7 +1283,6 @@ ${text}`;
                                     // 同步更新mathjax版本
                                     if (mathjaxDiv) {
                                         mathjaxDiv.innerHTML = displayResult;
-                                        MathJax.typesetClear([mathjaxDiv]);
                                         
                                         // 如果当前显示的是MathJax模式，重新渲染
                                         if (this.translationRenderMode && this.translationRenderMode[blockIndex] === 'mathjax') {
@@ -1355,7 +1343,6 @@ ${text}`;
                                     // 同步更新mathjax版本
                                     if (mathjaxDiv) {
                                         mathjaxDiv.innerHTML = displayResult;
-                                        MathJax.typesetClear([mathjaxDiv]);
                                         
                                         // 如果当前显示的是MathJax模式，重新渲染
                                         if (this.translationRenderMode && this.translationRenderMode[blockIndex] === 'mathjax') {
@@ -1385,13 +1372,12 @@ ${text}`;
             result = result.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
         }
         
-        return result || languageManager.get('errors.proofreadFailed');
+        return result ?? languageManager.get('errors.proofreadFailed');
     }
 
     async proofreadAll() {
-        const settings = JSON.parse(localStorage.getItem('markdown-translator-settings') || '{}');
-        const apiKey = settings.proofreadApiKey;
-        const provider = settings.proofreadApiProvider || 'ollama';
+        const apiKey = document.getElementById('proofread-api-key').value;
+        const provider = document.getElementById('proofread-api-provider').value ?? 'ollama';
         const modelName = document.getElementById('proofread-model-name').value;
         
         if (!apiKey && provider !== 'ollama') {
