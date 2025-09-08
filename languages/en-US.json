@@ -34,9 +34,7 @@
       "proofreadTemperaturePlaceholder": "Leave empty for default",
       "proofreadTemperatureHint": "Control proofreading output randomness, 0.0-2.0, leave empty to not set",
       "proofreadPrompt": "Proofreading Prompt",
-      "proofreadPromptPlaceholder": "Please proofread the following translated content...",
-      "proofreadBatchSize": "Proofreading Batch Size",
-      "proofreadBatchSizeHint": "Number of text blocks to proofread at once, default is 10"
+      "proofreadPromptPlaceholder": "Please proofread the following translated content..."
     },
     "buttons": {
       "uploadFile": "Upload Markdown File",

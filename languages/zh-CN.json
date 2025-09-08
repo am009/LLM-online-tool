@@ -34,9 +34,7 @@
       "proofreadTemperaturePlaceholder": "留空使用默认值",
       "proofreadTemperatureHint": "校对输出随机性，0.0-2.0，留空则不设置",
       "proofreadPrompt": "校对提示词",
-      "proofreadPromptPlaceholder": "请校对以下翻译内容...",
-      "proofreadBatchSize": "单次校对段落数量",
-      "proofreadBatchSizeHint": "一次校对的文本块数量，默认为10"
+      "proofreadPromptPlaceholder": "请校对以下翻译内容..."
     },
     "buttons": {
       "uploadFile": "上传Markdown文件",

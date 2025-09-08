@@ -71,7 +71,6 @@ class MarkdownTranslator {
         document.getElementById('proofread-model-name').addEventListener('input', () => this.saveSettings());
         document.getElementById('proofread-api-provider').addEventListener('change', () => this.onProofreadProviderChange());
         document.getElementById('proofread-temperature').addEventListener('input', () => this.saveSettings());
-        document.getElementById('proofread-batch-size').addEventListener('input', () => this.saveSettings());
         
         // 侧边栏折叠
         document.getElementById('collapse-btn').addEventListener('click', () => this.toggleSidebar());
@@ -136,7 +135,6 @@ class MarkdownTranslator {
             }
             const proofreadProvider = parsed.proofreadApiProvider || 'ollama';
             document.getElementById('proofread-api-provider').value = proofreadProvider;
-            document.getElementById('proofread-batch-size').value = parsed.proofreadBatchSize || 10;
             
             if (parsed.proofreadTemperature !== undefined && parsed.proofreadTemperature !== null && parsed.proofreadTemperature !== '') {
                 document.getElementById('proofread-temperature').value = parsed.proofreadTemperature;
@@ -193,8 +191,7 @@ class MarkdownTranslator {
             proofreadingMode: this.proofreadingMode,
             proofreadPrompt: document.getElementById('proofread-prompt').value,
             proofreadApiKey: document.getElementById('proofread-api-key').value,
-            proofreadApiProvider: document.getElementById('proofread-api-provider').value,
-            proofreadBatchSize: parseInt(document.getElementById('proofread-batch-size').value) || 10
+            proofreadApiProvider: document.getElementById('proofread-api-provider').value
         };
         
         // 只有当temperature有值时才保存
@@ -415,8 +412,6 @@ class MarkdownTranslator {
             blocks.push(currentBlock.trim());
         }
 
-        // 过滤掉太短的块（比如只有一两个字符的）
-        this.originalBlocks = blocks.filter(block => block.length > 3);
         this.translationBlocks = new Array(this.originalBlocks.length).fill('');
         // 初始化渲染模式数组，原文默认为mathjax模式
         this.originalRenderMode = new Array(this.originalBlocks.length).fill('mathjax');
@@ -946,13 +941,7 @@ class MarkdownTranslator {
     }
 
     async proofreadBlock(index) {
-        const batchSize = parseInt(document.getElementById('proofread-batch-size').value) || 1;
-        
-        if (batchSize === 1) {
-            await this.proofreadSingleBlock(index);
-        } else {
-            await this.proofreadBatchBlocks(index, batchSize);
-        }
+        await this.proofreadSingleBlock(index);
     }
 
     async proofreadSingleBlock(index) {
@@ -1052,123 +1041,6 @@ class MarkdownTranslator {
         }
     }
 
-    async proofreadBatchBlocks(startIndex, batchSize) {
-        const endIndex = Math.min(startIndex + batchSize, this.translationBlocks.length);
-        const batchTexts = [];
-        
-        // 收集批处理的文本
-        for (let i = startIndex; i < endIndex; i++) {
-            const translationContent = this.translationBlocks[i];
-            if (!translationContent || translationContent.trim() === '') {
-                this.showError(`第${i+1}段未翻译，无法进行校对`);
-                return;
-            }
-            batchTexts.push(translationContent);
-        }
-        
-        const translateBtn = document.querySelector(`[data-index="${startIndex}"] .translate-button`);
-        
-        // 如果已有正在进行的校对，则中断它
-        if (this.activeProofreadings.has(startIndex)) {
-            this.activeProofreadings.get(startIndex).abort();
-            this.activeProofreadings.delete(startIndex);
-            translateBtn.innerHTML = '✓';
-            translateBtn.title = `校对从此段开始的${batchSize}段`;
-            translateBtn.disabled = false;
-            translateBtn.classList.remove('loading');
-            return;
-        }
-        
-        const settings = JSON.parse(localStorage.getItem('markdown-translator-settings') || '{}');
-        const apiKey = settings.proofreadApiKey;
-        const prompt = settings.proofreadPrompt || document.getElementById('proofread-prompt').value;
-        const provider = settings.proofreadApiProvider || 'ollama';
-        const customEndpoint = document.getElementById('proofread-api-endpoint').value;
-        const modelName = document.getElementById('proofread-model-name').value;
-        const temperatureValue = document.getElementById('proofread-temperature').value;
-        
-        if (!apiKey && provider !== 'ollama') {
-            this.showError('请设置校对API Key');
-            return;
-        }
-        
-        if (!modelName) {
-            this.showError('请设置校对模型名称');
-            return;
-        }
-        
-        // 创建AbortController用于中断请求
-        const abortController = new AbortController();
-        this.activeProofreadings.set(startIndex, abortController);
-        
-        // 更新按钮为中断状态
-        translateBtn.innerHTML = '⏹';
-        translateBtn.title = '停止校对';
-        translateBtn.disabled = false;
-        translateBtn.classList.add('loading');
-        
-        try {
-            const batchText = batchTexts.join('\n\n');
-            const proofreadResult = await this.callProofreadingAPI(
-                batchText, 
-                prompt, 
-                apiKey, 
-                provider, 
-                customEndpoint, 
-                modelName, 
-                abortController,
-                startIndex,
-                temperatureValue
-            );
-            
-            if (proofreadResult) {
-                // 验证返回结果的段落数量
-                const resultParagraphs = proofreadResult.trim().split('\n\n');
-                if (resultParagraphs.length !== batchTexts.length) {
-                    throw new Error(`校对结果段落数量(${resultParagraphs.length})与原文段落数量(${batchTexts.length})不匹配`);
-                }
-                
-                // 更新所有相关块的翻译内容
-                for (let i = 0; i < resultParagraphs.length; i++) {
-                    const blockIndex = startIndex + i;
-                    const proofreadParagraph = resultParagraphs[i].trim();
-                    
-                    this.translationBlocks[blockIndex] = proofreadParagraph;
-                    
-                    // 更新翻译块的显示
-                    const translationBlock = document.querySelector(`[data-index="${blockIndex}"] .translation-block`);
-                    const markdownDiv = translationBlock?.querySelector('.content-markdown');
-                    const mathjaxDiv = translationBlock?.querySelector('.content-mathjax');
-                    
-                    if (markdownDiv && mathjaxDiv) {
-                        markdownDiv.innerHTML = proofreadParagraph;
-                        MathJax.typesetClear([markdownDiv]);
-                        mathjaxDiv.innerHTML = proofreadParagraph;
-
-                        // 重新渲染MathJax版本
-                        if (typeof MathJax !== 'undefined') {
-                            MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
-                        }
-                    }
-                }
-                
-                // 有新校对内容时，重置导出标记
-                this.hasExported = false;
-            }
-            
-        } catch (error) {
-            if (error.name !== 'AbortError') {
-                this.showError('批量校对失败: ' + error.message);
-            }
-        } finally {
-            // 清理状态
-            this.activeProofreadings.delete(startIndex);
-            translateBtn.innerHTML = '✓';
-            translateBtn.title = `校对从此段开始的${batchSize}段`;
-            translateBtn.disabled = false;
-            translateBtn.classList.remove('loading');
-        }
-    }
 
     async callProofreadingAPI(text, prompt, apiKey, provider, customEndpoint, modelName, abortController = null, blockIndex = null, temperature = null) {
         // 使用thinking功能的提示词
