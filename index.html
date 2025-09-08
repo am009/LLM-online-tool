@@ -107,6 +107,14 @@
                     </div>
 
                     <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="enable-thinking" />
+                            <span data-i18n="ui.settingsPanel.enableThinking">启用thinking</span>
+                        </label>
+                        <small class="setting-hint" data-i18n="ui.settingsPanel.enableThinkingHint">为支持的API提供商启用thinking功能（如Ollama）</small>
+                    </div>
+
+                    <div class="setting-group">
                         <label for="translation-prompt" data-i18n="ui.settingsPanel.translationPrompt">翻译提示词:</label>
                         <textarea id="translation-prompt" rows="6"
                             data-i18n-placeholder="ui.settingsPanel.translationPromptPlaceholder" placeholder="请将以下文本翻译成中文，保持原文的格式和结构...">请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。</textarea>
@@ -173,6 +181,14 @@
                             <label for="proofread-temperature" data-i18n="ui.settingsPanel.proofreadTemperature">校对Temperature:</label>
                             <input type="number" id="proofread-temperature" min="0" max="2" step="0.1" data-i18n-placeholder="ui.settingsPanel.proofreadTemperaturePlaceholder" placeholder="留空使用默认值">
                             <small class="setting-hint" data-i18n="ui.settingsPanel.proofreadTemperatureHint">校对输出随机性，0.0-2.0，留空则不设置</small>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>
+                                <input type="checkbox" id="proofread-enable-thinking" />
+                                <span data-i18n="ui.settingsPanel.proofreadEnableThinking">启用校对thinking</span>
+                            </label>
+                            <small class="setting-hint" data-i18n="ui.settingsPanel.proofreadEnableThinkingHint">为支持的API提供商启用thinking功能（如Ollama）</small>
                         </div>
 
                         <div class="setting-group">

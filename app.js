@@ -80,6 +80,9 @@ class MarkdownTranslator {
         // temperature控制
         document.getElementById('temperature').addEventListener('input', () => this.saveSettings());
         
+        // thinking控制
+        document.getElementById('enable-thinking').addEventListener('change', () => this.saveSettings());
+        
         // 校对设置变更
         document.getElementById('proofread-prompt').addEventListener('input', () => this.saveSettings());
         document.getElementById('proofread-api-key').addEventListener('input', () => this.saveSettings());
@@ -87,6 +90,9 @@ class MarkdownTranslator {
         document.getElementById('proofread-model-name').addEventListener('input', () => this.saveSettings());
         document.getElementById('proofread-api-provider').addEventListener('change', () => this.onProofreadProviderChange());
         document.getElementById('proofread-temperature').addEventListener('input', () => this.saveSettings());
+        
+        // 校对thinking控制
+        document.getElementById('proofread-enable-thinking').addEventListener('change', () => this.saveSettings());
         
         // 侧边栏折叠
         document.getElementById('collapse-btn').addEventListener('click', () => this.toggleSidebar());
@@ -161,6 +167,10 @@ class MarkdownTranslator {
                 document.getElementById('proofread-temperature').value = parsed.proofreadTemperature;
             }
             
+            // 加载thinking设置
+            document.getElementById('enable-thinking').checked = parsed.enableThinking ?? false;
+            document.getElementById('proofread-enable-thinking').checked = parsed.proofreadEnableThinking ?? false;
+            
             // 设置校对模式状态
             document.getElementById('proofreading-mode').checked = this.proofreadingMode;
             this.onProofreadingModeChange({ target: { checked: this.proofreadingMode } });
@@ -211,11 +221,13 @@ class MarkdownTranslator {
             contextCount: isNaN(contextCountValue) ? 1 : contextCountValue,
             paragraphCharLimit: isNaN(paragraphCharLimitValue) ? 0 : paragraphCharLimitValue,
             sidebarCollapsed: this.sidebarCollapsed,
+            enableThinking: document.getElementById('enable-thinking').checked,
             // 校对设置
             proofreadingMode: this.proofreadingMode,
             proofreadPrompt: document.getElementById('proofread-prompt').value,
             proofreadApiKey: document.getElementById('proofread-api-key').value,
-            proofreadApiProvider: document.getElementById('proofread-api-provider').value
+            proofreadApiProvider: document.getElementById('proofread-api-provider').value,
+            proofreadEnableThinking: document.getElementById('proofread-enable-thinking').checked
         };
         
         // 只有当temperature有值时才保存
@@ -617,6 +629,7 @@ class MarkdownTranslator {
         const contextCountValue = parseInt(document.getElementById('context-count').value);
         const contextCount = isNaN(contextCountValue) ? 1 : contextCountValue;
         const temperatureValue = document.getElementById('temperature').value;
+        const enableThinking = document.getElementById('enable-thinking').checked;
         
         if (!apiKey && provider !== 'ollama') {
             this.showError(languageManager.get('errors.apiKeyRequired'));
@@ -652,7 +665,8 @@ class MarkdownTranslator {
                 context, 
                 abortController,
                 index,
-                temperatureValue
+                temperatureValue,
+                enableThinking
             );
             
             if (translation) {
@@ -692,7 +706,7 @@ class MarkdownTranslator {
         }
     }
 
-    async callTranslationAPI(text, prompt, apiKey, provider, customEndpoint, modelName, context = null, abortController = null, blockIndex = null, temperature = null) {
+    async callTranslationAPI(text, prompt, apiKey, provider, customEndpoint, modelName, context = null, abortController = null, blockIndex = null, temperature = null, enableThinking = false) {
         // Assert that prompt contains ORIGTEXT exactly once
         const origTextCount = (prompt.match(/ORIGTEXT/g) || []).length;
         if (origTextCount !== 1) {
@@ -742,6 +756,11 @@ class MarkdownTranslator {
                     max_tokens: 2000
                 };
                 
+                // 根据enableThinking状态设置think参数（如果API支持）
+                if (enableThinking) {
+                    body.think = true;
+                }
+                
                 // 只有当temperature有值时才添加到请求中
                 if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
                     const tempFloat = parseFloat(temperature);
@@ -765,6 +784,11 @@ class MarkdownTranslator {
                     ]
                 };
                 
+                // 根据enableThinking状态设置think参数（如果API支持）
+                if (enableThinking) {
+                    body.think = true;
+                }
+                
                 // 只有当temperature有值时才添加到请求中
                 if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
                     const tempFloat = parseFloat(temperature);
@@ -785,6 +809,11 @@ class MarkdownTranslator {
                     ],
                     stream: true  // 启用流式输出
                 };
+                
+                // 根据enableThinking状态设置think参数
+                if (enableThinking) {
+                    body.think = true;
+                }
                 
                 // 只有当temperature有值时才添加到请求中
                 if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
@@ -1001,6 +1030,7 @@ class MarkdownTranslator {
         const customEndpoint = document.getElementById('proofread-api-endpoint').value;
         const modelName = document.getElementById('proofread-model-name').value;
         const temperatureValue = document.getElementById('proofread-temperature').value;
+        const enableProofreadThinking = document.getElementById('proofread-enable-thinking').checked;
 
         if (!apiKey && provider !== 'ollama') {
             this.showError(languageManager.get('errors.proofreadApiKeyRequired'));
@@ -1038,7 +1068,8 @@ class MarkdownTranslator {
                 modelName, 
                 abortController,
                 index,
-                temperatureValue
+                temperatureValue,
+                enableProofreadThinking
             );
             
             if (proofreadResult) {
@@ -1079,7 +1110,7 @@ class MarkdownTranslator {
     }
 
 
-    async callProofreadingAPI(originalText, translationText, prompt, apiKey, provider, customEndpoint, modelName, abortController = null, blockIndex = null, temperature = null) {
+    async callProofreadingAPI(originalText, translationText, prompt, apiKey, provider, customEndpoint, modelName, abortController = null, blockIndex = null, temperature = null, enableThinking = false) {
         // Replace ORIGTEXT and TRANSTEXT in the prompt if they exist
         let fullPrompt = prompt;
         
@@ -1132,6 +1163,11 @@ class MarkdownTranslator {
                     stream: true
                 };
                 
+                // 根据enableThinking状态设置think参数（如果API支持）
+                if (enableThinking) {
+                    body.think = true;
+                }
+                
                 // 只有当temperature有值时才添加到请求中
                 if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
                     const tempFloat = parseFloat(temperature);
@@ -1156,6 +1192,11 @@ class MarkdownTranslator {
                     stream: true
                 };
                 
+                // 根据enableThinking状态设置think参数（如果API支持）
+                if (enableThinking) {
+                    body.think = true;
+                }
+                
                 // 只有当temperature有值时才添加到请求中
                 if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
                     const tempFloat = parseFloat(temperature);
@@ -1174,9 +1215,13 @@ class MarkdownTranslator {
                     messages: [
                         { role: 'user', content: fullPrompt }
                     ],
-                    think: true,
                     stream: true  // 启用流式输出
                 };
+                
+                // 根据enableThinking状态设置think参数
+                if (enableThinking) {
+                    body.think = true;
+                }
                 
                 // 只有当temperature有值时才添加到请求中
                 if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
