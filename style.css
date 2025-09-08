@@ -375,15 +375,21 @@ input[type="checkbox"] {
 .content-mathjax {
     width: 100%;
     min-height: 40px;
+    color: #000;
 }
 
 .content-markdown {
-    white-space: pre-wrap;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: none;
+    font-family: inherit;
+    box-sizing: border-box;
 }
 
-.content-markdown[contenteditable="true"]:focus,
+.content-markdown:focus,
 .content-mathjax[contenteditable="true"]:focus {
     outline: none;
+    border-color: #3498db;
 }
 
 .translate-button {

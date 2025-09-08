@@ -471,16 +471,23 @@ class MarkdownTranslator {
         originalToggle.addEventListener('click', () => this.toggleOriginalRenderMode(index));
         
         // 原文markdown版本
-        const originalMarkdown = document.createElement('div');
+        const originalMarkdown = document.createElement('textarea');
         originalMarkdown.className = 'content-markdown';
-        originalMarkdown.setAttribute('contenteditable', 'true');
-        originalMarkdown.innerHTML = originalContent;
+        originalMarkdown.value = originalContent;
+        originalMarkdown.setAttribute('oninput', 'this.style.height = "";this.style.height = this.scrollHeight + "px"');
         // 根据默认渲染模式决定是否隐藏
         originalMarkdown.style.display = this.originalRenderMode[index] === 'markdown' ? 'block' : 'none';
+        
+        // 初始化高度
+        setTimeout(() => {
+            originalMarkdown.style.height = '';
+            originalMarkdown.style.height = originalMarkdown.scrollHeight + 'px';
+        }, 0);
+        
         originalMarkdown.addEventListener('input', () => {
-            this.originalBlocks[index] = originalMarkdown.textContent;
+            this.originalBlocks[index] = originalMarkdown.value;
             // 同步更新mathjax版本的内容
-            originalMathjax.innerHTML = originalMarkdown.innerHTML;
+            originalMathjax.innerHTML = originalMarkdown.value;
             MathJax.typesetClear([originalMathjax]);
             // 重新渲染MathJax版本
             if (typeof MathJax !== 'undefined') {
@@ -524,14 +531,21 @@ class MarkdownTranslator {
         translationToggle.addEventListener('click', () => this.toggleTranslationRenderMode(index));
         
         // 翻译markdown版本
-        const translationMarkdown = document.createElement('div');
+        const translationMarkdown = document.createElement('textarea');
         translationMarkdown.className = 'content-markdown';
-        translationMarkdown.setAttribute('contenteditable', 'true');
-        translationMarkdown.innerHTML = translationContent || originalContent;
+        translationMarkdown.value = translationContent || originalContent;
+        translationMarkdown.setAttribute('oninput', 'this.style.height = "";this.style.height = this.scrollHeight + "px"');
+        
+        // 初始化高度
+        setTimeout(() => {
+            translationMarkdown.style.height = '';
+            translationMarkdown.style.height = translationMarkdown.scrollHeight + 'px';
+        }, 0);
+        
         translationMarkdown.addEventListener('input', () => {
-            this.translationBlocks[index] = translationMarkdown.textContent;
+            this.translationBlocks[index] = translationMarkdown.value;
             // 同步更新mathjax版本的内容
-            translationMathjax.innerHTML = translationMarkdown.innerHTML;
+            translationMathjax.innerHTML = translationMarkdown.value;
             MathJax.typesetClear([translationMathjax]);
             // 重新渲染MathJax版本
             if (typeof MathJax !== 'undefined') {
@@ -655,7 +669,10 @@ class MarkdownTranslator {
                 const markdownDiv = translationBlock.querySelector('.content-markdown');
                 const mathjaxDiv = translationBlock.querySelector('.content-mathjax');
                 
-                markdownDiv.innerHTML = translation;
+                markdownDiv.value = translation;
+                // 触发自动调整高度
+                markdownDiv.style.height = '';
+                markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
                 MathJax.typesetClear([markdownDiv]);
                 mathjaxDiv.innerHTML = translation;
 
@@ -870,7 +887,10 @@ class MarkdownTranslator {
                             
                             // 实时更新界面显示
                             if (markdownDiv && blockIndex !== null) {
-                                markdownDiv.innerHTML = result;
+                                markdownDiv.value = result;
+                                // 触发自动调整高度
+                                markdownDiv.style.height = '';
+                                markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
                                 this.translationBlocks[blockIndex] = result;
                                 
                                 // 同步更新mathjax版本
@@ -1038,7 +1058,10 @@ class MarkdownTranslator {
                 const markdownDiv = translationBlock.querySelector('.content-markdown');
                 const mathjaxDiv = translationBlock.querySelector('.content-mathjax');
                 
-                markdownDiv.innerHTML = proofreadResult;
+                markdownDiv.value = proofreadResult;
+                // 触发自动调整高度
+                markdownDiv.style.height = '';
+                markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
                 MathJax.typesetClear([markdownDiv]);
                 mathjaxDiv.innerHTML = proofreadResult;
 
@@ -1262,7 +1285,10 @@ ${text}`;
                                 }
                                 
                                 if (markdownDiv && blockIndex !== null && displayResult) {
-                                    markdownDiv.innerHTML = displayResult;
+                                    markdownDiv.value = displayResult;
+                                    // 触发自动调整高度
+                                    markdownDiv.style.height = '';
+                                    markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
                                     this.translationBlocks[blockIndex] = displayResult;
                                     
                                     // 同步更新mathjax版本
@@ -1320,7 +1346,10 @@ ${text}`;
                                 }
                                 
                                 if (markdownDiv && blockIndex !== null && displayResult) {
-                                    markdownDiv.innerHTML = displayResult;
+                                    markdownDiv.value = displayResult;
+                                    // 触发自动调整高度
+                                    markdownDiv.style.height = '';
+                                    markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
                                     this.translationBlocks[blockIndex] = displayResult;
                                     
                                     // 同步更新mathjax版本
@@ -1674,19 +1703,22 @@ ${text}`;
         if (blockType === 'original') {
             const container = pair.querySelector('.original-block');
             const toggle = container.querySelector('.render-toggle');
-            const markdownDiv = container.querySelector('.content-markdown');
+            const markdownTextarea = container.querySelector('.content-markdown');
             const mathjaxDiv = container.querySelector('.content-mathjax');
             const mode = this.originalRenderMode[index];
             
             if (mode === 'markdown') {
                 toggle.innerHTML = '📝';
                 toggle.title = languageManager.get('ui.tooltips.toggleToMathJax');
-                markdownDiv.style.display = 'block';
+                markdownTextarea.style.display = 'block';
                 mathjaxDiv.style.display = 'none';
+                // 调整高度
+                markdownTextarea.style.height = '';
+                markdownTextarea.style.height = markdownTextarea.scrollHeight + 'px';
             } else {
                 toggle.innerHTML = '∫';
                 toggle.title = languageManager.get('ui.tooltips.toggleToMarkdown');
-                markdownDiv.style.display = 'none';
+                markdownTextarea.style.display = 'none';
                 mathjaxDiv.style.display = 'block';
                 // 触发MathJax渲染
                 if (typeof MathJax !== 'undefined') {
@@ -1696,19 +1728,22 @@ ${text}`;
         } else {
             const container = pair.querySelector('.translation-block');
             const toggle = container.querySelector('.render-toggle');
-            const markdownDiv = container.querySelector('.content-markdown');
+            const markdownTextarea = container.querySelector('.content-markdown');
             const mathjaxDiv = container.querySelector('.content-mathjax');
             const mode = this.translationRenderMode[index];
             
             if (mode === 'markdown') {
                 toggle.innerHTML = '📝';
                 toggle.title = languageManager.get('ui.tooltips.toggleToMathJax');
-                markdownDiv.style.display = 'block';
+                markdownTextarea.style.display = 'block';
                 mathjaxDiv.style.display = 'none';
+                // 调整高度
+                markdownTextarea.style.height = '';
+                markdownTextarea.style.height = markdownTextarea.scrollHeight + 'px';
             } else {
                 toggle.innerHTML = '∫';
                 toggle.title = languageManager.get('ui.tooltips.toggleToMarkdown');
-                markdownDiv.style.display = 'none';
+                markdownTextarea.style.display = 'none';
                 mathjaxDiv.style.display = 'block';
                 // 触发MathJax渲染
                 if (typeof MathJax !== 'undefined') {
