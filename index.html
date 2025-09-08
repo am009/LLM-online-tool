@@ -74,11 +74,13 @@
             <div class="setting-group">
                 <label for="context-count">上下文数量:</label>
                 <input type="number" id="context-count" min="0" max="5" value="0">
-                <small class="setting-hint">推荐1-3个块，提供前文以提升翻译准确性</small>
+                <small class="setting-hint">提供前文以提升翻译准确性，默认不提供</small>
             </div>
 
             <div class="setting-group">
-                <button id="export-btn" class="btn btn-secondary" disabled>导出翻译结果</button>
+                <label for="temperature">Temperature:</label>
+                <input type="number" id="temperature" min="0" max="2" step="0.1" placeholder="留空使用默认值">
+                <small class="setting-hint">控制输出随机性，0.0-2.0，留空则不设置</small>
             </div>
         </div>
 
@@ -92,6 +94,7 @@
                     <button id="upload-btn" class="btn btn-primary">上传Markdown文件</button>
                     <input type="file" id="file-input" accept=".md,.markdown" style="display: none;">
                     <button id="translate-all-btn" class="btn btn-primary" disabled>全部翻译</button>
+                    <button id="export-btn" class="btn btn-secondary" disabled>导出翻译结果</button>
                 </div>
             </div>
             <div class="content-container" id="content-container">

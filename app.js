@@ -45,6 +45,9 @@ class MarkdownTranslator {
         // 上下文数量控制
         document.getElementById('context-count').addEventListener('input', () => this.saveSettings());
         
+        // temperature控制
+        document.getElementById('temperature').addEventListener('input', () => this.saveSettings());
+        
         // 侧边栏折叠
         document.getElementById('collapse-btn').addEventListener('click', () => this.toggleSidebar());
     }
@@ -81,6 +84,13 @@ class MarkdownTranslator {
             document.getElementById('api-provider').value = provider;
             document.getElementById('context-count').value = (isNaN(parsed.contextCount) ? 1 : parsed.contextCount);
             
+            // 加载temperature设置，如果没有设置则留空
+            if (parsed.temperature !== undefined && parsed.temperature !== null && parsed.temperature !== '') {
+                document.getElementById('temperature').value = parsed.temperature;
+            } else {
+                document.getElementById('temperature').value = '';
+            }
+            
             // 加载对应提供商的API端点
             this.loadApiEndpoint(provider);
             
@@ -109,6 +119,8 @@ class MarkdownTranslator {
         this.saveModelName(provider, modelName);
         
         const contextCountValue = parseInt(document.getElementById('context-count').value);
+        const temperatureValue = document.getElementById('temperature').value;
+        
         const settings = {
             prompt: document.getElementById('translation-prompt').value,
             apiKey: document.getElementById('api-key').value,
@@ -117,6 +129,15 @@ class MarkdownTranslator {
             originalWidth: this.originalWidth,
             sidebarCollapsed: this.sidebarCollapsed
         };
+        
+        // 只有当temperature有值时才保存
+        if (temperatureValue !== null && temperatureValue !== undefined && temperatureValue.trim() !== '') {
+            const tempFloat = parseFloat(temperatureValue);
+            if (!isNaN(tempFloat)) {
+                settings.temperature = tempFloat;
+            }
+        }
+        
         localStorage.setItem('markdown-translator-settings', JSON.stringify(settings));
     }
 
@@ -405,6 +426,7 @@ class MarkdownTranslator {
         const modelName = document.getElementById('model-name').value;
         const contextCountValue = parseInt(document.getElementById('context-count').value);
         const contextCount = isNaN(contextCountValue) ? 1 : contextCountValue;
+        const temperatureValue = document.getElementById('temperature').value;
         
         if (!apiKey && provider !== 'ollama') {
             this.showError('请先设置API Key');
@@ -439,7 +461,8 @@ class MarkdownTranslator {
                 modelName, 
                 context, 
                 abortController,
-                index
+                index,
+                temperatureValue
             );
             
             if (translation) {
@@ -477,7 +500,7 @@ class MarkdownTranslator {
         }
     }
 
-    async callTranslationAPI(text, prompt, apiKey, provider, customEndpoint, modelName, context = null, abortController = null, blockIndex = null) {
+    async callTranslationAPI(text, prompt, apiKey, provider, customEndpoint, modelName, context = null, abortController = null, blockIndex = null, temperature = null) {
         let fullPrompt = prompt;
         
         // 构建包含上下文的完整提示
@@ -533,9 +556,16 @@ class MarkdownTranslator {
                     messages: [
                         { role: 'user', content: fullPrompt }
                     ],
-                    max_tokens: 2000,
-                    temperature: 0.3
+                    max_tokens: 2000
                 };
+                
+                // 只有当temperature有值时才添加到请求中
+                if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
+                    const tempFloat = parseFloat(temperature);
+                    if (!isNaN(tempFloat)) {
+                        body.temperature = tempFloat;
+                    }
+                }
                 break;
                 
             case 'anthropic':
@@ -551,6 +581,14 @@ class MarkdownTranslator {
                         { role: 'user', content: fullPrompt }
                     ]
                 };
+                
+                // 只有当temperature有值时才添加到请求中
+                if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
+                    const tempFloat = parseFloat(temperature);
+                    if (!isNaN(tempFloat)) {
+                        body.temperature = tempFloat;
+                    }
+                }
                 break;
                 
             case 'ollama':
@@ -564,6 +602,15 @@ class MarkdownTranslator {
                     ],
                     stream: true  // 启用流式输出
                 };
+                
+                // 只有当temperature有值时才添加到请求中
+                if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
+                    const tempFloat = parseFloat(temperature);
+                    if (!isNaN(tempFloat)) {
+                        body.options = body.options || {};
+                        body.options.temperature = tempFloat;
+                    }
+                }
                 break;
                 
             default:
