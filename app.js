@@ -1798,15 +1798,12 @@ ${text}`;
             return;
         }
 
-        // 重新组织原文段落
-        const newOriginalBlocks = this.mergeParagraphs(this.originalBlocks, charLimit);
-        
-        // 重新组织译文段落 - 按照相同的方式合并
-        const newTranslationBlocks = this.mergeParagraphs(this.translationBlocks, charLimit);
+        // 重新组织原文和译文段落 - 同时处理两个数组
+        const result = this.mergeParagraphs(this.originalBlocks, this.translationBlocks, charLimit);
 
         // 更新数组
-        this.originalBlocks = newOriginalBlocks;
-        this.translationBlocks = newTranslationBlocks;
+        this.originalBlocks = result.originalBlocks;
+        this.translationBlocks = result.translationBlocks;
         
         // 重新初始化渲染模式数组
         this.originalRenderMode = new Array(this.originalBlocks.length).fill('mathjax');
@@ -1820,35 +1817,45 @@ ${text}`;
         this.hasExported = false;
     }
 
-    mergeParagraphs(blocks, charLimit) {
-        const mergedBlocks = [];
-        let currentMerged = [];
+    mergeParagraphs(originalBlocks, translationBlocks, charLimit) {
+        const mergedOriginalBlocks = [];
+        const mergedTranslationBlocks = [];
+        let currentOriginalMerged = [];
+        let currentTranslationMerged = [];
         let currentCharCount = 0;
 
-        for (let i = 0; i < blocks.length; i++) {
-            const block = typeof blocks[i] === 'string' ? blocks[i] : '';
-            const blockLength = block.length;
+        for (let i = 0; i < originalBlocks.length; i++) {
+            const originalBlock = originalBlocks[i] ?? '';
+            const translationBlock = translationBlocks[i] ?? '';
+            const blockLength = originalBlock.length;
             
             // 如果是第一个段落，或者加入当前段落后不超过字符限制，就加入当前合并组
-            if (currentMerged.length === 0 || currentCharCount + blockLength + 4 <= charLimit) { // +4 for \n\n separator
-                currentMerged.push(block);
-                currentCharCount += blockLength + (currentMerged.length > 1 ? 2 : 0); // +2 for \n\n
+            if (currentOriginalMerged.length === 0 || currentCharCount + blockLength + 4 <= charLimit) { // +4 for \n\n separator
+                currentOriginalMerged.push(originalBlock);
+                currentTranslationMerged.push(translationBlock);
+                currentCharCount += blockLength + (currentOriginalMerged.length > 1 ? 2 : 0); // +2 for \n\n
             } else {
                 // 超过限制，保存当前合并组并开始新的合并组
-                if (currentMerged.length > 0) {
-                    mergedBlocks.push(currentMerged.join('\n\n'));
+                if (currentOriginalMerged.length > 0) {
+                    mergedOriginalBlocks.push(currentOriginalMerged.join('\n\n'));
+                    mergedTranslationBlocks.push(currentTranslationMerged.join('\n\n'));
                 }
-                currentMerged = [block];
+                currentOriginalMerged = [originalBlock];
+                currentTranslationMerged = [translationBlock];
                 currentCharCount = blockLength;
             }
         }
 
         // 处理最后一个合并组
-        if (currentMerged.length > 0) {
-            mergedBlocks.push(currentMerged.join('\n\n'));
+        if (currentOriginalMerged.length > 0) {
+            mergedOriginalBlocks.push(currentOriginalMerged.join('\n\n'));
+            mergedTranslationBlocks.push(currentTranslationMerged.join('\n\n'));
         }
 
-        return mergedBlocks;
+        return {
+            originalBlocks: mergedOriginalBlocks,
+            translationBlocks: mergedTranslationBlocks
+        };
     }
 }
 
