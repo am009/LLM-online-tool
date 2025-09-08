@@ -693,25 +693,16 @@ class MarkdownTranslator {
     }
 
     async callTranslationAPI(text, prompt, apiKey, provider, customEndpoint, modelName, context = null, abortController = null, blockIndex = null, temperature = null) {
+        // Assert that prompt contains ORIGTEXT exactly once
+        const origTextCount = (prompt.match(/ORIGTEXT/g) || []).length;
+        if (origTextCount !== 1) {
+            throw new Error(languageManager.get('messages.noOrigTextOnce'));
+        }
+        
         let fullPrompt = prompt;
         
-        // 构建包含上下文的完整提示
-        if (context && (context.before.length > 0 || context.after.length > 0)) {
-            fullPrompt += '\n\n';
-            
-            if (context.before.length > 0) {
-                fullPrompt += languageManager.get('prompts.contextBefore') + '\n' + context.before.join('\n\n') + '\n\n';
-            }
-            
-            fullPrompt += languageManager.get('prompts.originalText') + '\n' + text;
-            
-            // 暂时不加入后文
-            // if (context.after.length > 0) {
-            //     fullPrompt += '\n\n' + languageManager.get('prompts.contextAfter') + '\n' + context.after.join('\n\n');
-            // }
-        } else {
-            fullPrompt += '\n\n' + languageManager.get('prompts.originalText') + '\n' + text;
-        }
+        // Replace ORIGTEXT with the actual text and context
+        fullPrompt = fullPrompt.replace('ORIGTEXT', text);
         
         let apiUrl, headers, body;
         
@@ -836,15 +827,24 @@ class MarkdownTranslator {
         const data = await response.json();
         
         // 根据提供商类型解析响应
+        let result = '';
         if (provider === 'openai' || provider === 'custom') {
-            return data.choices[0]?.message?.content ?? languageManager.get('errors.translationFailed');
+            result = data.choices[0]?.message?.content ?? languageManager.get('errors.translationFailed');
         } else if (provider === 'anthropic') {
-            return data.content[0]?.text ?? languageManager.get('errors.translationFailed');
+            result = data.content[0]?.text ?? languageManager.get('errors.translationFailed');
         } else if (provider === 'ollama') {
-            return data.message?.content ?? languageManager.get('errors.translationFailed');
+            result = data.message?.content ?? languageManager.get('errors.translationFailed');
         }
-        
-        throw new Error(languageManager.get('errors.parseApiResponseFailed'));
+
+        // 提取thinking部分并打印到控制台
+        const thinkingMatch = result.match(/<think>([\s\S]*?)<\/think>/);
+        if (thinkingMatch) {
+            console.log(languageManager.get('prompts.translationThinking'), thinkingMatch[1].trim());
+            // 删除thinking部分
+            result = result.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
+        }
+
+        return result ?? languageManager.get('errors.parseApiResponseFailed')
     }
 
     async handleOllamaStreamResponse(response, blockIndex) {
@@ -1029,6 +1029,7 @@ class MarkdownTranslator {
         
         try {
             const proofreadResult = await this.callProofreadingAPI(
+                originalContent,
                 translationContent, 
                 prompt, 
                 apiKey, 
@@ -1078,13 +1079,19 @@ class MarkdownTranslator {
     }
 
 
-    async callProofreadingAPI(text, prompt, apiKey, provider, customEndpoint, modelName, abortController = null, blockIndex = null, temperature = null) {
-        // 使用thinking功能的提示词
-        let fullPrompt = `
-${prompt}
-
-需要校对的文字：
-${text}`;
+    async callProofreadingAPI(originalText, translationText, prompt, apiKey, provider, customEndpoint, modelName, abortController = null, blockIndex = null, temperature = null) {
+        // Replace ORIGTEXT and TRANSTEXT in the prompt if they exist
+        let fullPrompt = prompt;
+        
+        if (fullPrompt.includes('ORIGTEXT')) {
+            fullPrompt = fullPrompt.replace(/ORIGTEXT/g, originalText);
+        }
+        
+        if (fullPrompt.includes('TRANSTEXT')) {
+            fullPrompt = fullPrompt.replace(/TRANSTEXT/g, translationText);
+        } else {
+            throw new Error(languageManager.get('messages.noOrigText'));
+        }
         
         let apiUrl, headers, body;
         

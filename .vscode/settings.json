@@ -4,6 +4,8 @@
         "contenteditable",
         "mathjax",
         "ollama",
-        "Proofreadings"
+        "ORIGTEXT",
+        "Proofreadings",
+        "TRANSTEXT"
     ]
 }

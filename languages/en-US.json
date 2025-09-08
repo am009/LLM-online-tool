@@ -74,6 +74,8 @@
     "proofreading": "Proofreading...",
     "fileInfo": "paragraphs",
     "beforeUnloadWarning": "You have untranslated content that hasn't been downloaded. Are you sure you want to leave?",
+    "noOrigText": "Prompt does not contain ORIGTEXT placeholder!",
+    "noOrigTextOnce": "Prompt must contain exactly one ORIGTEXT placeholder!",
     "apiProviders": {
       "openai": "OpenAI",
       "anthropic": "Anthropic",
@@ -115,6 +117,7 @@
     "contextBefore": "Context (before): ",
     "contextAfter": "Context (after): ",
     "originalText": "Original text: ",
+    "translationThinking": "Translation thinking process: ",
     "proofreadingThinking": "Proofreading thinking process: "
   }
 }

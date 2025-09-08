@@ -74,6 +74,8 @@
     "proofreading": "正在校对...",
     "fileInfo": "个段落",
     "beforeUnloadWarning": "您有翻译内容尚未下载，确定要离开页面吗？",
+    "noOrigText": "Prompt 没有包含 ORIGTEXT 用于插入原文!",
+    "noOrigTextOnce": "Prompt 必须包含 ORIGTEXT，且仅能包含一次!",
     "apiProviders": {
       "openai": "OpenAI",
       "anthropic": "Anthropic", 
@@ -115,6 +117,7 @@
     "contextBefore": "前文：",
     "contextAfter": "后文：",
     "originalText": "原文：",
+    "translationThinking": "翻译思考过程：",
     "proofreadingThinking": "校对思考过程："
   }
 }
