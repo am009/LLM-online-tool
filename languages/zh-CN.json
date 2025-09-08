@@ -1,0 +1,68 @@
+{
+  "ui": {
+    "title": "Markdown在线翻译工具",
+    "settings": "设置",
+    "settingsPanel": {
+      "apiProvider": "API提供商",
+      "modelName": "模型名称",
+      "modelNamePlaceholder": "请输入模型名称",
+      "apiEndpoint": "API端点",
+      "apiEndpointPlaceholder": "请输入API端点URL",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "请输入您的API Key",
+      "translationPrompt": "翻译提示词",
+      "translationPromptPlaceholder": "请将以下文本翻译成中文，保持原文的格式和结构...",
+      "translationPromptDefault": "请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。",
+      "contextCount": "上下文数量",
+      "contextCountHint": "提供前文以提升翻译准确性，默认不提供",
+      "temperature": "Temperature",
+      "temperaturePlaceholder": "留空使用默认值",
+      "temperatureHint": "控制输出随机性，0.0-2.0，留空则不设置",
+      "language": "Language",
+      "custom": "自定义"
+    },
+    "buttons": {
+      "uploadFile": "上传Markdown文件",
+      "translateAll": "全部翻译",
+      "exportTranslation": "导出翻译结果",
+      "translate": "翻译此段",
+      "stopTranslation": "点击中断翻译"
+    },
+    "placeholders": {
+      "uploadPrompt": "请上传Markdown文件开始翻译"
+    },
+    "modal": {
+      "error": "错误",
+      "close": "关闭"
+    },
+    "tooltips": {
+      "toggleToMathJax": "点击切换到MathJax渲染",
+      "toggleToMarkdown": "点击切换到Markdown文本"
+    }
+  },
+  "messages": {
+    "translating": "翻译中...",
+    "fileInfo": "个段落",
+    "beforeUnloadWarning": "您有翻译内容尚未下载，确定要离开页面吗？",
+    "apiProviders": {
+      "openai": "OpenAI",
+      "anthropic": "Anthropic", 
+      "ollama": "Ollama",
+      "custom": "自定义"
+    }
+  },
+  "errors": {
+    "invalidFileType": "请选择有效的Markdown文件（.md或.markdown）",
+    "parseMarkdownFailed": "解析Markdown文件失败：",
+    "readFileFailed": "读取文件失败",
+    "apiKeyRequired": "请先设置API Key",
+    "modelNameRequired": "请先设置模型名称",
+    "translationFailed": "翻译失败：",
+    "batchTranslationFailed": "批量翻译失败：",
+    "noTranslationContent": "没有可导出的翻译内容",
+    "noTranslatedContent": "没有已翻译的内容可导出",
+    "unsupportedApiProvider": "不支持的API提供商",
+    "apiRequestFailed": "API请求失败",
+    "parseApiResponseFailed": "无法解析API响应"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "ui": {
+    "title": "Markdown Online Translation Tool",
+    "settings": "Settings",
+    "settingsPanel": {
+      "apiProvider": "API Provider",
+      "modelName": "Model Name",
+      "modelNamePlaceholder": "Enter model name",
+      "apiEndpoint": "API Endpoint",
+      "apiEndpointPlaceholder": "Enter API endpoint URL",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Enter your API Key",
+      "translationPrompt": "Translation Prompt",
+      "translationPromptPlaceholder": "Please translate the following text to Chinese, maintaining the original format and structure...",
+      "translationPromptDefault": "Please translate the following text to Chinese, maintaining the original format and structure, without adding additional explanations or comments.",
+      "contextCount": "Context Count",
+      "contextCountHint": "Provide previous text to improve translation accuracy, default is none",
+      "temperature": "Temperature",
+      "temperaturePlaceholder": "Leave empty for default",
+      "temperatureHint": "Control output randomness, 0.0-2.0, leave empty to not set",
+      "language": "Interface Language",
+      "custom": "Custom"
+    },
+    "buttons": {
+      "uploadFile": "Upload Markdown File",
+      "translateAll": "Translate All",
+      "exportTranslation": "Export Translation",
+      "translate": "Translate",
+      "stopTranslation": "Click to stop translation"
+    },
+    "placeholders": {
+      "uploadPrompt": "Please upload a Markdown file to start translation"
+    },
+    "modal": {
+      "error": "Error",
+      "close": "Close"
+    },
+    "tooltips": {
+      "toggleToMathJax": "Click to switch to MathJax rendering",
+      "toggleToMarkdown": "Click to switch to Markdown text"
+    }
+  },
+  "messages": {
+    "translating": "Translating...",
+    "fileInfo": "paragraphs",
+    "beforeUnloadWarning": "You have untranslated content that hasn't been downloaded. Are you sure you want to leave?",
+    "apiProviders": {
+      "openai": "OpenAI",
+      "anthropic": "Anthropic",
+      "ollama": "Ollama", 
+      "custom": "Custom"
+    }
+  },
+  "errors": {
+    "invalidFileType": "Please select a valid Markdown file (.md or .markdown)",
+    "parseMarkdownFailed": "Failed to parse Markdown file: ",
+    "readFileFailed": "Failed to read file",
+    "apiKeyRequired": "Please set your API Key first",
+    "modelNameRequired": "Please set model name first",
+    "translationFailed": "Translation failed: ",
+    "batchTranslationFailed": "Batch translation failed: ",
+    "noTranslationContent": "No translation content to export",
+    "noTranslatedContent": "No translated content to export",
+    "unsupportedApiProvider": "Unsupported API provider",
+    "apiRequestFailed": "API request failed",
+    "parseApiResponseFailed": "Unable to parse API response"
+  }
+}

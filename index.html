@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown在线翻译工具</title>
+    <title data-i18n="ui.title">Markdown在线翻译工具</title>
     <link rel="stylesheet" href="style.css">
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script>
@@ -35,52 +35,61 @@
     <div class="app-container">
         <!-- 左侧设置栏 -->
         <div class="settings-panel" id="settings-panel">
+
             <div class="settings-header">
-                <h2>设置</h2>
+                <h2 data-i18n="ui.settings">设置</h2>
                 <button class="collapse-btn" id="collapse-btn">‹</button>
             </div>
 
             <div class="setting-group">
-                <label for="api-provider">API提供商:</label>
-                <select id="api-provider">
-                    <option value="openai">OpenAI</option>
-                    <option value="anthropic">Anthropic</option>
-                    <option value="ollama">Ollama</option>
-                    <option value="custom">自定义</option>
+                <label for="interface-language" data-i18n="ui.settingsPanel.language">界面语言:</label>
+                <select id="interface-language">
+                    <option value="zh-CN">中文</option>
+                    <option value="en-US">English</option>
                 </select>
             </div>
 
             <div class="setting-group">
-                <label for="model-name">模型名称:</label>
-                <input type="text" id="model-name" placeholder="请输入模型名称">
+                <label for="api-provider" data-i18n="ui.settingsPanel.apiProvider">API提供商:</label>
+                <select id="api-provider">
+                    <option value="openai" data-i18n="messages.apiProviders.openai">OpenAI</option>
+                    <option value="anthropic" data-i18n="messages.apiProviders.anthropic">Anthropic</option>
+                    <option value="ollama" data-i18n="messages.apiProviders.ollama">Ollama</option>
+                    <option value="custom" data-i18n="ui.settingsPanel.custom">自定义</option>
+                </select>
             </div>
 
             <div class="setting-group">
-                <label for="api-endpoint">API端点:</label>
-                <input type="text" id="api-endpoint" placeholder="请输入API端点URL">
+                <label for="model-name" data-i18n="ui.settingsPanel.modelName">模型名称:</label>
+                <input type="text" id="model-name" data-i18n-placeholder="ui.settingsPanel.modelNamePlaceholder" placeholder="请输入模型名称">
             </div>
 
             <div class="setting-group">
-                <label for="api-key">API Key:</label>
-                <input type="password" id="api-key" placeholder="请输入您的API Key">
+                <label for="api-endpoint" data-i18n="ui.settingsPanel.apiEndpoint">API端点:</label>
+                <input type="text" id="api-endpoint" data-i18n-placeholder="ui.settingsPanel.apiEndpointPlaceholder" placeholder="请输入API端点URL">
             </div>
 
             <div class="setting-group">
-                <label for="translation-prompt">翻译提示词:</label>
+                <label for="api-key" data-i18n="ui.settingsPanel.apiKey">API Key:</label>
+                <input type="password" id="api-key" data-i18n-placeholder="ui.settingsPanel.apiKeyPlaceholder" placeholder="请输入您的API Key">
+            </div>
+
+            <div class="setting-group">
+                <label for="translation-prompt" data-i18n="ui.settingsPanel.translationPrompt">翻译提示词:</label>
                 <textarea id="translation-prompt" rows="6"
-                    placeholder="请将以下文本翻译成中文，保持原文的格式和结构...">请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。</textarea>
+                    data-i18n-placeholder="ui.settingsPanel.translationPromptPlaceholder" placeholder="请将以下文本翻译成中文，保持原文的格式和结构...">请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。</textarea>
             </div>
 
             <div class="setting-group">
-                <label for="context-count">上下文数量:</label>
+                <label for="context-count" data-i18n="ui.settingsPanel.contextCount">上下文数量:</label>
                 <input type="number" id="context-count" min="0" max="5" value="0">
-                <small class="setting-hint">提供前文以提升翻译准确性，默认不提供</small>
+                <small class="setting-hint" data-i18n="ui.settingsPanel.contextCountHint">提供前文以提升翻译准确性，留空则不提供</small>
             </div>
 
             <div class="setting-group">
-                <label for="temperature">Temperature:</label>
-                <input type="number" id="temperature" min="0" max="2" step="0.1" placeholder="留空使用默认值">
-                <small class="setting-hint">控制输出随机性，0.0-2.0，留空则不设置</small>
+                <label for="temperature" data-i18n="ui.settingsPanel.temperature">Temperature:</label>
+                <input type="number" id="temperature" min="0" max="2" step="0.1" data-i18n-placeholder="ui.settingsPanel.temperaturePlaceholder" placeholder="留空使用默认值">
+                <small class="setting-hint" data-i18n="ui.settingsPanel.temperatureHint">控制输出随机性，0.0-2.0，留空则不设置</small>
             </div>
         </div>
 
@@ -91,15 +100,15 @@
                     <div class="file-info" id="file-info"></div>
                 </div>
                 <div class="header-right">
-                    <button id="upload-btn" class="btn btn-primary">上传Markdown文件</button>
+                    <button id="upload-btn" class="btn btn-primary" data-i18n="ui.buttons.uploadFile">上传Markdown文件</button>
                     <input type="file" id="file-input" accept=".md,.markdown" style="display: none;">
-                    <button id="translate-all-btn" class="btn btn-primary" disabled>全部翻译</button>
-                    <button id="export-btn" class="btn btn-secondary" disabled>导出翻译结果</button>
+                    <button id="translate-all-btn" class="btn btn-primary" disabled data-i18n="ui.buttons.translateAll">全部翻译</button>
+                    <button id="export-btn" class="btn btn-secondary" disabled data-i18n="ui.buttons.exportTranslation">导出翻译结果</button>
                 </div>
             </div>
             <div class="content-container" id="content-container">
                 <div class="placeholder">
-                    <p>请上传Markdown文件开始翻译</p>
+                    <p data-i18n="ui.placeholders.uploadPrompt">请上传Markdown文件开始翻译</p>
                 </div>
             </div>
         </div>
@@ -109,11 +118,12 @@
     <div id="error-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h3>错误</h3>
+            <h3 data-i18n="ui.modal.error">错误</h3>
             <p id="error-message"></p>
         </div>
     </div>
 
+    <script src="language-manager.js"></script>
     <script src="app.js"></script>
 </body>
 

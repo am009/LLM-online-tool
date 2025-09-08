@@ -13,12 +13,18 @@ class MarkdownTranslator {
         this.init();
     }
 
-    init() {
+    async init() {
+        // 等待语言管理器初始化完成
+        if (!languageManager.isInitialized()) {
+            await languageManager.init();
+        }
+        
         this.setupEventListeners();
         this.loadSettings();
         this.setupModal();
         this.setupSidebar();
         this.setupBeforeUnloadWarning();
+        this.initLanguageSettings();
     }
 
     setupEventListeners() {
@@ -41,6 +47,7 @@ class MarkdownTranslator {
         document.getElementById('api-endpoint').addEventListener('input', () => this.saveSettings());
         document.getElementById('model-name').addEventListener('input', () => this.saveSettings());
         document.getElementById('api-provider').addEventListener('change', () => this.onProviderChange());
+        document.getElementById('interface-language').addEventListener('change', (e) => this.onLanguageChange(e));
         
         // 上下文数量控制
         document.getElementById('context-count').addEventListener('input', () => this.saveSettings());
@@ -78,7 +85,7 @@ class MarkdownTranslator {
         const settings = localStorage.getItem('markdown-translator-settings');
         if (settings) {
             const parsed = JSON.parse(settings);
-            document.getElementById('translation-prompt').value = parsed.prompt || '请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。';
+            document.getElementById('translation-prompt').value = parsed.prompt || languageManager.get('ui.settingsPanel.translationPromptDefault');
             document.getElementById('api-key').value = parsed.apiKey || '';
             const provider = parsed.apiProvider || 'openai';
             document.getElementById('api-provider').value = provider;
@@ -201,7 +208,7 @@ class MarkdownTranslator {
         if (!file) return;
 
         if (!file.name.toLowerCase().endsWith('.md') && !file.name.toLowerCase().endsWith('.markdown')) {
-            this.showError('请选择有效的Markdown文件（.md或.markdown）');
+            this.showError(languageManager.get('errors.invalidFileType'));
             return;
         }
 
@@ -218,12 +225,12 @@ class MarkdownTranslator {
                 document.getElementById('translate-all-btn').disabled = false;
                 document.getElementById('export-btn').disabled = false;
             } catch (error) {
-                this.showError('解析Markdown文件失败：' + error.message);
+                this.showError(languageManager.get('errors.parseMarkdownFailed') + error.message);
             }
         };
         
         reader.onerror = () => {
-            this.showError('读取文件失败');
+            this.showError(languageManager.get('errors.readFileFailed'));
         };
         
         reader.readAsText(file, 'UTF-8');
@@ -377,7 +384,7 @@ class MarkdownTranslator {
     updateFileInfo() {
         const fileInfo = document.getElementById('file-info');
         if (this.currentFile) {
-            fileInfo.textContent = `${this.currentFile.name} (${this.originalBlocks.length} 个段落)`;
+            fileInfo.textContent = `${this.currentFile.name} (${this.originalBlocks.length} ${languageManager.get('messages.fileInfo')})`;
         }
     }
 
@@ -412,7 +419,7 @@ class MarkdownTranslator {
             this.activeTranslations.get(index).abort();
             this.activeTranslations.delete(index);
             translateBtn.innerHTML = '→';
-            translateBtn.title = '翻译此段';
+            translateBtn.title = languageManager.get('ui.buttons.translate');
             translateBtn.disabled = false;
             translateBtn.classList.remove('loading');
             return;
@@ -429,12 +436,12 @@ class MarkdownTranslator {
         const temperatureValue = document.getElementById('temperature').value;
         
         if (!apiKey && provider !== 'ollama') {
-            this.showError('请先设置API Key');
+            this.showError(languageManager.get('errors.apiKeyRequired'));
             return;
         }
         
         if (!modelName) {
-            this.showError('请先设置模型名称');
+            this.showError(languageManager.get('errors.modelNameRequired'));
             return;
         }
         
@@ -444,7 +451,7 @@ class MarkdownTranslator {
         
         // 更新按钮为中断状态
         translateBtn.innerHTML = '⏹';
-        translateBtn.title = '点击中断翻译';
+        translateBtn.title = languageManager.get('ui.buttons.stopTranslation');
         translateBtn.disabled = false;
         translateBtn.classList.add('loading');
         
@@ -488,13 +495,13 @@ class MarkdownTranslator {
             
         } catch (error) {
             if (error.name !== 'AbortError') {
-                this.showError('翻译失败：' + error.message);
+                this.showError(languageManager.get('errors.translationFailed') + error.message);
             }
         } finally {
             // 清理状态
             this.activeTranslations.delete(index);
             translateBtn.innerHTML = '→';
-            translateBtn.title = '翻译此段';
+            translateBtn.title = languageManager.get('ui.buttons.translate');
             translateBtn.disabled = false;
             translateBtn.classList.remove('loading');
         }
@@ -539,7 +546,7 @@ class MarkdownTranslator {
                     apiUrl = 'http://localhost:11434/api/chat';
                     break;
                 default:
-                    throw new Error('不支持的API提供商');
+                    throw new Error(languageManager.get('errors.unsupportedApiProvider'));
             }
         }
         
@@ -632,7 +639,7 @@ class MarkdownTranslator {
         
         if (!response.ok) {
             const error = await response.text();
-            throw new Error(`API请求失败: ${response.status} - ${error}`);
+            throw new Error(`${languageManager.get('errors.apiRequestFailed')}: ${response.status} - ${error}`);
         }
         
         // 处理流式响应（仅适用于Ollama）
@@ -645,14 +652,14 @@ class MarkdownTranslator {
         
         // 根据提供商类型解析响应
         if (provider === 'openai' || provider === 'custom') {
-            return data.choices[0]?.message?.content || '翻译失败';
+            return data.choices[0]?.message?.content || languageManager.get('errors.translationFailed');
         } else if (provider === 'anthropic') {
-            return data.content[0]?.text || '翻译失败';
+            return data.content[0]?.text || languageManager.get('errors.translationFailed');
         } else if (provider === 'ollama') {
-            return data.message?.content || '翻译失败';
+            return data.message?.content || languageManager.get('errors.translationFailed');
         }
         
-        throw new Error('无法解析API响应');
+        throw new Error(languageManager.get('errors.parseApiResponseFailed'));
     }
 
     async handleOllamaStreamResponse(response, blockIndex) {
@@ -719,7 +726,7 @@ class MarkdownTranslator {
             reader.releaseLock();
         }
         
-        return result || '翻译失败';
+        return result || languageManager.get('errors.translationFailed');
     }
 
     async translateAll() {
@@ -729,18 +736,18 @@ class MarkdownTranslator {
         const modelName = document.getElementById('model-name').value;
         
         if (!apiKey && provider !== 'ollama') {
-            this.showError('请先设置API Key');
+            this.showError(languageManager.get('errors.apiKeyRequired'));
             return;
         }
         
         if (!modelName) {
-            this.showError('请先设置模型名称');
+            this.showError(languageManager.get('errors.modelNameRequired'));
             return;
         }
         
         const translateAllBtn = document.getElementById('translate-all-btn');
         translateAllBtn.disabled = true;
-        translateAllBtn.innerHTML = '<span class="loading-spinner"></span>翻译中...';
+        translateAllBtn.innerHTML = '<span class="loading-spinner"></span>' + languageManager.get('messages.translating');
         
         try {
             for (let i = 0; i < this.originalBlocks.length; i++) {
@@ -751,16 +758,16 @@ class MarkdownTranslator {
                 }
             }
         } catch (error) {
-            this.showError('批量翻译失败：' + error.message);
+            this.showError(languageManager.get('errors.batchTranslationFailed') + error.message);
         } finally {
             translateAllBtn.disabled = false;
-            translateAllBtn.innerHTML = '全部翻译';
+            translateAllBtn.innerHTML = languageManager.get('ui.buttons.translateAll');
         }
     }
 
     exportTranslation() {
         if (!this.currentFile || this.translationBlocks.length === 0) {
-            this.showError('没有可导出的翻译内容');
+            this.showError(languageManager.get('errors.noTranslationContent'));
             return;
         }
         
@@ -769,7 +776,7 @@ class MarkdownTranslator {
             .join('\n\n');
             
         if (!translatedContent) {
-            this.showError('没有已翻译的内容可导出');
+            this.showError(languageManager.get('errors.noTranslatedContent'));
             return;
         }
         
@@ -795,7 +802,7 @@ class MarkdownTranslator {
         window.addEventListener('beforeunload', (e) => {
             // 检查是否有翻译内容且未导出
             if (this.hasTranslatedContent() && !this.hasExported) {
-                const message = '您有翻译内容尚未下载，确定要离开页面吗？';
+                const message = languageManager.get('messages.beforeUnloadWarning');
                 e.preventDefault();
                 e.returnValue = message;
                 return message;
@@ -870,12 +877,12 @@ class MarkdownTranslator {
             
             if (mode === 'markdown') {
                 toggle.innerHTML = '📝';
-                toggle.title = '点击切换到MathJax渲染';
+                toggle.title = languageManager.get('ui.tooltips.toggleToMathJax');
                 markdownDiv.style.display = 'block';
                 mathjaxDiv.style.display = 'none';
             } else {
                 toggle.innerHTML = '∫';
-                toggle.title = '点击切换到Markdown文本';
+                toggle.title = languageManager.get('ui.tooltips.toggleToMarkdown');
                 markdownDiv.style.display = 'none';
                 mathjaxDiv.style.display = 'block';
                 // 触发MathJax渲染
@@ -892,12 +899,12 @@ class MarkdownTranslator {
             
             if (mode === 'markdown') {
                 toggle.innerHTML = '📝';
-                toggle.title = '点击切换到MathJax渲染';
+                toggle.title = languageManager.get('ui.tooltips.toggleToMathJax');
                 markdownDiv.style.display = 'block';
                 mathjaxDiv.style.display = 'none';
             } else {
                 toggle.innerHTML = '∫';
-                toggle.title = '点击切换到Markdown文本';
+                toggle.title = languageManager.get('ui.tooltips.toggleToMarkdown');
                 markdownDiv.style.display = 'none';
                 mathjaxDiv.style.display = 'block';
                 // 触发MathJax渲染
@@ -907,9 +914,45 @@ class MarkdownTranslator {
             }
         }
     }
+
+    initLanguageSettings() {
+        // 设置语言选择器的当前值
+        const languageSelect = document.getElementById('interface-language');
+        languageSelect.value = languageManager.getCurrentLanguage();
+        
+        // 监听语言变更事件
+        window.addEventListener('languageChanged', () => {
+            this.updateDynamicTranslations();
+        });
+    }
+
+    async onLanguageChange(event) {
+        const newLanguage = event.target.value;
+        await languageManager.switchLanguage(newLanguage);
+    }
+
+    updateDynamicTranslations() {
+        // 更新文件信息显示
+        this.updateFileInfo();
+        
+        // 更新按钮文本
+        const translateAllBtn = document.getElementById('translate-all-btn');
+        if (translateAllBtn.innerHTML.includes('loading-spinner')) {
+            translateAllBtn.innerHTML = '<span class="loading-spinner"></span>' + languageManager.get('messages.translating');
+        } else {
+            translateAllBtn.innerHTML = languageManager.get('ui.buttons.translateAll');
+        }
+        
+        // 更新翻译提示词默认值（如果当前为空或默认值）
+        const promptTextarea = document.getElementById('translation-prompt');
+        const currentPrompt = promptTextarea.value.trim();
+        if (!currentPrompt || currentPrompt === '请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。' || currentPrompt === 'Please translate the following text to English, maintaining the original format and structure, without adding additional explanations or comments.') {
+            promptTextarea.value = languageManager.get('ui.settingsPanel.translationPromptDefault');
+        }
+    }
 }
 
 // 初始化应用
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     new MarkdownTranslator();
 });
