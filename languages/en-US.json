@@ -19,7 +19,9 @@
       "temperaturePlaceholder": "Leave empty for default",
       "temperatureHint": "Control output randomness, 0.0-2.0, leave empty to not set",
       "language": "Interface Language",
-      "custom": "Custom"
+      "custom": "Custom",
+      "generalSettings": "General",
+      "proofreadSettings": "Proofread"
     },
     "buttons": {
       "uploadFile": "Upload Markdown File",

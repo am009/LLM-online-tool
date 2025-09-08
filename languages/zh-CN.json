@@ -19,7 +19,9 @@
       "temperaturePlaceholder": "留空使用默认值",
       "temperatureHint": "控制输出随机性，0.0-2.0，留空则不设置",
       "language": "Language",
-      "custom": "自定义"
+      "custom": "自定义",
+      "generalSettings": "常规",
+      "proofreadSettings": "校对"
     },
     "buttons": {
       "uploadFile": "上传Markdown文件",
