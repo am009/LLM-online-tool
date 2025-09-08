@@ -3,6 +3,7 @@
         "bboldx",
         "contenteditable",
         "mathjax",
-        "ollama"
+        "ollama",
+        "Proofreadings"
     ]
 }

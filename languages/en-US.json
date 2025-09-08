@@ -21,6 +21,10 @@
       "language": "Interface Language",
       "custom": "Custom",
       "generalSettings": "General",
+      "translationSettings": "Translation",
+      "paragraphSettings": "Paragraph",
+      "paragraphCharLimit": "Characters per Paragraph",
+      "paragraphCharLimitHint": "Set to 0 for no limit, values > 0 will merge paragraphs to reduce API calls",
       "proofreadSettings": "Proofread",
       "proofreadingMode": "Enable Proofreading Mode",
       "proofreadApiProvider": "Proofreading API Provider",
@@ -47,7 +51,8 @@
       "proofreadAll": "Proofread All Paragraphs",
       "saveProgress": "Save Progress",
       "loadProgress": "Load Progress",
-      "exportOriginal": "Export Original"
+      "exportOriginal": "Export Original",
+      "reorganizeParagraphs": "Reorganize Paragraphs"
     },
     "placeholders": {
       "uploadPrompt": "Please upload a Markdown file to start translation"

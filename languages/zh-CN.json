@@ -21,6 +21,10 @@
       "language": "Language",
       "custom": "自定义",
       "generalSettings": "常规",
+      "translationSettings": "翻译",
+      "paragraphSettings": "分段",
+      "paragraphCharLimit": "单段字符数",
+      "paragraphCharLimitHint": "设置为0表示不限制，大于0时会合并段落以减少API调用",
       "proofreadSettings": "校对",
       "proofreadingMode": "启用校对模式",
       "proofreadApiProvider": "校对API提供商",
@@ -47,7 +51,8 @@
       "proofreadAll": "校对所有段落",
       "saveProgress": "保存进度",
       "loadProgress": "加载进度",
-      "exportOriginal": "导出原文"
+      "exportOriginal": "导出原文",
+      "reorganizeParagraphs": "重新划分段落"
     },
     "placeholders": {
       "uploadPrompt": "请上传Markdown文件开始翻译"

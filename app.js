@@ -63,6 +63,10 @@ class MarkdownTranslator {
         document.getElementById('proofreading-mode').addEventListener('change', (e) => this.onProofreadingModeChange(e));
         document.getElementById('proofread-all-btn').addEventListener('click', () => this.proofreadAll());
 
+        // 段落重新划分功能
+        document.getElementById('reorganize-paragraphs-btn').addEventListener('click', () => this.reorganizeParagraphs());
+        document.getElementById('paragraph-char-limit').addEventListener('input', () => this.saveSettings());
+
         // 设置变更
         document.getElementById('translation-prompt').addEventListener('input', () => this.saveSettings());
         document.getElementById('api-key').addEventListener('input', () => this.saveSettings());
@@ -120,6 +124,9 @@ class MarkdownTranslator {
             const provider = parsed.apiProvider || 'ollama';
             document.getElementById('api-provider').value = provider;
             document.getElementById('context-count').value = (isNaN(parsed.contextCount) ? 1 : parsed.contextCount);
+            
+            // 加载段落字符数限制设置
+            document.getElementById('paragraph-char-limit').value = parsed.paragraphCharLimit || 0;
             
             // 加载temperature设置，如果没有设置则留空
             if (parsed.temperature !== undefined && parsed.temperature !== null && parsed.temperature !== '') {
@@ -191,6 +198,7 @@ class MarkdownTranslator {
         this.saveProofreadModelName(proofreadProvider, proofreadModelName);
         
         const contextCountValue = parseInt(document.getElementById('context-count').value);
+        const paragraphCharLimitValue = parseInt(document.getElementById('paragraph-char-limit').value);
         const temperatureValue = document.getElementById('temperature').value;
         
         const settings = {
@@ -198,6 +206,7 @@ class MarkdownTranslator {
             apiKey: document.getElementById('api-key').value,
             apiProvider: provider,
             contextCount: isNaN(contextCountValue) ? 1 : contextCountValue,
+            paragraphCharLimit: isNaN(paragraphCharLimitValue) ? 0 : paragraphCharLimitValue,
             originalWidth: this.originalWidth,
             sidebarCollapsed: this.sidebarCollapsed,
             // 校对设置
@@ -382,6 +391,7 @@ class MarkdownTranslator {
                 document.getElementById('export-alternating-btn').disabled = false;
                 document.getElementById('save-progress-btn').disabled = false;
                 document.getElementById('export-original-btn').disabled = false;
+                document.getElementById('reorganize-paragraphs-btn').disabled = false;
                 // 如果处于校对模式，启用校对所有按钮
                 if (this.proofreadingMode) {
                     document.getElementById('proofread-all-btn').disabled = false;
@@ -1491,6 +1501,7 @@ ${text}`;
                 document.getElementById('export-alternating-btn').disabled = false;
                 document.getElementById('save-progress-btn').disabled = false;
                 document.getElementById('export-original-btn').disabled = false;
+                document.getElementById('reorganize-paragraphs-btn').disabled = false;
                 
                 // 如果处于校对模式，启用校对所有按钮
                 if (this.proofreadingMode) {
@@ -1733,6 +1744,72 @@ ${text}`;
         if (!currentPrompt || currentPrompt === '请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。' || currentPrompt === 'Please translate the following text to English, maintaining the original format and structure, without adding additional explanations or comments.') {
             promptTextarea.value = languageManager.get('ui.settingsPanel.translationPromptDefault');
         }
+    }
+
+    reorganizeParagraphs() {
+        if (!this.originalBlocks || this.originalBlocks.length === 0) {
+            this.showError('没有可重新划分的段落');
+            return;
+        }
+
+        const charLimit = parseInt(document.getElementById('paragraph-char-limit').value);
+        
+        if (charLimit <= 0) {
+            this.showError('请设置大于0的字符数限制');
+            return;
+        }
+
+        // 重新组织原文段落
+        const newOriginalBlocks = this.mergeParagraphs(this.originalBlocks, charLimit);
+        
+        // 重新组织译文段落 - 按照相同的方式合并
+        const newTranslationBlocks = this.mergeParagraphs(this.translationBlocks, charLimit);
+
+        // 更新数组
+        this.originalBlocks = newOriginalBlocks;
+        this.translationBlocks = newTranslationBlocks;
+        
+        // 重新初始化渲染模式数组
+        this.originalRenderMode = new Array(this.originalBlocks.length).fill('mathjax');
+        this.translationRenderMode = new Array(this.originalBlocks.length).fill('markdown');
+        
+        // 重新渲染
+        this.renderBlocks();
+        this.updateFileInfo();
+        
+        // 重置导出标记
+        this.hasExported = false;
+    }
+
+    mergeParagraphs(blocks, charLimit) {
+        const mergedBlocks = [];
+        let currentMerged = [];
+        let currentCharCount = 0;
+
+        for (let i = 0; i < blocks.length; i++) {
+            const block = typeof blocks[i] === 'string' ? blocks[i] : '';
+            const blockLength = block.length;
+            
+            // 如果是第一个段落，或者加入当前段落后不超过字符限制，就加入当前合并组
+            if (currentMerged.length === 0 || currentCharCount + blockLength + 4 <= charLimit) { // +4 for \n\n separator
+                currentMerged.push(block);
+                currentCharCount += blockLength + (currentMerged.length > 1 ? 2 : 0); // +2 for \n\n
+            } else {
+                // 超过限制，保存当前合并组并开始新的合并组
+                if (currentMerged.length > 0) {
+                    mergedBlocks.push(currentMerged.join('\n\n'));
+                }
+                currentMerged = [block];
+                currentCharCount = blockLength;
+            }
+        }
+
+        // 处理最后一个合并组
+        if (currentMerged.length > 0) {
+            mergedBlocks.push(currentMerged.join('\n\n'));
+        }
+
+        return mergedBlocks;
     }
 }
 
