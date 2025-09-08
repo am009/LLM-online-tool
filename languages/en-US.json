@@ -26,7 +26,8 @@
       "translateAll": "Translate All",
       "exportTranslation": "Export Translation",
       "translate": "Translate",
-      "stopTranslation": "Click to stop translation"
+      "stopTranslation": "Click to stop translation",
+      "exportAlternating": "Export Alternate Translation"
     },
     "placeholders": {
       "uploadPrompt": "Please upload a Markdown file to start translation"

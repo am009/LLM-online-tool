@@ -37,6 +37,9 @@ class MarkdownTranslator {
 
         // 导出功能
         document.getElementById('export-btn').addEventListener('click', () => this.exportTranslation());
+        
+        // 导出交替翻译结果
+        document.getElementById('export-alternating-btn').addEventListener('click', () => this.exportAlternatingTranslation());
 
         // 全部翻译
         document.getElementById('translate-all-btn').addEventListener('click', () => this.translateAll());
@@ -224,6 +227,7 @@ class MarkdownTranslator {
                 this.updateFileInfo();
                 document.getElementById('translate-all-btn').disabled = false;
                 document.getElementById('export-btn').disabled = false;
+                document.getElementById('export-alternating-btn').disabled = false;
             } catch (error) {
                 this.showError(languageManager.get('errors.parseMarkdownFailed') + error.message);
             }
@@ -788,6 +792,53 @@ class MarkdownTranslator {
         a.download = this.currentFile.name.startsWith('translated_') 
             ? this.currentFile.name 
             : `translated_${this.currentFile.name}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        // 标记为已导出
+        this.hasExported = true;
+    }
+
+    exportAlternatingTranslation() {
+        if (!this.currentFile || this.originalBlocks.length === 0) {
+            this.showError(languageManager.get('errors.noTranslationContent'));
+            return;
+        }
+        
+        // 构建交替内容：原文（英文）在前，翻译（中文）在后
+        const alternatingContent = [];
+        
+        for (let i = 0; i < this.originalBlocks.length; i++) {
+            const originalBlock = this.originalBlocks[i];
+            const translationBlock = this.translationBlocks[i];
+            
+            if (originalBlock && originalBlock.trim()) {
+                // 添加原文（英文）
+                alternatingContent.push(originalBlock.trim());
+                
+                // 添加翻译（中文），如果有翻译内容且不同于原文
+                if (translationBlock && translationBlock.trim() && translationBlock.trim() !== originalBlock.trim()) {
+                    alternatingContent.push(translationBlock.trim());
+                }
+            }
+        }
+            
+        if (alternatingContent.length === 0) {
+            this.showError(languageManager.get('errors.noTranslatedContent'));
+            return;
+        }
+        
+        const finalContent = alternatingContent.join('\n\n');
+        const blob = new Blob([finalContent], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = this.currentFile.name.startsWith('alternating_') 
+            ? this.currentFile.name 
+            : `alternating_${this.currentFile.name}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

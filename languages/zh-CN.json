@@ -26,7 +26,8 @@
       "translateAll": "全部翻译",
       "exportTranslation": "导出翻译结果",
       "translate": "翻译此段",
-      "stopTranslation": "点击中断翻译"
+      "stopTranslation": "点击中断翻译",
+      "exportAlternating": "导出交替翻译结果"
     },
     "placeholders": {
       "uploadPrompt": "请上传Markdown文件开始翻译"
