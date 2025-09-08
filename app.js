@@ -447,7 +447,7 @@ class MarkdownTranslator {
         });
         
         // 初始化所有MathJax版本的渲染（但不显示）
-        if (typeof MathJax !== 'undefined') {
+        if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
             const mathjaxElements = document.querySelectorAll('.content-mathjax');
             MathJax.typesetPromise(mathjaxElements).catch((err) => console.log(err.message));
         }
@@ -488,9 +488,9 @@ class MarkdownTranslator {
             this.originalBlocks[index] = originalMarkdown.value;
             // 同步更新mathjax版本的内容
             originalMathjax.innerHTML = originalMarkdown.value;
-            MathJax.typesetClear([originalMathjax]);
             // 重新渲染MathJax版本
-            if (typeof MathJax !== 'undefined') {
+            if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
+                MathJax.typesetClear([originalMathjax]);
                 MathJax.typesetPromise([originalMathjax]).catch((err) => console.log(err.message));
             }
         });
@@ -548,7 +548,7 @@ class MarkdownTranslator {
             translationMathjax.innerHTML = translationMarkdown.value;
             MathJax.typesetClear([translationMathjax]);
             // 重新渲染MathJax版本
-            if (typeof MathJax !== 'undefined') {
+            if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
                 MathJax.typesetPromise([translationMathjax]).catch((err) => console.log(err.message));
             }
         });
@@ -677,7 +677,7 @@ class MarkdownTranslator {
                 mathjaxDiv.innerHTML = translation;
 
                 // 重新渲染MathJax版本（无论当前显示的是哪个版本）
-                if (typeof MathJax !== 'undefined') {
+                if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
                     MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
                 }
                 
@@ -900,7 +900,7 @@ class MarkdownTranslator {
                                     
                                     // 如果当前显示的是MathJax模式，重新渲染
                                     if (this.translationRenderMode[blockIndex] === 'mathjax') {
-                                        if (typeof MathJax !== 'undefined') {
+                                        if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
                                             MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
                                         }
                                     }
@@ -1066,7 +1066,7 @@ class MarkdownTranslator {
                 mathjaxDiv.innerHTML = proofreadResult;
 
                 // 重新渲染MathJax版本
-                if (typeof MathJax !== 'undefined') {
+                if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
                     MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
                 }
                 
@@ -1298,7 +1298,7 @@ ${text}`;
                                         
                                         // 如果当前显示的是MathJax模式，重新渲染
                                         if (this.translationRenderMode && this.translationRenderMode[blockIndex] === 'mathjax') {
-                                            if (typeof MathJax !== 'undefined') {
+                                            if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
                                                 MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
                                             }
                                         }
@@ -1359,7 +1359,7 @@ ${text}`;
                                         
                                         // 如果当前显示的是MathJax模式，重新渲染
                                         if (this.translationRenderMode && this.translationRenderMode[blockIndex] === 'mathjax') {
-                                            if (typeof MathJax !== 'undefined') {
+                                            if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
                                                 MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
                                             }
                                         }
@@ -1721,7 +1721,7 @@ ${text}`;
                 markdownTextarea.style.display = 'none';
                 mathjaxDiv.style.display = 'block';
                 // 触发MathJax渲染
-                if (typeof MathJax !== 'undefined') {
+                if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
                     MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
                 }
             }
@@ -1746,7 +1746,7 @@ ${text}`;
                 markdownTextarea.style.display = 'none';
                 mathjaxDiv.style.display = 'block';
                 // 触发MathJax渲染
-                if (typeof MathJax !== 'undefined') {
+                if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
                     MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
                 }
             }
