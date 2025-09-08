@@ -123,7 +123,7 @@ class MarkdownTranslator {
         if (settings) {
             const parsed = JSON.parse(settings);
             document.getElementById('translation-prompt').value = parsed.prompt || languageManager.get('ui.settingsPanel.translationPromptDefault');
-            document.getElementById('api-key').value = parsed.apiKey || '';
+            document.getElementById('api-key').value = parsed.apiKey ?? '';
             const provider = parsed.apiProvider || 'ollama';
             document.getElementById('api-provider').value = provider;
             document.getElementById('context-count').value = (isNaN(parsed.contextCount) ? 1 : parsed.contextCount);
@@ -288,7 +288,7 @@ class MarkdownTranslator {
             'custom': ''
         };
         
-        const endpoint = endpoints[provider] || defaultEndpoints[provider] || '';
+        const endpoint = endpoints[provider] || defaultEndpoints[provider] ?? '';
         document.getElementById('api-endpoint').value = endpoint;
     }
 
@@ -312,7 +312,7 @@ class MarkdownTranslator {
             'custom': ''
         };
         
-        const model = models[provider] || defaultModels[provider] || '';
+        const model = models[provider] || defaultModels[provider] ?? '';
         document.getElementById('model-name').value = model;
     }
 
@@ -336,7 +336,7 @@ class MarkdownTranslator {
             'custom': ''
         };
         
-        const endpoint = endpoints[provider] || defaultEndpoints[provider] || '';
+        const endpoint = endpoints[provider] || defaultEndpoints[provider] ?? '';
         document.getElementById('proofread-api-endpoint').value = endpoint;
     }
 
@@ -360,7 +360,7 @@ class MarkdownTranslator {
             'custom': ''
         };
         
-        const model = models[provider] || defaultModels[provider] || '';
+        const model = models[provider] || defaultModels[provider] ?? '';
         document.getElementById('proofread-model-name').value = model;
     }
 
@@ -1304,9 +1304,9 @@ ${text}`;
                             let content = '';
                             
                             if (provider === 'openai' || provider === 'custom') {
-                                content = parsed.choices?.[0]?.delta?.content || '';
+                                content = parsed.choices?.[0]?.delta?.content ?? '';
                             } else if (provider === 'anthropic') {
-                                content = parsed.delta?.text || '';
+                                content = parsed.delta?.text ?? '';
                             }
                             
                             if (content) {
@@ -1438,7 +1438,7 @@ ${text}`;
         for (let i = 0; i < this.originalBlocks.length; i++) {
             progressData.push({
                 original_text: this.originalBlocks[i],
-                translated_text: this.translationBlocks[i] || ''
+                translated_text: this.translationBlocks[i] ?? ''
             });
         }
         

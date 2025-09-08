@@ -49,8 +49,8 @@ class LanguageManager {
             }
         }
         
-        // Default to Chinese
-        return 'zh-CN';
+        // Default to English
+        return 'en-US';
     }
 
     async loadLanguage(language) {
