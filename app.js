@@ -362,7 +362,7 @@ class MarkdownTranslator {
         
         reader.onload = (e) => {
             try {
-                this.parseMarkdown(e.target.result);
+                this.parseContent(e.target.result);
                 this.updateFileInfo();
                 document.getElementById('translate-all-btn').disabled = false;
                 document.getElementById('export-btn').disabled = false;
@@ -383,42 +383,22 @@ class MarkdownTranslator {
         reader.readAsText(file, 'UTF-8');
     }
 
-    parseMarkdown(content) {
-        // 简单的Markdown段落分割
-        const blocks = [];
-        const lines = content.split('\n');
-        let currentBlock = '';
+    parseContent(content) {
+        // 先将CRLF换行转换为LF换行，然后将只有空白字符的行转为空行
+        const normalizedContent = content
+            .replace(/\r\n/g, '\n')
+            .replace(/^[ \t]+$/gm, '');
         
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
+        // 按照两个及以上的连续换行分割段落
+        const blocks = normalizedContent.split(/\n{2,}/)
+            .map(block => block.trim())
+            .filter(block => block.length > 0);
             
-            // 空行作为段落分隔符
-            if (line.trim() === '') {
-                if (currentBlock.trim()) {
-                    blocks.push(currentBlock.trim());
-                    currentBlock = '';
-                }
-            } else {
-                if (currentBlock) {
-                    currentBlock += '\n' + line;
-                } else {
-                    currentBlock = line;
-                }
-            }
-        }
-        
-        // 处理最后一个块
-        if (currentBlock.trim()) {
-            blocks.push(currentBlock.trim());
-        }
-
-        this.translationBlocks = new Array(this.originalBlocks.length).fill('');
+        this.originalBlocks = blocks;
+        this.translationBlocks = new Array(blocks.length).fill('');
         // 初始化渲染模式数组，原文默认为mathjax模式
         this.originalRenderMode = new Array(this.originalBlocks.length).fill('mathjax');
         this.translationRenderMode = new Array(this.originalBlocks.length).fill('markdown');
-        for (let i = 0; i < this.originalBlocks.length; i++) {
-            this.translationBlocks[i] = this.originalBlocks[i]
-        }
         
         this.renderBlocks();
     }
@@ -460,14 +440,15 @@ class MarkdownTranslator {
         // 原文markdown版本
         const originalMarkdown = document.createElement('div');
         originalMarkdown.className = 'content-markdown';
-        originalMarkdown.innerHTML = originalContent || '';
+        originalMarkdown.setAttribute('contenteditable', 'true');
+        originalMarkdown.innerHTML = originalContent;
         // 根据默认渲染模式决定是否隐藏
         originalMarkdown.style.display = this.originalRenderMode[index] === 'markdown' ? 'block' : 'none';
         
         // 原文mathjax版本
         const originalMathjax = document.createElement('div');
         originalMathjax.className = 'content-mathjax tex2jax_process';
-        originalMathjax.innerHTML = originalContent || '';
+        originalMathjax.innerHTML = originalContent;
         // 根据默认渲染模式决定是否隐藏
         originalMathjax.style.display = this.originalRenderMode[index] === 'mathjax' ? 'block' : 'none';
         
@@ -1470,7 +1451,7 @@ ${text}`;
         
         // 检查是否有任何翻译内容与原文不同
         return this.translationBlocks.some((translation, index) => {
-            const original = this.originalBlocks[index] || '';
+            const original = this.originalBlocks[index];
             return translation && translation.trim() !== '' && translation.trim() !== original.trim();
         });
     }
