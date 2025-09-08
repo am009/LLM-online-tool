@@ -9,6 +9,7 @@ class MarkdownTranslator {
         this.hasExported = false; // 标记是否已导出
         this.originalRenderMode = []; // 存储每个原文块的渲染模式：'markdown' 或 'mathjax'
         this.translationRenderMode = []; // 存储每个翻译块的渲染模式：'markdown' 或 'mathjax'
+        this.activeTranslations = new Map(); // 存储正在进行的翻译请求的AbortController
         this.init();
     }
 
@@ -384,6 +385,17 @@ class MarkdownTranslator {
         const originalContent = this.originalBlocks[index];
         
         if (!originalContent) return;
+
+        // 如果已有正在进行的翻译，则中断它
+        if (this.activeTranslations.has(index)) {
+            this.activeTranslations.get(index).abort();
+            this.activeTranslations.delete(index);
+            translateBtn.innerHTML = '→';
+            translateBtn.title = '翻译此段';
+            translateBtn.disabled = false;
+            translateBtn.classList.remove('loading');
+            return;
+        }
         
         const settings = JSON.parse(localStorage.getItem('markdown-translator-settings') || '{}');
         const apiKey = settings.apiKey;
@@ -404,42 +416,68 @@ class MarkdownTranslator {
             return;
         }
         
-        translateBtn.disabled = true;
+        // 创建AbortController用于中断请求
+        const abortController = new AbortController();
+        this.activeTranslations.set(index, abortController);
+        
+        // 更新按钮为中断状态
+        translateBtn.innerHTML = '⏹';
+        translateBtn.title = '点击中断翻译';
+        translateBtn.disabled = false;
         translateBtn.classList.add('loading');
         
         try {
             // 获取上下文块
             const context = this.getContextBlocks(index, contextCount);
             
-            const translation = await this.callTranslationAPI(originalContent, prompt, apiKey, provider, customEndpoint, modelName, context);
-            this.translationBlocks[index] = translation;
+            const translation = await this.callTranslationAPI(
+                originalContent, 
+                prompt, 
+                apiKey, 
+                provider, 
+                customEndpoint, 
+                modelName, 
+                context, 
+                abortController,
+                index
+            );
             
-            // 更新翻译块的显示
-            const translationBlock = document.querySelector(`[data-index="${index}"] .translation-block`);
-            const markdownDiv = translationBlock.querySelector('.content-markdown');
-            const mathjaxDiv = translationBlock.querySelector('.content-mathjax');
-            
-            markdownDiv.innerHTML = translation;
-            MathJax.typesetClear([markdownDiv]);
-            mathjaxDiv.innerHTML = translation;
+            if (translation) {
+                this.translationBlocks[index] = translation;
+                
+                // 更新翻译块的显示
+                const translationBlock = document.querySelector(`[data-index="${index}"] .translation-block`);
+                const markdownDiv = translationBlock.querySelector('.content-markdown');
+                const mathjaxDiv = translationBlock.querySelector('.content-mathjax');
+                
+                markdownDiv.innerHTML = translation;
+                MathJax.typesetClear([markdownDiv]);
+                mathjaxDiv.innerHTML = translation;
 
-            // 重新渲染MathJax版本（无论当前显示的是哪个版本）
-            if (typeof MathJax !== 'undefined') {
-                MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
+                // 重新渲染MathJax版本（无论当前显示的是哪个版本）
+                if (typeof MathJax !== 'undefined') {
+                    MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
+                }
+                
+                // 有新翻译内容时，重置导出标记
+                this.hasExported = false;
             }
             
-            // 有新翻译内容时，重置导出标记
-            this.hasExported = false;
-            
         } catch (error) {
-            this.showError('翻译失败：' + error.message);
+            if (error.name !== 'AbortError') {
+                this.showError('翻译失败：' + error.message);
+            }
         } finally {
+            // 清理状态
+            this.activeTranslations.delete(index);
+            translateBtn.innerHTML = '→';
+            translateBtn.title = '翻译此段';
             translateBtn.disabled = false;
             translateBtn.classList.remove('loading');
         }
     }
 
-    async callTranslationAPI(text, prompt, apiKey, provider, customEndpoint, modelName, context = null) {
+    async callTranslationAPI(text, prompt, apiKey, provider, customEndpoint, modelName, context = null, abortController = null, blockIndex = null) {
         let fullPrompt = prompt;
         
         // 构建包含上下文的完整提示
@@ -524,7 +562,7 @@ class MarkdownTranslator {
                     messages: [
                         { role: 'user', content: fullPrompt }
                     ],
-                    stream: false
+                    stream: true  // 启用流式输出
                 };
                 break;
                 
@@ -532,17 +570,30 @@ class MarkdownTranslator {
                 throw new Error('不支持的API提供商');
         }
         
-        const response = await fetch(apiUrl, {
+        const fetchOptions = {
             method: 'POST',
             headers: headers,
             body: JSON.stringify(body)
-        });
+        };
+        
+        // 添加AbortController信号
+        if (abortController) {
+            fetchOptions.signal = abortController.signal;
+        }
+        
+        const response = await fetch(apiUrl, fetchOptions);
         
         if (!response.ok) {
             const error = await response.text();
             throw new Error(`API请求失败: ${response.status} - ${error}`);
         }
         
+        // 处理流式响应（仅适用于Ollama）
+        if (provider === 'ollama' && body.stream) {
+            return await this.handleOllamaStreamResponse(response, blockIndex);
+        }
+        
+        // 处理非流式响应
         const data = await response.json();
         
         // 根据提供商类型解析响应
@@ -555,6 +606,73 @@ class MarkdownTranslator {
         }
         
         throw new Error('无法解析API响应');
+    }
+
+    async handleOllamaStreamResponse(response, blockIndex) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let result = '';
+        
+        // 获取对应的翻译块DOM元素
+        let translationBlock, markdownDiv, mathjaxDiv;
+        if (blockIndex !== null) {
+            translationBlock = document.querySelector(`[data-index="${blockIndex}"] .translation-block`);
+            markdownDiv = translationBlock?.querySelector('.content-markdown');
+            mathjaxDiv = translationBlock?.querySelector('.content-mathjax');
+        }
+        
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                
+                if (done) break;
+                
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+                
+                for (const line of lines) {
+                    if (line.trim() === '') continue;
+                    
+                    try {
+                        const data = JSON.parse(line);
+                        
+                        if (data.message && data.message.content) {
+                            result += data.message.content;
+                            
+                            // 实时更新界面显示
+                            if (markdownDiv && blockIndex !== null) {
+                                markdownDiv.innerHTML = result;
+                                this.translationBlocks[blockIndex] = result;
+                                
+                                // 同步更新mathjax版本
+                                if (mathjaxDiv) {
+                                    mathjaxDiv.innerHTML = result;
+                                    MathJax.typesetClear([mathjaxDiv]);
+                                    
+                                    // 如果当前显示的是MathJax模式，重新渲染
+                                    if (this.translationRenderMode[blockIndex] === 'mathjax') {
+                                        if (typeof MathJax !== 'undefined') {
+                                            MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (data.done) {
+                            break;
+                        }
+                    } catch (e) {
+                        // 忽略JSON解析错误，继续处理下一行
+                        continue;
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+        
+        return result || '翻译失败';
     }
 
     async translateAll() {
