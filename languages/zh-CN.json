@@ -38,12 +38,16 @@
     },
     "buttons": {
       "uploadFile": "上传Markdown文件",
+      "uploadOriginal": "上传原文",
       "translateAll": "全部翻译",
-      "exportTranslation": "导出翻译结果",
+      "exportTranslation": "导出译文",
       "translate": "翻译此段",
       "stopTranslation": "点击中断翻译",
       "exportAlternating": "导出交替翻译结果",
-      "proofreadAll": "校对所有段落"
+      "proofreadAll": "校对所有段落",
+      "saveProgress": "保存进度",
+      "loadProgress": "加载进度",
+      "exportOriginal": "导出原文"
     },
     "placeholders": {
       "uploadPrompt": "请上传Markdown文件开始翻译"

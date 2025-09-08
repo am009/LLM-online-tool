@@ -39,6 +39,19 @@ class MarkdownTranslator {
 
         // 导出功能
         document.getElementById('export-btn').addEventListener('click', () => this.exportTranslation());
+
+        // 保存进度
+        document.getElementById('save-progress-btn').addEventListener('click', () => this.saveProgress());
+
+        // 加载进度
+        const loadProgressBtn = document.getElementById('load-progress-btn');
+        const progressInput = document.getElementById('progress-input');
+        
+        loadProgressBtn.addEventListener('click', () => progressInput.click());
+        progressInput.addEventListener('change', (e) => this.handleProgressUpload(e));
+
+        // 导出原文
+        document.getElementById('export-original-btn').addEventListener('click', () => this.exportOriginal());
         
         // 导出交替翻译结果
         document.getElementById('export-alternating-btn').addEventListener('click', () => this.exportAlternatingTranslation());
@@ -367,6 +380,8 @@ class MarkdownTranslator {
                 document.getElementById('translate-all-btn').disabled = false;
                 document.getElementById('export-btn').disabled = false;
                 document.getElementById('export-alternating-btn').disabled = false;
+                document.getElementById('save-progress-btn').disabled = false;
+                document.getElementById('export-original-btn').disabled = false;
                 // 如果处于校对模式，启用校对所有按钮
                 if (this.proofreadingMode) {
                     document.getElementById('proofread-all-btn').disabled = false;
@@ -444,6 +459,16 @@ class MarkdownTranslator {
         originalMarkdown.innerHTML = originalContent;
         // 根据默认渲染模式决定是否隐藏
         originalMarkdown.style.display = this.originalRenderMode[index] === 'markdown' ? 'block' : 'none';
+        originalMarkdown.addEventListener('input', () => {
+            this.originalBlocks[index] = originalMarkdown.textContent;
+            // 同步更新mathjax版本的内容
+            originalMathjax.innerHTML = originalMarkdown.innerHTML;
+            MathJax.typesetClear([originalMathjax]);
+            // 重新渲染MathJax版本
+            if (typeof MathJax !== 'undefined') {
+                MathJax.typesetPromise([originalMathjax]).catch((err) => console.log(err.message));
+            }
+        });
         
         // 原文mathjax版本
         const originalMathjax = document.createElement('div');
@@ -1382,6 +1407,131 @@ ${text}`;
         
         // 标记为已导出
         this.hasExported = true;
+    }
+
+    saveProgress() {
+        if (!this.currentFile || this.originalBlocks.length === 0) {
+            this.showError('没有可保存的进度');
+            return;
+        }
+        
+        const progressData = [];
+        
+        for (let i = 0; i < this.originalBlocks.length; i++) {
+            progressData.push({
+                original_text: this.originalBlocks[i],
+                translated_text: this.translationBlocks[i] || ''
+            });
+        }
+        
+        const blob = new Blob([JSON.stringify(progressData, null, 2)], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = this.currentFile.name.replace(/\.(md|markdown)$/, '_progress.json');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    handleProgressUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!file.name.toLowerCase().endsWith('.json')) {
+            this.showError('请选择JSON格式的进度文件');
+            return;
+        }
+
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            try {
+                const progressData = JSON.parse(e.target.result);
+                
+                if (!Array.isArray(progressData)) {
+                    this.showError('进度文件格式错误：根元素必须是数组');
+                    return;
+                }
+                
+                // 验证数据格式
+                for (let i = 0; i < progressData.length; i++) {
+                    const item = progressData[i];
+                    if (!item.hasOwnProperty('original_text') || !item.hasOwnProperty('translated_text')) {
+                        this.showError(`进度文件格式错误：第${i+1}个对象缺少必需的属性`);
+                        return;
+                    }
+                }
+                
+                // 加载数据到数组中
+                this.originalBlocks = progressData.map(item => item.original_text);
+                this.translationBlocks = progressData.map(item => item.translated_text);
+                
+                // 初始化渲染模式数组
+                this.originalRenderMode = new Array(this.originalBlocks.length).fill('mathjax');
+                this.translationRenderMode = new Array(this.originalBlocks.length).fill('markdown');
+                
+                // 重置导出标记
+                this.hasExported = false;
+                
+                // 创建一个虚拟文件对象
+                this.currentFile = {
+                    name: 'loaded_progress.md'
+                };
+                
+                // 重新渲染页面
+                this.renderBlocks();
+                this.updateFileInfo();
+                
+                // 启用相关按钮
+                document.getElementById('translate-all-btn').disabled = false;
+                document.getElementById('export-btn').disabled = false;
+                document.getElementById('export-alternating-btn').disabled = false;
+                document.getElementById('save-progress-btn').disabled = false;
+                document.getElementById('export-original-btn').disabled = false;
+                
+                // 如果处于校对模式，启用校对所有按钮
+                if (this.proofreadingMode) {
+                    document.getElementById('proofread-all-btn').disabled = false;
+                }
+                
+            } catch (error) {
+                this.showError('加载进度文件失败：' + error.message);
+            }
+        };
+        
+        reader.onerror = () => {
+            this.showError('读取进度文件失败');
+        };
+        
+        reader.readAsText(file, 'UTF-8');
+        
+        // 清空文件输入，以便可以重复选择同一文件
+        event.target.value = '';
+    }
+
+    exportOriginal() {
+        if (!this.currentFile || this.originalBlocks.length === 0) {
+            this.showError('没有原文内容可导出');
+            return;
+        }
+        
+        const originalContent = this.originalBlocks.join('\n\n');
+        
+        const blob = new Blob([originalContent], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = this.currentFile.name.startsWith('original_') 
+            ? this.currentFile.name 
+            : `original_${this.currentFile.name}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
     exportAlternatingTranslation() {

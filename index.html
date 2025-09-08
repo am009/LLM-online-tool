@@ -178,9 +178,13 @@
                     <div class="file-info" id="file-info"></div>
                 </div>
                 <div class="header-right">
-                    <button id="upload-btn" class="btn btn-primary" data-i18n="ui.buttons.uploadFile">上传Markdown文件</button>
+                    <button id="upload-btn" class="btn btn-primary" data-i18n="ui.buttons.uploadOriginal">上传原文</button>
                     <input type="file" id="file-input" accept=".md,.markdown" style="display: none;">
-                    <button id="export-btn" class="btn btn-secondary" disabled data-i18n="ui.buttons.exportTranslation">导出翻译结果</button>
+                    <button id="save-progress-btn" class="btn btn-secondary" disabled data-i18n="ui.buttons.saveProgress">保存进度</button>
+                    <button id="load-progress-btn" class="btn btn-secondary" data-i18n="ui.buttons.loadProgress">加载进度</button>
+                    <input type="file" id="progress-input" accept=".json" style="display: none;">
+                    <button id="export-original-btn" class="btn btn-secondary" disabled data-i18n="ui.buttons.exportOriginal">导出原文</button>
+                    <button id="export-btn" class="btn btn-secondary" disabled data-i18n="ui.buttons.exportTranslation">导出译文</button>
                 </div>
             </div>
             <div class="content-container" id="content-container">

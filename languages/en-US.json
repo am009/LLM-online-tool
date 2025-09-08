@@ -38,12 +38,16 @@
     },
     "buttons": {
       "uploadFile": "Upload Markdown File",
+      "uploadOriginal": "Upload Original",
       "translateAll": "Translate All",
       "exportTranslation": "Export Translation",
       "translate": "Translate",
       "stopTranslation": "Click to stop translation",
       "exportAlternating": "Export Alternate Translation",
-      "proofreadAll": "Proofread All Paragraphs"
+      "proofreadAll": "Proofread All Paragraphs",
+      "saveProgress": "Save Progress",
+      "loadProgress": "Load Progress",
+      "exportOriginal": "Export Original"
     },
     "placeholders": {
       "uploadPrompt": "Please upload a Markdown file to start translation"
