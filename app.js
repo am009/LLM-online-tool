@@ -116,7 +116,10 @@ class MarkdownTranslator {
     }
 
     loadSettings() {
-        const settings = localStorage.getItem('markdown-translator-settings');
+        const currentLanguage = languageManager.getCurrentLanguage();
+        const settingsKey = `markdown-translator-settings-${currentLanguage}`;
+        const settings = localStorage.getItem(settingsKey);
+        
         if (settings) {
             const parsed = JSON.parse(settings);
             document.getElementById('translation-prompt').value = parsed.prompt || languageManager.get('ui.settingsPanel.translationPromptDefault');
@@ -175,6 +178,8 @@ class MarkdownTranslator {
             // 初次使用时加载默认校对设置
             this.loadProofreadApiEndpoint('openai');
             this.loadProofreadModelName('openai');
+            // 设置默认翻译提示词
+            document.getElementById('translation-prompt').value = languageManager.get('ui.settingsPanel.translationPromptDefault');
         }
     }
 
@@ -233,7 +238,10 @@ class MarkdownTranslator {
             }
         }
         
-        localStorage.setItem('markdown-translator-settings', JSON.stringify(settings));
+        // 按语言分别保存设置
+        const currentLanguage = languageManager.getCurrentLanguage();
+        const settingsKey = `markdown-translator-settings-${currentLanguage}`;
+        localStorage.setItem(settingsKey, JSON.stringify(settings));
     }
 
     onProviderChange() {
@@ -1738,19 +1746,8 @@ ${text}`;
             translateAllBtn.innerHTML = languageManager.get('ui.buttons.translateAll');
         }
         
-        // 更新翻译提示词默认值（如果当前为空或默认值）
-        const promptTextarea = document.getElementById('translation-prompt');
-        const currentPrompt = promptTextarea.value.trim();
-        // Check if current prompt is empty or one of the default prompts in any language
-        const currentLangDefault = languageManager.get('ui.settingsPanel.translationPromptDefault');
-        const isDefaultPrompt = !currentPrompt || 
-            currentPrompt === currentLangDefault ||
-            currentPrompt === '请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。' || 
-            currentPrompt === 'Please translate the following text to English, maintaining the original format and structure, without adding additional explanations or comments.';
-            
-        if (isDefaultPrompt) {
-            promptTextarea.value = languageManager.get('ui.settingsPanel.translationPromptDefault');
-        }
+        // 重新加载当前语言的设置
+        this.loadSettings();
     }
 
     reorganizeParagraphs() {
