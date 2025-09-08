@@ -386,6 +386,10 @@ input[type="checkbox"] {
     box-sizing: border-box;
 }
 
+.content-mathjax {
+    white-space: pre-wrap;
+}
+
 .content-markdown:focus,
 .content-mathjax[contenteditable="true"]:focus {
     outline: none;
