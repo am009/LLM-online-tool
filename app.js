@@ -10,6 +10,8 @@ class MarkdownTranslator {
         this.originalRenderMode = []; // 存储每个原文块的渲染模式：'markdown' 或 'mathjax'
         this.translationRenderMode = []; // 存储每个翻译块的渲染模式：'markdown' 或 'mathjax'
         this.activeTranslations = new Map(); // 存储正在进行的翻译请求的AbortController
+        this.activeProofreadings = new Map(); // 存储正在进行的校对请求的AbortController
+        this.proofreadingMode = false; // 校对模式标志
         this.init();
     }
 
@@ -44,6 +46,10 @@ class MarkdownTranslator {
         // 全部翻译
         document.getElementById('translate-all-btn').addEventListener('click', () => this.translateAll());
 
+        // 校对功能
+        document.getElementById('proofreading-mode').addEventListener('change', (e) => this.onProofreadingModeChange(e));
+        document.getElementById('proofread-all-btn').addEventListener('click', () => this.proofreadAll());
+
         // 设置变更
         document.getElementById('translation-prompt').addEventListener('input', () => this.saveSettings());
         document.getElementById('api-key').addEventListener('input', () => this.saveSettings());
@@ -57,6 +63,15 @@ class MarkdownTranslator {
         
         // temperature控制
         document.getElementById('temperature').addEventListener('input', () => this.saveSettings());
+        
+        // 校对设置变更
+        document.getElementById('proofread-prompt').addEventListener('input', () => this.saveSettings());
+        document.getElementById('proofread-api-key').addEventListener('input', () => this.saveSettings());
+        document.getElementById('proofread-api-endpoint').addEventListener('input', () => this.saveSettings());
+        document.getElementById('proofread-model-name').addEventListener('input', () => this.saveSettings());
+        document.getElementById('proofread-api-provider').addEventListener('change', () => this.onProofreadProviderChange());
+        document.getElementById('proofread-temperature').addEventListener('input', () => this.saveSettings());
+        document.getElementById('proofread-batch-size').addEventListener('input', () => this.saveSettings());
         
         // 侧边栏折叠
         document.getElementById('collapse-btn').addEventListener('click', () => this.toggleSidebar());
@@ -90,7 +105,7 @@ class MarkdownTranslator {
             const parsed = JSON.parse(settings);
             document.getElementById('translation-prompt').value = parsed.prompt || languageManager.get('ui.settingsPanel.translationPromptDefault');
             document.getElementById('api-key').value = parsed.apiKey || '';
-            const provider = parsed.apiProvider || 'openai';
+            const provider = parsed.apiProvider || 'ollama';
             document.getElementById('api-provider').value = provider;
             document.getElementById('context-count').value = (isNaN(parsed.contextCount) ? 1 : parsed.contextCount);
             
@@ -110,10 +125,38 @@ class MarkdownTranslator {
             // 加载布局设置
             this.originalWidth = parsed.originalWidth || 45;
             this.sidebarCollapsed = parsed.sidebarCollapsed || false;
+            
+            // 加载校对设置
+            this.proofreadingMode = parsed.proofreadingMode || false;
+            if (parsed.proofreadPrompt) {
+                document.getElementById('proofread-prompt').value = parsed.proofreadPrompt;
+            }
+            if (parsed.proofreadApiKey) {
+                document.getElementById('proofread-api-key').value = parsed.proofreadApiKey;
+            }
+            const proofreadProvider = parsed.proofreadApiProvider || 'ollama';
+            document.getElementById('proofread-api-provider').value = proofreadProvider;
+            document.getElementById('proofread-batch-size').value = parsed.proofreadBatchSize || 10;
+            
+            if (parsed.proofreadTemperature !== undefined && parsed.proofreadTemperature !== null && parsed.proofreadTemperature !== '') {
+                document.getElementById('proofread-temperature').value = parsed.proofreadTemperature;
+            }
+            
+            // 设置校对模式状态
+            document.getElementById('proofreading-mode').checked = this.proofreadingMode;
+            this.onProofreadingModeChange({ target: { checked: this.proofreadingMode } });
+            
+            // 加载对应提供商的校对API端点
+            this.loadProofreadApiEndpoint(proofreadProvider);
+            // 加载对应提供商的校对模型名称
+            this.loadProofreadModelName(proofreadProvider);
         } else {
             // 初次使用时加载默认端点和模型
             this.loadApiEndpoint('openai');
             this.loadModelName('openai');
+            // 初次使用时加载默认校对设置
+            this.loadProofreadApiEndpoint('openai');
+            this.loadProofreadModelName('openai');
         }
     }
 
@@ -128,6 +171,14 @@ class MarkdownTranslator {
         // 保存当前提供商的模型名称
         this.saveModelName(provider, modelName);
         
+        // 保存校对提供商的设置
+        const proofreadProvider = document.getElementById('proofread-api-provider').value;
+        const proofreadEndpoint = document.getElementById('proofread-api-endpoint').value;
+        const proofreadModelName = document.getElementById('proofread-model-name').value;
+        
+        this.saveProofreadApiEndpoint(proofreadProvider, proofreadEndpoint);
+        this.saveProofreadModelName(proofreadProvider, proofreadModelName);
+        
         const contextCountValue = parseInt(document.getElementById('context-count').value);
         const temperatureValue = document.getElementById('temperature').value;
         
@@ -137,7 +188,13 @@ class MarkdownTranslator {
             apiProvider: provider,
             contextCount: isNaN(contextCountValue) ? 1 : contextCountValue,
             originalWidth: this.originalWidth,
-            sidebarCollapsed: this.sidebarCollapsed
+            sidebarCollapsed: this.sidebarCollapsed,
+            // 校对设置
+            proofreadingMode: this.proofreadingMode,
+            proofreadPrompt: document.getElementById('proofread-prompt').value,
+            proofreadApiKey: document.getElementById('proofread-api-key').value,
+            proofreadApiProvider: document.getElementById('proofread-api-provider').value,
+            proofreadBatchSize: parseInt(document.getElementById('proofread-batch-size').value) || 10
         };
         
         // 只有当temperature有值时才保存
@@ -148,6 +205,15 @@ class MarkdownTranslator {
             }
         }
         
+        // 只有当校对temperature有值时才保存
+        const proofreadTemperatureValue = document.getElementById('proofread-temperature').value;
+        if (proofreadTemperatureValue !== null && proofreadTemperatureValue !== undefined && proofreadTemperatureValue.trim() !== '') {
+            const proofreadTempFloat = parseFloat(proofreadTemperatureValue);
+            if (!isNaN(proofreadTempFloat)) {
+                settings.proofreadTemperature = proofreadTempFloat;
+            }
+        }
+        
         localStorage.setItem('markdown-translator-settings', JSON.stringify(settings));
     }
 
@@ -155,6 +221,34 @@ class MarkdownTranslator {
         const provider = document.getElementById('api-provider').value;
         this.loadApiEndpoint(provider);
         this.loadModelName(provider);
+        this.saveSettings();
+    }
+
+    onProofreadProviderChange() {
+        const provider = document.getElementById('proofread-api-provider').value;
+        this.loadProofreadApiEndpoint(provider);
+        this.loadProofreadModelName(provider);
+        this.saveSettings();
+    }
+
+    onProofreadingModeChange(event) {
+        this.proofreadingMode = event.target.checked;
+        const settingsGroup = document.getElementById('proofreading-settings-group');
+        const proofreadAllBtn = document.getElementById('proofread-all-btn');
+        
+        if (this.proofreadingMode) {
+            settingsGroup.style.display = 'block';
+            // 切换所有翻译按钮为校对按钮
+            this.switchToProofreadingMode();
+            if (this.originalBlocks && this.originalBlocks.length > 0) {
+                proofreadAllBtn.disabled = false;
+            }
+        } else {
+            settingsGroup.style.display = 'none';
+            // 切换所有校对按钮为翻译按钮
+            this.switchToTranslationMode();
+            proofreadAllBtn.disabled = true;
+        }
         this.saveSettings();
     }
 
@@ -206,6 +300,54 @@ class MarkdownTranslator {
         return stored ? JSON.parse(stored) : {};
     }
 
+    loadProofreadApiEndpoint(provider) {
+        const endpoints = this.getStoredProofreadEndpoints();
+        const defaultEndpoints = {
+            'openai': 'https://api.openai.com/v1/chat/completions',
+            'anthropic': 'https://api.anthropic.com/v1/messages',
+            'ollama': 'http://localhost:11434/api/chat',
+            'custom': ''
+        };
+        
+        const endpoint = endpoints[provider] || defaultEndpoints[provider] || '';
+        document.getElementById('proofread-api-endpoint').value = endpoint;
+    }
+
+    saveProofreadApiEndpoint(provider, endpoint) {
+        const endpoints = this.getStoredProofreadEndpoints();
+        endpoints[provider] = endpoint;
+        localStorage.setItem('markdown-translator-proofread-endpoints', JSON.stringify(endpoints));
+    }
+
+    getStoredProofreadEndpoints() {
+        const stored = localStorage.getItem('markdown-translator-proofread-endpoints');
+        return stored ? JSON.parse(stored) : {};
+    }
+
+    loadProofreadModelName(provider) {
+        const models = this.getStoredProofreadModels();
+        const defaultModels = {
+            'openai': 'gpt-4',
+            'anthropic': 'claude-3-sonnet-20240229',
+            'ollama': 'llama2',
+            'custom': ''
+        };
+        
+        const model = models[provider] || defaultModels[provider] || '';
+        document.getElementById('proofread-model-name').value = model;
+    }
+
+    saveProofreadModelName(provider, modelName) {
+        const models = this.getStoredProofreadModels();
+        models[provider] = modelName;
+        localStorage.setItem('markdown-translator-proofread-models', JSON.stringify(models));
+    }
+
+    getStoredProofreadModels() {
+        const stored = localStorage.getItem('markdown-translator-proofread-models');
+        return stored ? JSON.parse(stored) : {};
+    }
+
     handleFileUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -228,6 +370,10 @@ class MarkdownTranslator {
                 document.getElementById('translate-all-btn').disabled = false;
                 document.getElementById('export-btn').disabled = false;
                 document.getElementById('export-alternating-btn').disabled = false;
+                // 如果处于校对模式，启用校对所有按钮
+                if (this.proofreadingMode) {
+                    document.getElementById('proofread-all-btn').disabled = false;
+                }
             } catch (error) {
                 this.showError(languageManager.get('errors.parseMarkdownFailed') + error.message);
             }
@@ -337,9 +483,15 @@ class MarkdownTranslator {
         // 翻译按钮
         const translateBtn = document.createElement('button');
         translateBtn.className = 'translate-button';
-        translateBtn.innerHTML = '→';
-        translateBtn.title = '翻译此段';
-        translateBtn.addEventListener('click', () => this.translateBlock(index));
+        translateBtn.innerHTML = this.proofreadingMode ? '✓' : '→';
+        translateBtn.title = this.proofreadingMode ? '校对此段' : '翻译此段';
+        translateBtn.addEventListener('click', () => {
+            if (this.proofreadingMode) {
+                this.proofreadBlock(index);
+            } else {
+                this.translateBlock(index);
+            }
+        });
         
         // 翻译块容器
         const translationContainer = document.createElement('div');
@@ -432,7 +584,7 @@ class MarkdownTranslator {
         const settings = JSON.parse(localStorage.getItem('markdown-translator-settings') || '{}');
         const apiKey = settings.apiKey;
         const prompt = settings.prompt;
-        const provider = settings.apiProvider || 'openai';
+        const provider = settings.apiProvider || 'ollama';
         const customEndpoint = document.getElementById('api-endpoint').value;
         const modelName = document.getElementById('model-name').value;
         const contextCountValue = parseInt(document.getElementById('context-count').value);
@@ -607,7 +759,7 @@ class MarkdownTranslator {
                     'Content-Type': 'application/json'
                 };
                 body = {
-                    model: modelName || 'llama2',
+                    model: modelName || 'llama3.2',
                     messages: [
                         { role: 'user', content: fullPrompt }
                     ],
@@ -733,10 +885,34 @@ class MarkdownTranslator {
         return result || languageManager.get('errors.translationFailed');
     }
 
+    switchToProofreadingMode() {
+        const translateButtons = document.querySelectorAll('.translate-button');
+        translateButtons.forEach((btn, index) => {
+            btn.innerHTML = '✓';
+            btn.title = '校对此段';
+            // 移除旧的事件监听器并添加新的
+            const newBtn = btn.cloneNode(true);
+            newBtn.addEventListener('click', () => this.proofreadBlock(index));
+            btn.parentNode.replaceChild(newBtn, btn);
+        });
+    }
+
+    switchToTranslationMode() {
+        const translateButtons = document.querySelectorAll('.translate-button');
+        translateButtons.forEach((btn, index) => {
+            btn.innerHTML = '→';
+            btn.title = '翻译此段';
+            // 移除旧的事件监听器并添加新的
+            const newBtn = btn.cloneNode(true);
+            newBtn.addEventListener('click', () => this.translateBlock(index));
+            btn.parentNode.replaceChild(newBtn, btn);
+        });
+    }
+
     async translateAll() {
         const settings = JSON.parse(localStorage.getItem('markdown-translator-settings') || '{}');
         const apiKey = settings.apiKey;
-        const provider = settings.apiProvider || 'openai';
+        const provider = settings.apiProvider || 'ollama';
         const modelName = document.getElementById('model-name').value;
         
         if (!apiKey && provider !== 'ollama') {
@@ -766,6 +942,560 @@ class MarkdownTranslator {
         } finally {
             translateAllBtn.disabled = false;
             translateAllBtn.innerHTML = languageManager.get('ui.buttons.translateAll');
+        }
+    }
+
+    async proofreadBlock(index) {
+        const batchSize = parseInt(document.getElementById('proofread-batch-size').value) || 1;
+        
+        if (batchSize === 1) {
+            await this.proofreadSingleBlock(index);
+        } else {
+            await this.proofreadBatchBlocks(index, batchSize);
+        }
+    }
+
+    async proofreadSingleBlock(index) {
+        const translateBtn = document.querySelector(`[data-index="${index}"] .translate-button`);
+        const translationContent = this.translationBlocks[index];
+        const originalContent = this.originalBlocks[index];
+
+        // 如果已有正在进行的校对，则中断它
+        if (this.activeProofreadings.has(index)) {
+            this.activeProofreadings.get(index).abort();
+            this.activeProofreadings.delete(index);
+            translateBtn.innerHTML = '✓';
+            translateBtn.title = '校对此段';
+            translateBtn.disabled = false;
+            translateBtn.classList.remove('loading');
+            return;
+        }
+
+        const settings = JSON.parse(localStorage.getItem('markdown-translator-settings') || '{}');
+        const apiKey = settings.proofreadApiKey;
+        const prompt = settings.proofreadPrompt || document.getElementById('proofread-prompt').value;
+        const provider = settings.proofreadApiProvider || 'ollama';
+        const customEndpoint = document.getElementById('proofread-api-endpoint').value;
+        const modelName = document.getElementById('proofread-model-name').value;
+        const temperatureValue = document.getElementById('proofread-temperature').value;
+
+        if (!apiKey && provider !== 'ollama') {
+            this.showError('请设置校对API Key');
+            return;
+        }
+
+        if (!modelName) {
+            this.showError('请设置校对模型名称');
+            return;
+        }
+
+        if (!translationContent || translationContent.trim() === '') {
+            this.showError('请先翻译此段落再进行校对');
+            return;
+        }
+
+        // 创建AbortController用于中断请求
+        const abortController = new AbortController();
+        this.activeProofreadings.set(index, abortController);
+        
+        // 更新按钮为中断状态
+        translateBtn.innerHTML = '⏹';
+        translateBtn.title = '停止校对';
+        translateBtn.disabled = false;
+        translateBtn.classList.add('loading');
+        
+        try {
+            const proofreadResult = await this.callProofreadingAPI(
+                translationContent, 
+                prompt, 
+                apiKey, 
+                provider, 
+                customEndpoint, 
+                modelName, 
+                abortController,
+                index,
+                temperatureValue
+            );
+            
+            if (proofreadResult) {
+                this.translationBlocks[index] = proofreadResult;
+                
+                // 更新翻译块的显示
+                const translationBlock = document.querySelector(`[data-index="${index}"] .translation-block`);
+                const markdownDiv = translationBlock.querySelector('.content-markdown');
+                const mathjaxDiv = translationBlock.querySelector('.content-mathjax');
+                
+                markdownDiv.innerHTML = proofreadResult;
+                MathJax.typesetClear([markdownDiv]);
+                mathjaxDiv.innerHTML = proofreadResult;
+
+                // 重新渲染MathJax版本
+                if (typeof MathJax !== 'undefined') {
+                    MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
+                }
+                
+                // 有新校对内容时，重置导出标记
+                this.hasExported = false;
+            }
+            
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                this.showError('校对失败: ' + error.message);
+            }
+        } finally {
+            // 清理状态
+            this.activeProofreadings.delete(index);
+            translateBtn.innerHTML = '✓';
+            translateBtn.title = '校对此段';
+            translateBtn.disabled = false;
+            translateBtn.classList.remove('loading');
+        }
+    }
+
+    async proofreadBatchBlocks(startIndex, batchSize) {
+        const endIndex = Math.min(startIndex + batchSize, this.translationBlocks.length);
+        const batchTexts = [];
+        
+        // 收集批处理的文本
+        for (let i = startIndex; i < endIndex; i++) {
+            const translationContent = this.translationBlocks[i];
+            if (!translationContent || translationContent.trim() === '') {
+                this.showError(`第${i+1}段未翻译，无法进行校对`);
+                return;
+            }
+            batchTexts.push(translationContent);
+        }
+        
+        const translateBtn = document.querySelector(`[data-index="${startIndex}"] .translate-button`);
+        
+        // 如果已有正在进行的校对，则中断它
+        if (this.activeProofreadings.has(startIndex)) {
+            this.activeProofreadings.get(startIndex).abort();
+            this.activeProofreadings.delete(startIndex);
+            translateBtn.innerHTML = '✓';
+            translateBtn.title = `校对从此段开始的${batchSize}段`;
+            translateBtn.disabled = false;
+            translateBtn.classList.remove('loading');
+            return;
+        }
+        
+        const settings = JSON.parse(localStorage.getItem('markdown-translator-settings') || '{}');
+        const apiKey = settings.proofreadApiKey;
+        const prompt = settings.proofreadPrompt || document.getElementById('proofread-prompt').value;
+        const provider = settings.proofreadApiProvider || 'ollama';
+        const customEndpoint = document.getElementById('proofread-api-endpoint').value;
+        const modelName = document.getElementById('proofread-model-name').value;
+        const temperatureValue = document.getElementById('proofread-temperature').value;
+        
+        if (!apiKey && provider !== 'ollama') {
+            this.showError('请设置校对API Key');
+            return;
+        }
+        
+        if (!modelName) {
+            this.showError('请设置校对模型名称');
+            return;
+        }
+        
+        // 创建AbortController用于中断请求
+        const abortController = new AbortController();
+        this.activeProofreadings.set(startIndex, abortController);
+        
+        // 更新按钮为中断状态
+        translateBtn.innerHTML = '⏹';
+        translateBtn.title = '停止校对';
+        translateBtn.disabled = false;
+        translateBtn.classList.add('loading');
+        
+        try {
+            const batchText = batchTexts.join('\n\n');
+            const proofreadResult = await this.callProofreadingAPI(
+                batchText, 
+                prompt, 
+                apiKey, 
+                provider, 
+                customEndpoint, 
+                modelName, 
+                abortController,
+                startIndex,
+                temperatureValue
+            );
+            
+            if (proofreadResult) {
+                // 验证返回结果的段落数量
+                const resultParagraphs = proofreadResult.trim().split('\n\n');
+                if (resultParagraphs.length !== batchTexts.length) {
+                    throw new Error(`校对结果段落数量(${resultParagraphs.length})与原文段落数量(${batchTexts.length})不匹配`);
+                }
+                
+                // 更新所有相关块的翻译内容
+                for (let i = 0; i < resultParagraphs.length; i++) {
+                    const blockIndex = startIndex + i;
+                    const proofreadParagraph = resultParagraphs[i].trim();
+                    
+                    this.translationBlocks[blockIndex] = proofreadParagraph;
+                    
+                    // 更新翻译块的显示
+                    const translationBlock = document.querySelector(`[data-index="${blockIndex}"] .translation-block`);
+                    const markdownDiv = translationBlock?.querySelector('.content-markdown');
+                    const mathjaxDiv = translationBlock?.querySelector('.content-mathjax');
+                    
+                    if (markdownDiv && mathjaxDiv) {
+                        markdownDiv.innerHTML = proofreadParagraph;
+                        MathJax.typesetClear([markdownDiv]);
+                        mathjaxDiv.innerHTML = proofreadParagraph;
+
+                        // 重新渲染MathJax版本
+                        if (typeof MathJax !== 'undefined') {
+                            MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
+                        }
+                    }
+                }
+                
+                // 有新校对内容时，重置导出标记
+                this.hasExported = false;
+            }
+            
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                this.showError('批量校对失败: ' + error.message);
+            }
+        } finally {
+            // 清理状态
+            this.activeProofreadings.delete(startIndex);
+            translateBtn.innerHTML = '✓';
+            translateBtn.title = `校对从此段开始的${batchSize}段`;
+            translateBtn.disabled = false;
+            translateBtn.classList.remove('loading');
+        }
+    }
+
+    async callProofreadingAPI(text, prompt, apiKey, provider, customEndpoint, modelName, abortController = null, blockIndex = null, temperature = null) {
+        // 使用thinking功能的提示词
+        let fullPrompt = `
+${prompt}
+
+需要校对的文字：
+${text}`;
+        
+        let apiUrl, headers, body;
+        
+        // 如果有自定义端点，使用自定义端点，否则使用默认端点
+        if (customEndpoint && customEndpoint.trim()) {
+            apiUrl = customEndpoint.trim();
+        } else {
+            // 使用默认端点
+            switch (provider) {
+                case 'openai':
+                    apiUrl = 'https://api.openai.com/v1/chat/completions';
+                    break;
+                case 'anthropic':
+                    apiUrl = 'https://api.anthropic.com/v1/messages';
+                    break;
+                case 'ollama':
+                    apiUrl = 'http://localhost:11434/api/chat';
+                    break;
+                default:
+                    throw new Error('不支持的校对API提供商');
+            }
+        }
+        
+        // 设置请求头和请求体
+        switch (provider) {
+            case 'openai':
+            case 'custom': // 自定义端点也可以使用OpenAI格式
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                };
+                body = {
+                    model: modelName || 'gpt-4',
+                    messages: [
+                        { role: 'user', content: fullPrompt }
+                    ],
+                    max_tokens: 4000,
+                    stream: true
+                };
+                
+                // 只有当temperature有值时才添加到请求中
+                if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
+                    const tempFloat = parseFloat(temperature);
+                    if (!isNaN(tempFloat)) {
+                        body.temperature = tempFloat;
+                    }
+                }
+                break;
+                
+            case 'anthropic':
+                headers = {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01'
+                };
+                body = {
+                    model: modelName || 'claude-3-sonnet-20240229',
+                    max_tokens: 4000,
+                    messages: [
+                        { role: 'user', content: fullPrompt }
+                    ],
+                    stream: true
+                };
+                
+                // 只有当temperature有值时才添加到请求中
+                if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
+                    const tempFloat = parseFloat(temperature);
+                    if (!isNaN(tempFloat)) {
+                        body.temperature = tempFloat;
+                    }
+                }
+                break;
+                
+            case 'ollama':
+                headers = {
+                    'Content-Type': 'application/json'
+                };
+                body = {
+                    model: modelName,
+                    messages: [
+                        { role: 'user', content: fullPrompt }
+                    ],
+                    think: true,
+                    stream: true  // 启用流式输出
+                };
+                
+                // 只有当temperature有值时才添加到请求中
+                if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
+                    const tempFloat = parseFloat(temperature);
+                    if (!isNaN(tempFloat)) {
+                        body.options = body.options || {};
+                        body.options.temperature = tempFloat;
+                    }
+                }
+                break;
+                
+            default:
+                throw new Error('不支持的校对API提供商');
+        }
+        
+        const fetchOptions = {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(body)
+        };
+        
+        // 添加AbortController信号
+        if (abortController) {
+            fetchOptions.signal = abortController.signal;
+        }
+        
+        const response = await fetch(apiUrl, fetchOptions);
+        
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`校对API请求失败: ${response.status} - ${error}`);
+        }
+        
+        // 处理流式响应
+        if (body.stream) {
+            return await this.handleProofreadingStreamResponse(response, blockIndex, provider);
+        }
+        
+        // 处理非流式响应（备用）
+        const data = await response.json();
+        
+        // 根据提供商类型解析响应
+        let result = '';
+        if (provider === 'openai' || provider === 'custom') {
+            result = data.choices[0]?.message?.content || '校对失败';
+        } else if (provider === 'anthropic') {
+            result = data.content[0]?.text || '校对失败';
+        } else if (provider === 'ollama') {
+            result = data.message?.content || '校对失败';
+        }
+        
+        // 提取thinking部分并打印到控制台
+        const thinkingMatch = result.match(/<think>([\s\S]*?)<\/think>/);
+        if (thinkingMatch) {
+            console.log('校对思考过程:', thinkingMatch[1].trim());
+            // 删除thinking部分
+            result = result.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
+        }
+        
+        return result || '校对失败';
+    }
+
+    async handleProofreadingStreamResponse(response, blockIndex, provider) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let result = '';
+        
+        // 获取对应的翻译块DOM元素
+        let translationBlock, markdownDiv, mathjaxDiv;
+        if (blockIndex !== null) {
+            translationBlock = document.querySelector(`[data-index="${blockIndex}"] .translation-block`);
+            markdownDiv = translationBlock?.querySelector('.content-markdown');
+            mathjaxDiv = translationBlock?.querySelector('.content-mathjax');
+        }
+        
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                
+                if (done) break;
+                
+                const chunk = decoder.decode(value);
+                
+                if (provider === 'ollama') {
+                    // 处理Ollama流式响应
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.trim() === '') continue;
+                        
+                        try {
+                            const data = JSON.parse(line);
+                            
+                            if (data.message && data.message.content) {
+                                result += data.message.content;
+                                
+                                // 实时更新界面显示（但不包含thinking部分）
+                                let displayResult = result;
+                                const thinkingMatch = displayResult.match(/<think>[\s\S]*?<\/think>\s*/);
+                                if (thinkingMatch) {
+                                    displayResult = displayResult.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
+                                }
+                                
+                                if (markdownDiv && blockIndex !== null && displayResult) {
+                                    markdownDiv.innerHTML = displayResult;
+                                    this.translationBlocks[blockIndex] = displayResult;
+                                    
+                                    // 同步更新mathjax版本
+                                    if (mathjaxDiv) {
+                                        mathjaxDiv.innerHTML = displayResult;
+                                        MathJax.typesetClear([mathjaxDiv]);
+                                        
+                                        // 如果当前显示的是MathJax模式，重新渲染
+                                        if (this.translationRenderMode && this.translationRenderMode[blockIndex] === 'mathjax') {
+                                            if (typeof MathJax !== 'undefined') {
+                                                MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if (data.done) {
+                                break;
+                            }
+                        } catch (e) {
+                            // 忽略JSON解析错误，继续处理下一行
+                            continue;
+                        }
+                    }
+                } else {
+                    // 处理OpenAI/Anthropic流式响应
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.trim() === '' || !line.startsWith('data: ')) continue;
+                        
+                        const data = line.substring(6); // 移除 'data: ' 前缀
+                        
+                        if (data === '[DONE]') break;
+                        
+                        try {
+                            const parsed = JSON.parse(data);
+                            let content = '';
+                            
+                            if (provider === 'openai' || provider === 'custom') {
+                                content = parsed.choices?.[0]?.delta?.content || '';
+                            } else if (provider === 'anthropic') {
+                                content = parsed.delta?.text || '';
+                            }
+                            
+                            if (content) {
+                                result += content;
+                                
+                                // 实时更新界面显示（但不包含thinking部分）
+                                let displayResult = result;
+                                const thinkingMatch = displayResult.match(/<think>[\s\S]*?<\/think>\s*/);
+                                if (thinkingMatch) {
+                                    displayResult = displayResult.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
+                                }
+                                
+                                if (markdownDiv && blockIndex !== null && displayResult) {
+                                    markdownDiv.innerHTML = displayResult;
+                                    this.translationBlocks[blockIndex] = displayResult;
+                                    
+                                    // 同步更新mathjax版本
+                                    if (mathjaxDiv) {
+                                        mathjaxDiv.innerHTML = displayResult;
+                                        MathJax.typesetClear([mathjaxDiv]);
+                                        
+                                        // 如果当前显示的是MathJax模式，重新渲染
+                                        if (this.translationRenderMode && this.translationRenderMode[blockIndex] === 'mathjax') {
+                                            if (typeof MathJax !== 'undefined') {
+                                                MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            // 忽略JSON解析错误，继续处理下一行
+                            continue;
+                        }
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+        
+        // 提取thinking部分并打印到控制台
+        const thinkingMatch = result.match(/<think>([\s\S]*?)<\/think>/);
+        if (thinkingMatch) {
+            console.log('校对思考过程:', thinkingMatch[1].trim());
+            // 删除thinking部分
+            result = result.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
+        }
+        
+        return result || '校对失败';
+    }
+
+    async proofreadAll() {
+        const settings = JSON.parse(localStorage.getItem('markdown-translator-settings') || '{}');
+        const apiKey = settings.proofreadApiKey;
+        const provider = settings.proofreadApiProvider || 'ollama';
+        const modelName = document.getElementById('proofread-model-name').value;
+        
+        if (!apiKey && provider !== 'ollama') {
+            this.showError('请设置校对API Key');
+            return;
+        }
+        
+        if (!modelName) {
+            this.showError('请设置校对模型名称');
+            return;
+        }
+        
+        const proofreadAllBtn = document.getElementById('proofread-all-btn');
+        proofreadAllBtn.disabled = true;
+        proofreadAllBtn.innerHTML = '<span class="loading-spinner"></span>正在校对...';
+        
+        try {
+            for (let i = 0; i < this.originalBlocks.length; i++) {
+                if (this.translationBlocks[i] && this.translationBlocks[i].trim()) {
+                    await this.proofreadSingleBlock(i);
+                    // 添加延迟以避免API限制
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        } catch (error) {
+            this.showError('批量校对失败: ' + error.message);
+        } finally {
+            proofreadAllBtn.disabled = false;
+            proofreadAllBtn.innerHTML = '校对所有段落';
         }
     }
 

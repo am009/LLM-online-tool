@@ -115,7 +115,63 @@
                     <span class="section-toggle">▼</span>
                 </div>
                 <div id="proofread-settings" class="settings-section-content">
+                    <!-- 校对模式开关 -->
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="proofreading-mode" />
+                            <span data-i18n="ui.settingsPanel.proofreadingMode">启用校对模式</span>
+                        </label>
+                    </div>
 
+                    <!-- 校对设置 -->
+                    <div id="proofreading-settings-group" style="display: none;">
+                        <div class="setting-group">
+                            <label for="proofread-api-provider" data-i18n="ui.settingsPanel.proofreadApiProvider">校对API提供商:</label>
+                            <select id="proofread-api-provider">
+                                <option value="ollama" data-i18n="messages.apiProviders.ollama">Ollama</option>
+                                <option value="openai" data-i18n="messages.apiProviders.openai">OpenAI</option>
+                                <option value="anthropic" data-i18n="messages.apiProviders.anthropic">Anthropic</option>
+                                <option value="custom" data-i18n="ui.settingsPanel.custom">自定义</option>
+                            </select>
+                        </div>
+
+                        <div class="setting-group">
+                            <label for="proofread-model-name" data-i18n="ui.settingsPanel.proofreadModelName">校对模型名称:</label>
+                            <input type="text" id="proofread-model-name" data-i18n-placeholder="ui.settingsPanel.proofreadModelNamePlaceholder" placeholder="请输入校对模型名称">
+                        </div>
+
+                        <div class="setting-group">
+                            <label for="proofread-api-endpoint" data-i18n="ui.settingsPanel.proofreadApiEndpoint">校对API端点:</label>
+                            <input type="text" id="proofread-api-endpoint" data-i18n-placeholder="ui.settingsPanel.proofreadApiEndpointPlaceholder" placeholder="请输入校对API端点URL">
+                        </div>
+
+                        <div class="setting-group">
+                            <label for="proofread-api-key" data-i18n="ui.settingsPanel.proofreadApiKey">校对API Key:</label>
+                            <input type="password" id="proofread-api-key" data-i18n-placeholder="ui.settingsPanel.proofreadApiKeyPlaceholder" placeholder="请输入您的校对API Key">
+                        </div>
+
+                        <div class="setting-group">
+                            <label for="proofread-temperature" data-i18n="ui.settingsPanel.proofreadTemperature">校对Temperature:</label>
+                            <input type="number" id="proofread-temperature" min="0" max="2" step="0.1" data-i18n-placeholder="ui.settingsPanel.proofreadTemperaturePlaceholder" placeholder="留空使用默认值">
+                            <small class="setting-hint" data-i18n="ui.settingsPanel.proofreadTemperatureHint">校对输出随机性，0.0-2.0，留空则不设置</small>
+                        </div>
+
+                        <div class="setting-group">
+                            <label for="proofread-prompt" data-i18n="ui.settingsPanel.proofreadPrompt">校对提示词:</label>
+                            <textarea id="proofread-prompt" rows="6"
+                                data-i18n-placeholder="ui.settingsPanel.proofreadPromptPlaceholder" placeholder="请校对以下翻译内容...">请校对以下翻译内容，检查语法、用词、逻辑和流畅度，并给出改进建议。请直接输出改进后的内容，不要添加额外的解释或注释。</textarea>
+                        </div>
+
+                        <div class="setting-group">
+                            <label for="proofread-batch-size" data-i18n="ui.settingsPanel.proofreadBatchSize">单次校对段落数量:</label>
+                            <input type="number" id="proofread-batch-size" min="1" max="500" value="5">
+                            <small class="setting-hint" data-i18n="ui.settingsPanel.proofreadBatchSizeHint">一次校对的文本块数量，默认为10</small>
+                        </div>
+
+                        <div class="setting-group">
+                            <button id="proofread-all-btn" class="btn btn-primary btn-full-width" disabled data-i18n="ui.buttons.proofreadAll">校对所有段落</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
