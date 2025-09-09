@@ -863,6 +863,9 @@ class MarkdownTranslator {
         } else if (provider === 'anthropic') {
             result = data.content[0]?.text ?? languageManager.get('errors.translationFailed');
         } else if (provider === 'ollama') {
+            if (data.message && data.message.thinking) {
+                console.log(languageManager.get('prompts.translationThinking'), data.message.thinking)
+            }
             result = data.message?.content ?? languageManager.get('errors.translationFailed');
         }
 
@@ -904,6 +907,10 @@ class MarkdownTranslator {
                     
                     try {
                         const data = JSON.parse(line);
+
+                        if (data.message && data.message.thinking) {
+                            console.log(data.message.thinking)
+                        }
                         
                         if (data.message && data.message.content) {
                             result += data.message.content;
