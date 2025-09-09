@@ -11,6 +11,7 @@ class MarkdownTranslator {
         this.activeTranslations = new Map(); // 存储正在进行的翻译请求的AbortController
         this.activeProofreadings = new Map(); // 存储正在进行的校对请求的AbortController
         this.proofreadingMode = false; // 校对模式标志
+        this.isTranslatingAll = false; // 跟踪是否正在进行全部翻译
         this.init();
     }
 
@@ -970,6 +971,15 @@ class MarkdownTranslator {
     }
 
     async translateAll() {
+        // 如果已经在翻译中，点击按钮则停止翻译
+        if (this.isTranslatingAll) {
+            this.isTranslatingAll = false;
+            const translateAllBtn = document.getElementById('translate-all-btn');
+            translateAllBtn.disabled = false;
+            translateAllBtn.innerHTML = languageManager.get('ui.buttons.translateAll');
+            return;
+        }
+
         const apiKey = document.getElementById('api-key').value;
         const provider = document.getElementById('api-provider').value;
         const modelName = document.getElementById('model-name').value;
@@ -984,21 +994,33 @@ class MarkdownTranslator {
             return;
         }
         
+        this.isTranslatingAll = true;
         const translateAllBtn = document.getElementById('translate-all-btn');
-        translateAllBtn.disabled = true;
-        translateAllBtn.innerHTML = '<span class="loading-spinner"></span>' + languageManager.get('messages.translating');
+        translateAllBtn.disabled = false; // 保持按钮可点击以便停止
+        translateAllBtn.innerHTML = '<span class="loading-spinner"></span>' + languageManager.get('ui.buttons.stopTranslation');
         
         try {
             for (let i = 0; i < this.originalBlocks.length; i++) {
+                // 检查是否被用户停止
+                if (!this.isTranslatingAll) {
+                    break;
+                }
+                
                 if (this.translationBlocks[i].trim().length === 0) { // 只翻译未翻译的块
+                    // scroll into view
+                    const translationDiv = document.querySelector(`[data-index="${i}"] .translation-block`);
+                    translationDiv.scrollIntoViewIfNeeded();
                     await this.translateBlock(i);
                     // 添加延迟以避免API限制
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    if (this.isTranslatingAll) { // 只有在未被停止时才延迟
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
                 }
             }
         } catch (error) {
             this.showError(languageManager.get('errors.batchTranslationFailed') + error.message);
         } finally {
+            this.isTranslatingAll = false;
             translateAllBtn.disabled = false;
             translateAllBtn.innerHTML = languageManager.get('ui.buttons.translateAll');
         }
@@ -1314,16 +1336,20 @@ class MarkdownTranslator {
                         
                         try {
                             const data = JSON.parse(line);
+
+                            if (data.message && data.message.thinking) {
+                                console.log(data.message.thinking)
+                            }
                             
                             if (data.message && data.message.content) {
                                 result += data.message.content;
                                 
                                 // 实时更新界面显示（但不包含thinking部分）
                                 let displayResult = result;
-                                const thinkingMatch = displayResult.match(/<think>[\s\S]*?<\/think>\s*/);
-                                if (thinkingMatch) {
-                                    displayResult = displayResult.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
-                                }
+                                // const thinkingMatch = displayResult.match(/<think>[\s\S]*?<\/think>\s*/);
+                                // if (thinkingMatch) {
+                                //     displayResult = displayResult.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
+                                // }
                                 
                                 if (markdownDiv && blockIndex !== null && displayResult) {
                                     markdownDiv.value = displayResult;
