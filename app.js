@@ -23,7 +23,6 @@ class MarkdownTranslator {
         
         this.setupEventListeners();
         this.loadSettings();
-        this.setupModal();
         this.setupSidebar();
         this.setupBeforeUnloadWarning();
         this.initLanguageSettings();
@@ -99,27 +98,6 @@ class MarkdownTranslator {
         document.getElementById('translation-collapse-btn').addEventListener('click', () => this.toggleSidebar());
     }
 
-    setupModal() {
-        const modal = document.getElementById('error-modal');
-        const closeBtn = modal.querySelector('.close');
-        
-        closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-        
-        window.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
-    }
-
-    showError(message) {
-        const modal = document.getElementById('error-modal');
-        const messageEl = document.getElementById('error-message');
-        messageEl.textContent = message;
-        modal.style.display = 'block';
-    }
 
     loadSettings() {
         const currentLanguage = languageManager.getCurrentLanguage();
@@ -390,7 +368,7 @@ class MarkdownTranslator {
         if (!file) return;
 
         if (!file.name.toLowerCase().endsWith('.md') && !file.name.toLowerCase().endsWith('.markdown')) {
-            this.showError(languageManager.get('errors.invalidFileType'));
+            showError(languageManager.get('errors.invalidFileType'));
             return;
         }
 
@@ -415,12 +393,12 @@ class MarkdownTranslator {
                     document.getElementById('proofread-all-btn').disabled = false;
                 }
             } catch (error) {
-                this.showError(languageManager.get('errors.parseMarkdownFailed') + error.message);
+                showError(languageManager.get('errors.parseMarkdownFailed') + error.message);
             }
         };
         
         reader.onerror = () => {
-            this.showError(languageManager.get('errors.readFileFailed'));
+            showError(languageManager.get('errors.readFileFailed'));
         };
         
         reader.readAsText(file, 'UTF-8');
@@ -633,12 +611,12 @@ class MarkdownTranslator {
         const enableThinking = document.getElementById('translation-enable-thinking').checked;
         
         if (!apiKey && provider !== 'ollama') {
-            this.showError(languageManager.get('errors.apiKeyRequired'));
+            showError(languageManager.get('errors.apiKeyRequired'));
             return;
         }
         
         if (!modelName) {
-            this.showError(languageManager.get('errors.modelNameRequired'));
+            showError(languageManager.get('errors.modelNameRequired'));
             return;
         }
         
@@ -695,7 +673,7 @@ class MarkdownTranslator {
             
         } catch (error) {
             if (error.name !== 'AbortError') {
-                this.showError(languageManager.get('errors.translationFailed') + error.message);
+                showError(languageManager.get('errors.translationFailed') + error.message);
             }
         } finally {
             // 清理状态
@@ -992,12 +970,12 @@ class MarkdownTranslator {
         const modelName = document.getElementById('translation-model-name').value;
         
         if (!apiKey && provider !== 'ollama') {
-            this.showError(languageManager.get('errors.apiKeyRequired'));
+            showError(languageManager.get('errors.apiKeyRequired'));
             return;
         }
         
         if (!modelName) {
-            this.showError(languageManager.get('errors.modelNameRequired'));
+            showError(languageManager.get('errors.modelNameRequired'));
             return;
         }
         
@@ -1025,7 +1003,7 @@ class MarkdownTranslator {
                 }
             }
         } catch (error) {
-            this.showError(languageManager.get('errors.batchTranslationFailed') + error.message);
+            showError(languageManager.get('errors.batchTranslationFailed') + error.message);
         } finally {
             this.isTranslatingAll = false;
             translateAllBtn.disabled = false;
@@ -1062,17 +1040,17 @@ class MarkdownTranslator {
         const enableProofreadThinking = document.getElementById('proofread-enable-thinking').checked;
 
         if (!apiKey && provider !== 'ollama') {
-            this.showError(languageManager.get('errors.proofreadApiKeyRequired'));
+            showError(languageManager.get('errors.proofreadApiKeyRequired'));
             return;
         }
 
         if (!modelName) {
-            this.showError(languageManager.get('errors.proofreadModelNameRequired'));
+            showError(languageManager.get('errors.proofreadModelNameRequired'));
             return;
         }
 
         if (!translationContent || translationContent.trim() === '') {
-            this.showError(languageManager.get('errors.translateBeforeProofread'));
+            showError(languageManager.get('errors.translateBeforeProofread'));
             return;
         }
 
@@ -1126,7 +1104,7 @@ class MarkdownTranslator {
             
         } catch (error) {
             if (error.name !== 'AbortError') {
-                this.showError(languageManager.get('errors.proofreadingFailed') + error.message);
+                showError(languageManager.get('errors.proofreadingFailed') + error.message);
             }
         } finally {
             // 清理状态
@@ -1466,12 +1444,12 @@ class MarkdownTranslator {
         const modelName = document.getElementById('proofread-model-name').value;
         
         if (!apiKey && provider !== 'ollama') {
-            this.showError(languageManager.get('errors.proofreadApiKeyRequired'));
+            showError(languageManager.get('errors.proofreadApiKeyRequired'));
             return;
         }
         
         if (!modelName) {
-            this.showError(languageManager.get('errors.proofreadModelNameRequired'));
+            showError(languageManager.get('errors.proofreadModelNameRequired'));
             return;
         }
         
@@ -1488,7 +1466,7 @@ class MarkdownTranslator {
                 }
             }
         } catch (error) {
-            this.showError(languageManager.get('errors.batchProofreadingFailed') + error.message);
+            showError(languageManager.get('errors.batchProofreadingFailed') + error.message);
         } finally {
             proofreadAllBtn.disabled = false;
             proofreadAllBtn.innerHTML = languageManager.get('ui.buttons.proofreadAll');
@@ -1497,7 +1475,7 @@ class MarkdownTranslator {
 
     exportTranslation() {
         if (!this.currentFile || this.translationBlocks.length === 0) {
-            this.showError(languageManager.get('errors.noTranslationContent'));
+            showError(languageManager.get('errors.noTranslationContent'));
             return;
         }
         
@@ -1506,7 +1484,7 @@ class MarkdownTranslator {
             .join('\n\n');
             
         if (!translatedContent) {
-            this.showError(languageManager.get('errors.noTranslatedContent'));
+            showError(languageManager.get('errors.noTranslatedContent'));
             return;
         }
         
@@ -1529,7 +1507,7 @@ class MarkdownTranslator {
 
     saveProgress() {
         if (!this.currentFile || this.originalBlocks.length === 0) {
-            this.showError(languageManager.get('errors.noProgressToSave'));
+            showError(languageManager.get('errors.noProgressToSave'));
             return;
         }
         
@@ -1559,7 +1537,7 @@ class MarkdownTranslator {
         if (!file) return;
 
         if (!file.name.toLowerCase().endsWith('.json')) {
-            this.showError(languageManager.get('errors.loadProgressInvalidFormat'));
+            showError(languageManager.get('errors.loadProgressInvalidFormat'));
             return;
         }
 
@@ -1570,7 +1548,7 @@ class MarkdownTranslator {
                 const progressData = JSON.parse(e.target.result);
                 
                 if (!Array.isArray(progressData)) {
-                    this.showError(languageManager.get('errors.loadProgressInvalidData'));
+                    showError(languageManager.get('errors.loadProgressInvalidData'));
                     return;
                 }
                 
@@ -1578,7 +1556,7 @@ class MarkdownTranslator {
                 for (let i = 0; i < progressData.length; i++) {
                     const item = progressData[i];
                     if (!item.hasOwnProperty('original_text') || !item.hasOwnProperty('translated_text')) {
-                        this.showError(languageManager.get('errors.loadProgressInvalidObject', {index: i+1}));
+                        showError(languageManager.get('errors.loadProgressInvalidObject', {index: i+1}));
                         return;
                     }
                 }
@@ -1617,12 +1595,12 @@ class MarkdownTranslator {
                 }
                 
             } catch (error) {
-                this.showError(languageManager.get('errors.loadProgressFailed') + error.message);
+                showError(languageManager.get('errors.loadProgressFailed') + error.message);
             }
         };
         
         reader.onerror = () => {
-            this.showError(languageManager.get('errors.loadProgressReadFailed'));
+            showError(languageManager.get('errors.loadProgressReadFailed'));
         };
         
         reader.readAsText(file, 'UTF-8');
@@ -1633,7 +1611,7 @@ class MarkdownTranslator {
 
     exportOriginal() {
         if (!this.currentFile || this.originalBlocks.length === 0) {
-            this.showError(languageManager.get('errors.noOriginalContent'));
+            showError(languageManager.get('errors.noOriginalContent'));
             return;
         }
         
@@ -1655,7 +1633,7 @@ class MarkdownTranslator {
 
     exportAlternatingTranslation() {
         if (!this.currentFile || this.originalBlocks.length === 0) {
-            this.showError(languageManager.get('errors.noTranslationContent'));
+            showError(languageManager.get('errors.noTranslationContent'));
             return;
         }
         
@@ -1678,7 +1656,7 @@ class MarkdownTranslator {
         }
             
         if (alternatingContent.length === 0) {
-            this.showError(languageManager.get('errors.noTranslatedContent'));
+            showError(languageManager.get('errors.noTranslatedContent'));
             return;
         }
         
@@ -1858,14 +1836,14 @@ class MarkdownTranslator {
 
     reorganizeParagraphs() {
         if (!this.originalBlocks || this.originalBlocks.length === 0) {
-            this.showError(languageManager.get('errors.noParagraphsToReorganize'));
+            showError(languageManager.get('errors.noParagraphsToReorganize'));
             return;
         }
 
         const charLimit = parseInt(document.getElementById('translation-paragraph-char-limit').value);
         
         if (charLimit <= 0) {
-            this.showError(languageManager.get('errors.invalidCharacterLimit'));
+            showError(languageManager.get('errors.invalidCharacterLimit'));
             return;
         }
 
