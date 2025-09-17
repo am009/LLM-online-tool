@@ -35,127 +35,56 @@
 <body>
     <div class="container">
         <!-- 左侧设置栏 -->
-        <div class="translation-settings-panel" id="translation-settings-panel">
+        <aside class="settings-panel" id="translation-settings-panel">
+            <button class="collapse-btn" id="translation-collapse-btn" title="折叠/展开">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
 
-            <div class="settings-header">
+            <div class="settings-content">
                 <h2 data-i18n="ui.settings">设置</h2>
-                <button class="translation-collapse-btn" id="translation-collapse-btn">‹</button>
-            </div>
-
-            <div class="setting-group">
-                <label for="interface-language" data-i18n="ui.settingsPanel.language">界面语言:</label>
-                <select id="interface-language">
-                    <option value="zh-CN">中文</option>
-                    <option value="en-US">English</option>
-                </select>
-            </div>
-
-            <!-- 分段设置折叠区域 -->
-            <div class="settings-section">
-                <div class="settings-section-header" onclick="toggleSettingsSection('translation-paragraph-settings')">
-                    <span data-i18n="ui.settingsPanel.paragraphSettings">分段</span>
-                    <span class="section-toggle">▼</span>
+                <div class="setting-group">
+                    <label for="interface-language" data-i18n="ui.settingsPanel.language">界面语言:</label>
+                    <select id="interface-language">
+                        <option value="zh-CN">中文</option>
+                        <option value="en-US">English</option>
+                    </select>
                 </div>
-                <div id="translation-paragraph-settings" class="settings-section-content">
-                    <div class="setting-group">
-                        <label for="translation-paragraph-char-limit" data-i18n="ui.settingsPanel.paragraphCharLimit">单段字符数:</label>
-                        <input type="number" id="translation-paragraph-char-limit" min="0" value="0">
-                        <small class="setting-hint" data-i18n="ui.settingsPanel.paragraphCharLimitHint">设置为0表示不限制，大于0时会合并段落以减少API调用</small>
-                    </div>
 
-                    <div class="setting-group">
-                        <button id="translation-reorganize-paragraphs-btn" class="btn btn-secondary btn-full-width" disabled data-i18n="ui.buttons.reorganizeParagraphs">重新划分段落</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 常规设置折叠区域 -->
-            <div class="settings-section">
-                <div class="settings-section-header" onclick="toggleSettingsSection('translation-general-settings')">
-                    <span data-i18n="ui.settingsPanel.translationSettings">翻译</span>
-                    <span class="section-toggle">▼</span>
-                </div>
-                <div id="translation-general-settings" class="settings-section-content">
-                    <div class="setting-group">
-                        <label for="translation-api-provider" data-i18n="ui.settingsPanel.apiProvider">API提供商:</label>
-                        <select id="translation-api-provider">
-                            <option value="ollama" data-i18n="messages.apiProviders.ollama">Ollama</option>
-                            <option value="openai" data-i18n="messages.apiProviders.openai">OpenAI</option>
-                            <option value="anthropic" data-i18n="messages.apiProviders.anthropic">Anthropic</option>
-                            <option value="custom" data-i18n="ui.settingsPanel.custom">自定义</option>
-                        </select>
-                    </div>
-
-                    <div class="setting-group">
-                        <label for="translation-model-name" data-i18n="ui.settingsPanel.modelName">模型名称:</label>
-                        <input type="text" id="translation-model-name" data-i18n-placeholder="ui.settingsPanel.modelNamePlaceholder" placeholder="请输入模型名称">
-                    </div>
-
-                    <div class="setting-group">
-                        <label for="translation-api-endpoint" data-i18n="ui.settingsPanel.apiEndpoint">API端点:</label>
-                        <input type="text" id="translation-api-endpoint" data-i18n-placeholder="ui.settingsPanel.apiEndpointPlaceholder" placeholder="请输入API端点URL">
-                    </div>
-
-                    <div class="setting-group">
-                        <label for="translation-api-key" data-i18n="ui.settingsPanel.apiKey">API Key:</label>
-                        <input type="password" id="translation-api-key" data-i18n-placeholder="ui.settingsPanel.apiKeyPlaceholder" placeholder="请输入您的API Key">
-                    </div>
-
-                    <div class="setting-group">
-                        <label for="translation-temperature" data-i18n="ui.settingsPanel.temperature">Temperature:</label>
-                        <input type="number" id="translation-temperature" min="0" max="2" step="0.1" data-i18n-placeholder="ui.settingsPanel.temperaturePlaceholder" placeholder="留空使用默认值">
-                        <small class="setting-hint" data-i18n="ui.settingsPanel.temperatureHint">控制输出随机性，0.0-2.0，留空则不设置（建议降低一些temperature）</small>
-                    </div>
-
-                    <div class="setting-group">
-                        <label>
-                            <input type="checkbox" id="translation-enable-thinking" />
-                            <span data-i18n="ui.settingsPanel.enableThinking">启用thinking</span>
-                        </label>
-                        <small class="setting-hint" data-i18n="ui.settingsPanel.enableThinkingHint">为支持的API提供商启用thinking功能（如Ollama）</small>
-                    </div>
-
-                    <div class="setting-group">
-                        <label for="translation-prompt" data-i18n="ui.settingsPanel.translationPrompt">翻译提示词:</label>
-                        <textarea id="translation-prompt" rows="6"
-                            data-i18n-placeholder="ui.settingsPanel.translationPromptPlaceholder" placeholder="请将以下文本翻译成中文，保持原文的格式和结构...">请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。</textarea>
-                    </div>
-
-                    <div class="setting-group">
-                        <label for="translation-context-count" data-i18n="ui.settingsPanel.contextCount">上下文数量:</label>
-                        <input type="number" id="translation-context-count" min="0" max="5" value="0">
-                        <small class="setting-hint" data-i18n="ui.settingsPanel.contextCountHint">提供前文以提升翻译准确性，留空则不提供（对于小模型推荐设置为0）</small>
-                    </div>
-
-                    <div class="setting-group">
-                        <button id="translate-all-btn" class="btn btn-primary btn-full-width" disabled data-i18n="ui.buttons.translateAll">全部翻译</button>
-                    </div>
-                    <div class="setting-group">
-                        <button id="translation-export-alternating-btn" class="btn btn-secondary btn-full-width" disabled data-i18n="ui.buttons.exportAlternating">导出交替翻译结果</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 操作设置折叠区域 -->
-            <div class="settings-section">
-                <div class="settings-section-header" onclick="toggleSettingsSection('proofread-settings')">
-                    <span data-i18n="ui.settingsPanel.proofreadSettings">校对</span>
-                    <span class="section-toggle">▼</span>
-                </div>
-                <div id="proofread-settings" class="settings-section-content">
-                    <!-- 校对模式开关 -->
-                    <div class="setting-group">
-                        <label>
-                            <input type="checkbox" id="proofreading-mode" />
-                            <span data-i18n="ui.settingsPanel.proofreadingMode">启用校对模式</span>
-                        </label>
-                    </div>
-
-                    <!-- 校对设置 -->
-                    <div id="proofreading-settings-group" style="display: none;">
+                <!-- 分段设置折叠区域 -->
+                <div class="settings-section">
+                    <h3 class="section-header" onclick="toggleSection(this)">
+                        <svg class="section-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                        分段
+                    </h3>
+                    <div id="translation-paragraph-settings" class="section-content">
                         <div class="setting-group">
-                            <label for="proofread-api-provider" data-i18n="ui.settingsPanel.proofreadApiProvider">校对API提供商:</label>
-                            <select id="proofread-api-provider">
+                            <label for="translation-paragraph-char-limit" data-i18n="ui.settingsPanel.paragraphCharLimit">单段字符数:</label>
+                            <input type="number" id="translation-paragraph-char-limit" min="0" value="0">
+                            <small class="setting-hint" data-i18n="ui.settingsPanel.paragraphCharLimitHint">设置为0表示不限制，大于0时会合并段落以减少API调用</small>
+                        </div>
+
+                        <div class="setting-group">
+                            <button id="translation-reorganize-paragraphs-btn" class="btn btn-secondary btn-full-width" disabled data-i18n="ui.buttons.reorganizeParagraphs">重新划分段落</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 翻译设置折叠区域 -->
+                <div class="settings-section">
+                    <h3 class="section-header" onclick="toggleSection(this)">
+                        <svg class="section-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                        翻译
+                    </h3>
+                    <div id="translation-general-settings" class="section-content">
+                        <div class="setting-group">
+                            <label for="translation-api-provider" data-i18n="ui.settingsPanel.apiProvider">API提供商:</label>
+                            <select id="translation-api-provider">
                                 <option value="ollama" data-i18n="messages.apiProviders.ollama">Ollama</option>
                                 <option value="openai" data-i18n="messages.apiProviders.openai">OpenAI</option>
                                 <option value="anthropic" data-i18n="messages.apiProviders.anthropic">Anthropic</option>
@@ -164,48 +93,130 @@
                         </div>
 
                         <div class="setting-group">
-                            <label for="proofread-model-name" data-i18n="ui.settingsPanel.proofreadModelName">校对模型名称:</label>
-                            <input type="text" id="proofread-model-name" data-i18n-placeholder="ui.settingsPanel.proofreadModelNamePlaceholder" placeholder="请输入校对模型名称">
+                            <label for="translation-model-name" data-i18n="ui.settingsPanel.modelName">模型名称:</label>
+                            <input type="text" id="translation-model-name" data-i18n-placeholder="ui.settingsPanel.modelNamePlaceholder" placeholder="请输入模型名称">
                         </div>
 
                         <div class="setting-group">
-                            <label for="proofread-api-endpoint" data-i18n="ui.settingsPanel.proofreadApiEndpoint">校对API端点:</label>
-                            <input type="text" id="proofread-api-endpoint" data-i18n-placeholder="ui.settingsPanel.proofreadApiEndpointPlaceholder" placeholder="请输入校对API端点URL">
+                            <label for="translation-api-endpoint" data-i18n="ui.settingsPanel.apiEndpoint">API端点:</label>
+                            <input type="text" id="translation-api-endpoint" data-i18n-placeholder="ui.settingsPanel.apiEndpointPlaceholder" placeholder="请输入API端点URL">
                         </div>
 
                         <div class="setting-group">
-                            <label for="proofread-api-key" data-i18n="ui.settingsPanel.proofreadApiKey">校对API Key:</label>
-                            <input type="password" id="proofread-api-key" data-i18n-placeholder="ui.settingsPanel.proofreadApiKeyPlaceholder" placeholder="请输入您的校对API Key">
+                            <label for="translation-api-key" data-i18n="ui.settingsPanel.apiKey">API Key:</label>
+                            <input type="password" id="translation-api-key" data-i18n-placeholder="ui.settingsPanel.apiKeyPlaceholder" placeholder="请输入您的API Key">
                         </div>
 
                         <div class="setting-group">
-                            <label for="proofread-temperature" data-i18n="ui.settingsPanel.proofreadTemperature">校对Temperature:</label>
-                            <input type="number" id="proofread-temperature" min="0" max="2" step="0.1" data-i18n-placeholder="ui.settingsPanel.proofreadTemperaturePlaceholder" placeholder="留空使用默认值">
-                            <small class="setting-hint" data-i18n="ui.settingsPanel.proofreadTemperatureHint">校对输出随机性，0.0-2.0，留空则不设置</small>
+                            <label for="translation-temperature" data-i18n="ui.settingsPanel.temperature">Temperature:</label>
+                            <input type="number" id="translation-temperature" min="0" max="2" step="0.1" data-i18n-placeholder="ui.settingsPanel.temperaturePlaceholder" placeholder="留空使用默认值">
+                            <small class="setting-hint" data-i18n="ui.settingsPanel.temperatureHint">控制输出随机性，0.0-2.0，留空则不设置（建议降低一些temperature）</small>
                         </div>
 
                         <div class="setting-group">
                             <label>
-                                <input type="checkbox" id="proofread-enable-thinking" />
-                                <span data-i18n="ui.settingsPanel.proofreadEnableThinking">启用校对thinking</span>
+                                <input type="checkbox" id="translation-enable-thinking" />
+                                <span data-i18n="ui.settingsPanel.enableThinking">启用thinking</span>
                             </label>
-                            <small class="setting-hint" data-i18n="ui.settingsPanel.proofreadEnableThinkingHint">为支持的API提供商启用thinking功能（如Ollama）</small>
+                            <small class="setting-hint" data-i18n="ui.settingsPanel.enableThinkingHint">为支持的API提供商启用thinking功能（如Ollama）</small>
                         </div>
 
                         <div class="setting-group">
-                            <label for="proofread-prompt" data-i18n="ui.settingsPanel.proofreadPrompt">校对提示词:</label>
-                            <textarea id="proofread-prompt" rows="6"
-                                data-i18n-placeholder="ui.settingsPanel.proofreadPromptPlaceholder" placeholder="请校对以下翻译内容...">请校对以下翻译内容，检查语法、用词、逻辑和流畅度，并给出改进建议。请直接输出改进后的内容，不要添加额外的解释或注释。</textarea>
+                            <label for="translation-prompt" data-i18n="ui.settingsPanel.translationPrompt">翻译提示词:</label>
+                            <textarea id="translation-prompt" rows="6"
+                                data-i18n-placeholder="ui.settingsPanel.translationPromptPlaceholder" placeholder="请将以下文本翻译成中文，保持原文的格式和结构...">请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。</textarea>
                         </div>
 
+                        <div class="setting-group">
+                            <label for="translation-context-count" data-i18n="ui.settingsPanel.contextCount">上下文数量:</label>
+                            <input type="number" id="translation-context-count" min="0" max="5" value="0">
+                            <small class="setting-hint" data-i18n="ui.settingsPanel.contextCountHint">提供前文以提升翻译准确性，留空则不提供（对于小模型推荐设置为0）</small>
+                        </div>
 
                         <div class="setting-group">
-                            <button id="proofread-all-btn" class="btn btn-primary btn-full-width" disabled data-i18n="ui.buttons.proofreadAll">校对所有段落</button>
+                            <button id="translate-all-btn" class="btn btn-primary btn-full-width" disabled data-i18n="ui.buttons.translateAll">全部翻译</button>
+                        </div>
+                        <div class="setting-group">
+                            <button id="translation-export-alternating-btn" class="btn btn-secondary btn-full-width" disabled data-i18n="ui.buttons.exportAlternating">导出交替翻译结果</button>
                         </div>
                     </div>
                 </div>
+
+                <!-- 操作设置折叠区域 -->
+                <div class="settings-section">
+                    <h3 class="section-header" onclick="toggleSection(this)">
+                        <svg class="section-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                        校对
+                    </h3>
+                    <div id="proofread-settings" class="section-content">
+                        <!-- 校对模式开关 -->
+                        <div class="setting-group">
+                            <label>
+                                <input type="checkbox" id="proofreading-mode" />
+                                <span data-i18n="ui.settingsPanel.proofreadingMode">启用校对模式</span>
+                            </label>
+                        </div>
+
+                        <!-- 校对设置 -->
+                        <div id="proofreading-settings-group" style="display: none;">
+                            <div class="setting-group">
+                                <label for="proofread-api-provider" data-i18n="ui.settingsPanel.proofreadApiProvider">校对API提供商:</label>
+                                <select id="proofread-api-provider">
+                                    <option value="ollama" data-i18n="messages.apiProviders.ollama">Ollama</option>
+                                    <option value="openai" data-i18n="messages.apiProviders.openai">OpenAI</option>
+                                    <option value="anthropic" data-i18n="messages.apiProviders.anthropic">Anthropic</option>
+                                    <option value="custom" data-i18n="ui.settingsPanel.custom">自定义</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-group">
+                                <label for="proofread-model-name" data-i18n="ui.settingsPanel.proofreadModelName">校对模型名称:</label>
+                                <input type="text" id="proofread-model-name" data-i18n-placeholder="ui.settingsPanel.proofreadModelNamePlaceholder" placeholder="请输入校对模型名称">
+                            </div>
+
+                            <div class="setting-group">
+                                <label for="proofread-api-endpoint" data-i18n="ui.settingsPanel.proofreadApiEndpoint">校对API端点:</label>
+                                <input type="text" id="proofread-api-endpoint" data-i18n-placeholder="ui.settingsPanel.proofreadApiEndpointPlaceholder" placeholder="请输入校对API端点URL">
+                            </div>
+
+                            <div class="setting-group">
+                                <label for="proofread-api-key" data-i18n="ui.settingsPanel.proofreadApiKey">校对API Key:</label>
+                                <input type="password" id="proofread-api-key" data-i18n-placeholder="ui.settingsPanel.proofreadApiKeyPlaceholder" placeholder="请输入您的校对API Key">
+                            </div>
+
+                            <div class="setting-group">
+                                <label for="proofread-temperature" data-i18n="ui.settingsPanel.proofreadTemperature">校对Temperature:</label>
+                                <input type="number" id="proofread-temperature" min="0" max="2" step="0.1" data-i18n-placeholder="ui.settingsPanel.proofreadTemperaturePlaceholder" placeholder="留空使用默认值">
+                                <small class="setting-hint" data-i18n="ui.settingsPanel.proofreadTemperatureHint">校对输出随机性，0.0-2.0，留空则不设置</small>
+                            </div>
+
+                            <div class="setting-group">
+                                <label>
+                                    <input type="checkbox" id="proofread-enable-thinking" />
+                                    <span data-i18n="ui.settingsPanel.proofreadEnableThinking">启用校对thinking</span>
+                                </label>
+                                <small class="setting-hint" data-i18n="ui.settingsPanel.proofreadEnableThinkingHint">为支持的API提供商启用thinking功能（如Ollama）</small>
+                            </div>
+
+                            <div class="setting-group">
+                                <label for="proofread-prompt" data-i18n="ui.settingsPanel.proofreadPrompt">校对提示词:</label>
+                                <textarea id="proofread-prompt" rows="6"
+                                    data-i18n-placeholder="ui.settingsPanel.proofreadPromptPlaceholder" placeholder="请校对以下翻译内容...">请校对以下翻译内容，检查语法、用词、逻辑和流畅度，并给出改进建议。请直接输出改进后的内容，不要添加额外的解释或注释。</textarea>
+                            </div>
+
+
+                            <div class="setting-group">
+                                <button id="proofread-all-btn" class="btn btn-primary btn-full-width" disabled data-i18n="ui.buttons.proofreadAll">校对所有段落</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
-        </div>
+
+        </aside>
 
         <!-- 主内容区域 -->
         <div class="main-content-panel">
@@ -244,17 +255,16 @@
     <script src="common.js"></script>
     <script>
         // 折叠设置部分的JavaScript函数
-        function toggleSettingsSection(sectionId) {
-            const content = document.getElementById(sectionId);
-            const header = content.previousElementSibling;
-            const toggle = header.querySelector('.section-toggle');
+        function toggleSection(headerElement) {
+            const isCollapsed = headerElement.classList.contains('collapsed');
+            const sectionContent = headerElement.nextElementSibling;
             
-            if (content.style.display === 'none') {
-                content.style.display = 'block';
-                toggle.textContent = '▼';
+            if (isCollapsed) {
+                headerElement.classList.remove('collapsed');
+                sectionContent.classList.remove('collapsed');
             } else {
-                content.style.display = 'none';
-                toggle.textContent = '▶';
+                headerElement.classList.add('collapsed');
+                sectionContent.classList.add('collapsed');
             }
         }
         

@@ -19,6 +19,118 @@ body {
     height: 100vh;
 }
 
+/* 设置栏相关 */
+
+/* 左侧设置面板 */
+.settings-panel {
+    width: 280px;
+    background: white;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+    transition: width 0.3s ease, transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+}
+
+.settings-panel.collapsed {
+    width: 20px;
+}
+
+.settings-panel.collapsed .settings-content {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.collapse-btn {
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid #e1e4e8;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 11;
+    transition: all 0.3s ease;
+}
+
+.collapse-btn:hover {
+    background: #f6f8fa;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.collapse-btn svg {
+    transition: transform 0.3s ease;
+}
+
+.settings-content {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+    transition: opacity 0.3s ease;
+}
+
+.settings-content h2 {
+    font-size: 20px;
+    margin-bottom: 24px;
+    color: #1a1a1a;
+}
+
+.settings-section {
+    margin-bottom: 32px;
+}
+
+.section-header {
+    font-size: 16px;
+    font-weight: 600;
+    color: #586069;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.2s ease;
+    user-select: none;
+}
+
+.section-header:hover {
+    color: #0366d6;
+}
+
+.section-toggle-icon {
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.section-header.collapsed .section-toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.section-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+    max-height: 500px;
+    opacity: 1;
+}
+
+.section-content.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+}
+
+
+/* 错误模态框相关 */
+
 .modal {
     display: none;
     position: fixed;

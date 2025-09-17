@@ -1720,6 +1720,11 @@ class MarkdownTranslator {
         } else {
             settingsPanel.classList.remove('collapsed');
         }
+
+        // 让 ">" 变成 "<"
+        const collapseBtn = document.getElementById('translation-collapse-btn');
+        const svg = collapseBtn.querySelector('svg');
+        svg.style.transform = settingsPanel.classList.contains('collapsed') ? 'rotate(180deg)' : '';
         
         this.saveSettings();
     }
