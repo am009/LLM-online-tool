@@ -42,6 +42,13 @@
                 <button class="tab-button" data-tab="pdf-ocr" data-i18n="ui.tabs.pdfOcr">PDF OCR</button>
                 <button class="tab-button active" data-tab="translation" data-i18n="ui.tabs.translation">Translation</button>
             </div>
+            <div class="language-selector">
+                <svg t="1758113779159" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1494" width="25" height="25" style="margin: 5px; fill: gray;"><path d="M928 512a416.192 416.192 0 0 1-287.936 395.904L640 1024l-128-128 128-128 0.064 72a352.256 352.256 0 0 0 223.616-312.96L864 512h64zM320 448v64h192v64H416c0 66.048-33.28 130.944-81.216 182.4 33.92 25.344 68.032 38.912 102.592 41.216L448 800v64c-56.704 0-110.464-20.928-161.408-62.08-46.848 35.584-100.032 58.688-147.968 61.76L128 864v-64c33.984 0 74.368-16.448 111.424-42.88a650.24 650.24 0 0 1-64-83.52l-10.624-16.704 54.4-33.792a616.128 616.128 0 0 0 68.288 91.904c34.944-37.312 60.48-82.816 64.064-128.064L352 576H64V512h192V448h64zM817.728 60.8L956.8 448h-89.984l-28.992-88.768h-140.8L668.544 448H579.008L720.768 60.8h96.96zM448 0l128 128-128 128V165.824A352.32 352.32 0 0 0 183.04 386.56l-5.12 14.08-60.672-20.224A416.256 416.256 0 0 1 448 100.928V0z m320.256 127.488h-2.24l-1.408 11.2c-1.28 7.36-3.008 14.592-5.376 21.568l-44.224 135.232h103.232l-43.968-134.208-1.984-6.912a176.512 176.512 0 0 1-4.032-26.88z" p-id="1495"></path></svg>
+                <select id="interface-language" class="language-select">
+                    <option value="zh-CN">中文</option>
+                    <option value="en-US">English</option>
+                </select>
+            </div>
         </nav>
 
         <!-- Tab 内容容器 -->
@@ -155,13 +162,6 @@
 
                     <div class="settings-content">
                         <h2 data-i18n="ui.settings">设置</h2>
-                        <div class="setting-group">
-                            <label for="interface-language" data-i18n="ui.settingsPanel.language">界面语言:</label>
-                            <select id="interface-language">
-                                <option value="zh-CN">中文</option>
-                                <option value="en-US">English</option>
-                            </select>
-                        </div>
 
                         <!-- 分段设置折叠区域 -->
                         <div class="settings-section">
