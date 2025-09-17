@@ -4,171 +4,6 @@
     --translate-button-width: 60px;
 }
 
-/* 左侧设置栏 */
-.translation-settings-panel {
-    width: 25%;
-    min-width: 250px;
-    max-width: 400px;
-    background: #fff;
-    border-right: 1px solid #e0e0e0;
-    overflow-y: auto;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-    /* transition: width 0.3s ease; */
-    position: relative;
-}
-
-.translation-settings-panel.collapsed {
-    width: 40px;
-    min-width: 40px;
-}
-
-.settings-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 20px 0 20px;
-    margin-bottom: 20px;
-}
-
-.translation-settings-panel.collapsed .settings-header {
-    padding: 10px 5px 0 5px;
-    margin-bottom: 10px;
-    flex-direction: column;
-}
-
-.translation-settings-panel.collapsed .settings-header h2 {
-    display: none;
-}
-
-.translation-collapse-btn {
-    background: #f8f9fa;
-    border: 1px solid #e0e0e0;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: bold;
-    color: #666;
-    /* transition: all 0.3s; */
-}
-
-.translation-collapse-btn:hover {
-    background: #e9ecef;
-    color: #333;
-}
-
-.translation-settings-panel.collapsed .translation-collapse-btn {
-    transform: rotate(180deg);
-}
-
-.translation-settings-panel .setting-group {
-    padding: 0 20px;
-}
-
-.translation-settings-panel.collapsed .setting-group {
-    display: none;
-}
-
-.translation-settings-panel h2 {
-    margin-bottom: 20px;
-    color: #2c3e50;
-    font-size: 1.4em;
-}
-
-.setting-group {
-    margin-bottom: 20px;
-}
-
-.setting-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
-    color: #555;
-}
-
-.setting-group input,
-.setting-group select,
-.setting-group textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    /* transition: border-color 0.3s; */
-}
-
-.setting-group input:focus,
-.setting-group select:focus,
-.setting-group textarea:focus {
-    outline: none;
-    border-color: #3498db;
-    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
-}
-
-.setting-group textarea {
-    resize: vertical;
-    min-height: 100px;
-    font-family: inherit;
-}
-
-/* 复选框样式 */
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-}
-
-input[type="checkbox"] {
-    width: auto;
-    margin-right: 10px;
-}
-
-/* 折叠设置部分样式 */
-.settings-section {
-    margin-bottom: 20px;
-}
-
-.settings-section-header {
-    background: #f8f9fa;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    padding: 3px 15px;
-    margin: 0 5px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-weight: 500;
-    color: #2c3e50;
-    transition: all 0.2s;
-}
-
-.settings-section-header:hover {
-    background: #e9ecef;
-}
-
-.section-toggle {
-    font-size: 14px;
-    transition: transform 0.2s;
-    color: #666;
-}
-
-.settings-section-content {
-    padding-top: 15px;
-    border: 1px solid #e0e0e0;
-    border-top: none;
-    border-radius: 4px;
-    margin: 0px 5px;
-}
-
-.translation-settings-panel.collapsed .settings-section {
-    display: none;
-}
-
 /* 按钮全宽样式 */
 .btn-full-width {
     width: 100%;
@@ -327,7 +162,7 @@ input[type="checkbox"] {
 }
 
 /* 渲染切换图标 */
-.render-toggle {
+.translation-render-toggle {
     position: absolute;
     top: 5px;
     left: 5px;
@@ -346,20 +181,20 @@ input[type="checkbox"] {
     z-index: 10;
 }
 
-.render-toggle:hover {
+.translation-render-toggle:hover {
     background: rgba(52, 152, 219, 0.2);
     transform: scale(1.1);
 }
 
 /* 内容容器 */
-.content-markdown,
-.content-mathjax {
+.translation-content-markdown,
+.translation-content-mathjax {
     width: 100%;
     min-height: 40px;
     color: #000;
 }
 
-.content-markdown {
+.translation-content-markdown {
     border: 1px solid #ddd;
     border-radius: 4px;
     resize: none;
@@ -367,12 +202,12 @@ input[type="checkbox"] {
     box-sizing: border-box;
 }
 
-.content-mathjax {
+.translation-content-mathjax {
     white-space: pre-wrap;
 }
 
-.content-markdown:focus,
-.content-mathjax[contenteditable="true"]:focus {
+.translation-content-markdown:focus,
+.translation-content-mathjax[contenteditable="true"]:focus {
     outline: none;
     border-color: #3498db;
 }
@@ -459,7 +294,7 @@ input[type="checkbox"] {
 
 /* 响应式设计 */
 @media (max-width: 1024px) {
-    .translation-settings-panel {
+    .settings-panel {
         width: 30%;
         min-width: 200px;
     }
@@ -468,13 +303,13 @@ input[type="checkbox"] {
         width: 70%;
     }
     
-    .translation-settings-panel.collapsed + .main-content-panel {
+    .settings-panel.collapsed + .main-content-panel {
         width: calc(100% - 40px);
     }
 }
 
 @media (max-width: 768px) {
-    .translation-settings-panel {
+    .settings-panel {
         width: 25%;
         min-width: 180px;
     }
@@ -483,11 +318,11 @@ input[type="checkbox"] {
         width: 75%;
     }
     
-    .translation-settings-panel.collapsed + .main-content-panel {
+    .settings-panel.collapsed + .main-content-panel {
         width: calc(100% - 40px);
     }
     
-    .translation-settings-panel .setting-group {
+    .settings-panel .setting-group {
         padding: 0 10px;
     }
     
@@ -544,10 +379,7 @@ input[type="checkbox"] {
         color: #ecf0f1;
     }
     
-    .translation-settings-panel,
-    .original-panel,
-    .translation-panel,
-    .content-area {
+    .settings-panel {
         background: #34495e;
         border-color: #4a5c6a;
     }

@@ -436,7 +436,7 @@ class MarkdownTranslator {
         
         // 初始化所有MathJax版本的渲染（但不显示）
         if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
-            const mathjaxElements = document.querySelectorAll('.content-mathjax');
+            const mathjaxElements = document.querySelectorAll('.translation-content-mathjax');
             MathJax.typesetPromise(mathjaxElements).catch((err) => console.log(err.message));
         }
     }
@@ -452,7 +452,7 @@ class MarkdownTranslator {
         
         // 原文块切换图标
         const originalToggle = document.createElement('button');
-        originalToggle.className = 'render-toggle';
+        originalToggle.className = 'translation-render-toggle';
         // 根据默认渲染模式设置初始图标
         originalToggle.innerHTML = this.originalRenderMode[index] === 'mathjax' ? '∫' : '📝';
         originalToggle.title = this.originalRenderMode[index] === 'mathjax' ? languageManager.get('ui.tooltips.toggleToMarkdown') : languageManager.get('ui.tooltips.toggleToMathJax');
@@ -460,7 +460,7 @@ class MarkdownTranslator {
         
         // 原文markdown版本
         const originalMarkdown = document.createElement('textarea');
-        originalMarkdown.className = 'content-markdown';
+        originalMarkdown.className = 'translation-content-markdown';
         originalMarkdown.value = originalContent;
         originalMarkdown.setAttribute('oninput', 'this.style.height = "";this.style.height = this.scrollHeight + "px"');
         // 根据默认渲染模式决定是否隐藏
@@ -484,7 +484,7 @@ class MarkdownTranslator {
         
         // 原文mathjax版本
         const originalMathjax = document.createElement('div');
-        originalMathjax.className = 'content-mathjax tex2jax_process';
+        originalMathjax.className = 'translation-content-mathjax tex2jax_process';
         originalMathjax.innerHTML = originalContent;
         // 根据默认渲染模式决定是否隐藏
         originalMathjax.style.display = this.originalRenderMode[index] === 'mathjax' ? 'block' : 'none';
@@ -512,14 +512,14 @@ class MarkdownTranslator {
         
         // 翻译块切换图标
         const translationToggle = document.createElement('button');
-        translationToggle.className = 'render-toggle';
+        translationToggle.className = 'translation-render-toggle';
         translationToggle.innerHTML = '📝';
         translationToggle.title = languageManager.get('ui.tooltips.toggleToMathJax');
         translationToggle.addEventListener('click', () => this.toggleTranslationRenderMode(index));
         
         // 翻译markdown版本
         const translationMarkdown = document.createElement('textarea');
-        translationMarkdown.className = 'content-markdown';
+        translationMarkdown.className = 'translation-content-markdown';
         translationMarkdown.value = translationContent ?? '';
         translationMarkdown.setAttribute('oninput', 'this.style.height = "";this.style.height = this.scrollHeight + "px"');
         
@@ -541,7 +541,7 @@ class MarkdownTranslator {
         
         // 翻译mathjax版本
         const translationMathjax = document.createElement('div');
-        translationMathjax.className = 'content-mathjax tex2jax_process';
+        translationMathjax.className = 'translation-content-mathjax tex2jax_process';
         translationMathjax.innerHTML = translationContent ?? '';
         translationMathjax.style.display = 'none';
         
@@ -653,8 +653,8 @@ class MarkdownTranslator {
                 
                 // 更新翻译块的显示
                 const translationBlock = document.querySelector(`[data-index="${index}"] .translation-block`);
-                const markdownDiv = translationBlock.querySelector('.content-markdown');
-                const mathjaxDiv = translationBlock.querySelector('.content-mathjax');
+                const markdownDiv = translationBlock.querySelector('.translation-content-markdown');
+                const mathjaxDiv = translationBlock.querySelector('.translation-content-mathjax');
                 
                 markdownDiv.value = translation;
                 // 触发自动调整高度
@@ -867,8 +867,8 @@ class MarkdownTranslator {
         let translationBlock, markdownDiv, mathjaxDiv;
         if (blockIndex !== null) {
             translationBlock = document.querySelector(`[data-index="${blockIndex}"] .translation-block`);
-            markdownDiv = translationBlock?.querySelector('.content-markdown');
-            mathjaxDiv = translationBlock?.querySelector('.content-mathjax');
+            markdownDiv = translationBlock?.querySelector('.translation-content-markdown');
+            mathjaxDiv = translationBlock?.querySelector('.translation-content-mathjax');
         }
         
         try {
@@ -1084,8 +1084,8 @@ class MarkdownTranslator {
                 
                 // 更新翻译块的显示
                 const translationBlock = document.querySelector(`[data-index="${index}"] .translation-block`);
-                const markdownDiv = translationBlock.querySelector('.content-markdown');
-                const mathjaxDiv = translationBlock.querySelector('.content-mathjax');
+                const markdownDiv = translationBlock.querySelector('.translation-content-markdown');
+                const mathjaxDiv = translationBlock.querySelector('.translation-content-mathjax');
                 
                 markdownDiv.value = proofreadResult;
                 // 触发自动调整高度
@@ -1300,8 +1300,8 @@ class MarkdownTranslator {
         let translationBlock, markdownDiv, mathjaxDiv;
         if (blockIndex !== null) {
             translationBlock = document.querySelector(`[data-index="${blockIndex}"] .translation-block`);
-            markdownDiv = translationBlock?.querySelector('.content-markdown');
-            mathjaxDiv = translationBlock?.querySelector('.content-mathjax');
+            markdownDiv = translationBlock?.querySelector('.translation-content-markdown');
+            mathjaxDiv = translationBlock?.querySelector('.translation-content-mathjax');
         }
         
         try {
@@ -1756,9 +1756,9 @@ class MarkdownTranslator {
         
         if (blockType === 'original') {
             const container = pair.querySelector('.original-block');
-            const toggle = container.querySelector('.render-toggle');
-            const markdownTextarea = container.querySelector('.content-markdown');
-            const mathjaxDiv = container.querySelector('.content-mathjax');
+            const toggle = container.querySelector('.translation-render-toggle');
+            const markdownTextarea = container.querySelector('.translation-content-markdown');
+            const mathjaxDiv = container.querySelector('.translation-content-mathjax');
             const mode = this.originalRenderMode[index];
             
             if (mode === 'markdown') {
@@ -1781,9 +1781,9 @@ class MarkdownTranslator {
             }
         } else {
             const container = pair.querySelector('.translation-block');
-            const toggle = container.querySelector('.render-toggle');
-            const markdownTextarea = container.querySelector('.content-markdown');
-            const mathjaxDiv = container.querySelector('.content-mathjax');
+            const toggle = container.querySelector('.translation-render-toggle');
+            const markdownTextarea = container.querySelector('.translation-content-markdown');
+            const mathjaxDiv = container.querySelector('.translation-content-mathjax');
             const mode = this.translationRenderMode[index];
             
             if (mode === 'markdown') {
