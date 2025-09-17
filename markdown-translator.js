@@ -101,135 +101,192 @@ class MarkdownTranslator {
 
     loadSettings() {
         const currentLanguage = languageManager.getCurrentLanguage();
-        const settingsKey = `markdown-translator-settings-${currentLanguage}`;
-        const settings = localStorage.getItem(settingsKey);
+        const settings = this.getStoredSettings(currentLanguage);
         
         if (settings) {
-            const parsed = JSON.parse(settings);
-            document.getElementById('translation-prompt').value = parsed.prompt ?? languageManager.get('ui.settingsPanel.translationPromptDefault');
-            document.getElementById('translation-api-key').value = parsed.apiKey ?? '';
-            const provider = parsed.apiProvider ?? 'ollama';
-            document.getElementById('translation-api-provider').value = provider;
-            document.getElementById('translation-context-count').value = (isNaN(parsed.contextCount) ? 1 : parsed.contextCount);
-            
-            // 加载段落字符数限制设置
-            document.getElementById('translation-paragraph-char-limit').value = parsed.paragraphCharLimit ?? 0;
-            
-            // 加载temperature设置，如果没有设置则留空
-            if (parsed.temperature !== undefined && parsed.temperature !== null && parsed.temperature !== '') {
-                document.getElementById('translation-temperature').value = parsed.temperature;
-            } else {
-                document.getElementById('translation-temperature').value = '';
-            }
-            
-            // 加载对应提供商的API端点
-            this.loadApiEndpoint(provider);
-            
-            // 加载对应提供商的模型名称
-            this.loadModelName(provider);
-            
-            // 加载布局设置
-            this.sidebarCollapsed = parsed.sidebarCollapsed ?? false;
+            // 加载翻译设置
+            this.loadTranslationSettings(settings);
             
             // 加载校对设置
-            this.proofreadingMode = parsed.proofreadingMode ?? false;
-            if (parsed.proofreadPrompt) {
-                document.getElementById('proofread-prompt').value = parsed.proofreadPrompt;
-            }
-            if (parsed.proofreadApiKey) {
-                document.getElementById('proofread-api-key').value = parsed.proofreadApiKey;
-            }
-            const proofreadProvider = parsed.proofreadApiProvider ?? 'ollama';
-            document.getElementById('proofread-api-provider').value = proofreadProvider;
+            this.loadProofreadSettings(settings);
             
-            if (parsed.proofreadTemperature !== undefined && parsed.proofreadTemperature !== null && parsed.proofreadTemperature !== '') {
-                document.getElementById('proofread-temperature').value = parsed.proofreadTemperature;
-            }
-            
-            // 加载thinking设置
-            document.getElementById('translation-enable-thinking').checked = parsed.enableThinking ?? false;
-            document.getElementById('proofread-enable-thinking').checked = parsed.proofreadEnableThinking ?? false;
-            
-            // 设置校对模式状态
-            document.getElementById('proofreading-mode').checked = this.proofreadingMode;
-            this.onProofreadingModeChange({ target: { checked: this.proofreadingMode } });
-            
-            // 加载对应提供商的校对API端点
-            this.loadProofreadApiEndpoint(proofreadProvider);
-            // 加载对应提供商的校对模型名称
-            this.loadProofreadModelName(proofreadProvider);
+            // 加载通用设置
+            this.loadGeneralSettings(settings);
         } else {
-            // 初次使用时加载默认端点和模型
-            this.loadApiEndpoint('openai');
-            this.loadModelName('openai');
-            // 初次使用时加载默认校对设置
-            this.loadProofreadApiEndpoint('openai');
-            this.loadProofreadModelName('openai');
-            // 设置默认翻译提示词
-            document.getElementById('translation-prompt').value = languageManager.get('ui.settingsPanel.translationPromptDefault');
+            // 初次使用时设置默认值
+            this.loadDefaultSettings();
         }
     }
 
+    getStoredSettings(language) {
+        const settingsKey = `markdown-translator-settings-${language}`;
+        const stored = localStorage.getItem(settingsKey);
+        return stored ? JSON.parse(stored) : null;
+    }
+
+    loadTranslationSettings(settings) {
+        const provider = settings.apiProvider ?? 'ollama';
+        document.getElementById('translation-api-provider').value = provider;
+        document.getElementById('translation-prompt').value = settings.prompt ?? languageManager.get('ui.settingsPanel.translationPromptDefault');
+        
+        // 加载该provider的设置
+        const providerSettings = this.getProviderSettings('translation', provider, settings);
+        this.applyProviderSettings('translation', providerSettings);
+    }
+
+    loadProofreadSettings(settings) {
+        const provider = settings.proofreadApiProvider ?? 'ollama';
+        document.getElementById('proofread-api-provider').value = provider;
+        if (settings.proofreadPrompt) {
+            document.getElementById('proofread-prompt').value = settings.proofreadPrompt;
+        }
+        
+        // 设置校对模式
+        this.proofreadingMode = settings.proofreadingMode ?? false;
+        document.getElementById('proofreading-mode').checked = this.proofreadingMode;
+        this.onProofreadingModeChange({ target: { checked: this.proofreadingMode } });
+        
+        // 加载该provider的设置
+        const providerSettings = this.getProviderSettings('proofread', provider, settings);
+        this.applyProviderSettings('proofread', providerSettings);
+    }
+
+    loadGeneralSettings(settings) {
+        document.getElementById('translation-context-count').value = (isNaN(settings.contextCount) ? 1 : settings.contextCount);
+        document.getElementById('translation-paragraph-char-limit').value = settings.paragraphCharLimit ?? 0;
+        this.sidebarCollapsed = settings.sidebarCollapsed ?? false;
+    }
+
+    getProviderSettings(type, provider, settings) {
+        const prefix = type === 'translation' ? '' : 'proofread';
+        const providerKey = prefix ? `${prefix}${provider.charAt(0).toUpperCase() + provider.slice(1)}` : provider;
+        
+        return {
+            apiKey: settings[`${prefix}ApiKey`] ?? '',
+            endpoint: this.getStoredEndpoint(type, provider),
+            modelName: this.getStoredModel(type, provider),
+            temperature: settings[`${prefix}Temperature`],
+            enableThinking: settings[`${prefix}EnableThinking`] ?? false
+        };
+    }
+
+    applyProviderSettings(type, settings) {
+        const prefix = type === 'translation' ? 'translation' : 'proofread';
+        
+        document.getElementById(`${prefix}-api-key`).value = settings.apiKey;
+        document.getElementById(`${prefix}-api-endpoint`).value = settings.endpoint;
+        document.getElementById(`${prefix}-model-name`).value = settings.modelName;
+        document.getElementById(`${prefix}-enable-thinking`).checked = settings.enableThinking;
+        
+        if (settings.temperature !== undefined && settings.temperature !== null && settings.temperature !== '') {
+            document.getElementById(`${prefix}-temperature`).value = settings.temperature;
+        } else {
+            document.getElementById(`${prefix}-temperature`).value = '';
+        }
+    }
+
+    loadDefaultSettings() {
+        this.loadApiEndpoint('openai');
+        this.loadModelName('openai');
+        this.loadProofreadApiEndpoint('openai');
+        this.loadProofreadModelName('openai');
+        document.getElementById('translation-prompt').value = languageManager.get('ui.settingsPanel.translationPromptDefault');
+    }
+
     saveSettings() {
+        const currentLanguage = languageManager.getCurrentLanguage();
+        
+        // 获取翻译设置
+        const translationSettings = this.collectTranslationSettings();
+        
+        // 获取校对设置
+        const proofreadSettings = this.collectProofreadSettings();
+        
+        // 获取通用设置
+        const generalSettings = this.collectGeneralSettings();
+        
+        // 合并所有设置
+        const settings = {
+            ...generalSettings,
+            ...translationSettings,
+            ...proofreadSettings
+        };
+        
+        // 保存provider特定的设置
+        this.saveProviderSettings('translation', translationSettings.apiProvider);
+        this.saveProviderSettings('proofread', proofreadSettings.proofreadApiProvider);
+        
+        // 保存到localStorage
+        const settingsKey = `markdown-translator-settings-${currentLanguage}`;
+        localStorage.setItem(settingsKey, JSON.stringify(settings));
+    }
+
+    collectTranslationSettings() {
         const provider = document.getElementById('translation-api-provider').value;
-        const endpoint = document.getElementById('translation-api-endpoint').value;
-        const modelName = document.getElementById('translation-model-name').value;
-        
-        // 保存当前提供商的API端点
-        this.saveApiEndpoint(provider, endpoint);
-        
-        // 保存当前提供商的模型名称
-        this.saveModelName(provider, modelName);
-        
-        // 保存校对提供商的设置
-        const proofreadProvider = document.getElementById('proofread-api-provider').value;
-        const proofreadEndpoint = document.getElementById('proofread-api-endpoint').value;
-        const proofreadModelName = document.getElementById('proofread-model-name').value;
-        
-        this.saveProofreadApiEndpoint(proofreadProvider, proofreadEndpoint);
-        this.saveProofreadModelName(proofreadProvider, proofreadModelName);
-        
-        const contextCountValue = parseInt(document.getElementById('translation-context-count').value);
-        const paragraphCharLimitValue = parseInt(document.getElementById('translation-paragraph-char-limit').value);
         const temperatureValue = document.getElementById('translation-temperature').value;
         
         const settings = {
             prompt: document.getElementById('translation-prompt').value,
             apiKey: document.getElementById('translation-api-key').value,
             apiProvider: provider,
-            contextCount: isNaN(contextCountValue) ? 1 : contextCountValue,
-            paragraphCharLimit: isNaN(paragraphCharLimitValue) ? 0 : paragraphCharLimitValue,
-            sidebarCollapsed: this.sidebarCollapsed,
-            enableThinking: document.getElementById('translation-enable-thinking').checked,
-            // 校对设置
-            proofreadingMode: this.proofreadingMode,
-            proofreadPrompt: document.getElementById('proofread-prompt').value,
-            proofreadApiKey: document.getElementById('proofread-api-key').value,
-            proofreadApiProvider: document.getElementById('proofread-api-provider').value,
-            proofreadEnableThinking: document.getElementById('proofread-enable-thinking').checked
+            enableThinking: document.getElementById('translation-enable-thinking').checked
         };
         
-        // 只有当temperature有值时才保存
-        if (temperatureValue !== null && temperatureValue !== undefined && temperatureValue.trim() !== '') {
+        if (temperatureValue && temperatureValue.trim() !== '') {
             const tempFloat = parseFloat(temperatureValue);
             if (!isNaN(tempFloat)) {
                 settings.temperature = tempFloat;
             }
         }
         
-        // 只有当校对temperature有值时才保存
-        const proofreadTemperatureValue = document.getElementById('proofread-temperature').value;
-        if (proofreadTemperatureValue !== null && proofreadTemperatureValue !== undefined && proofreadTemperatureValue.trim() !== '') {
-            const proofreadTempFloat = parseFloat(proofreadTemperatureValue);
-            if (!isNaN(proofreadTempFloat)) {
-                settings.proofreadTemperature = proofreadTempFloat;
+        return settings;
+    }
+
+    collectProofreadSettings() {
+        const provider = document.getElementById('proofread-api-provider').value;
+        const temperatureValue = document.getElementById('proofread-temperature').value;
+        
+        const settings = {
+            proofreadingMode: this.proofreadingMode,
+            proofreadPrompt: document.getElementById('proofread-prompt').value,
+            proofreadApiKey: document.getElementById('proofread-api-key').value,
+            proofreadApiProvider: provider,
+            proofreadEnableThinking: document.getElementById('proofread-enable-thinking').checked
+        };
+        
+        if (temperatureValue && temperatureValue.trim() !== '') {
+            const tempFloat = parseFloat(temperatureValue);
+            if (!isNaN(tempFloat)) {
+                settings.proofreadTemperature = tempFloat;
             }
         }
         
-        // 按语言分别保存设置
-        const currentLanguage = languageManager.getCurrentLanguage();
-        const settingsKey = `markdown-translator-settings-${currentLanguage}`;
-        localStorage.setItem(settingsKey, JSON.stringify(settings));
+        return settings;
+    }
+
+    collectGeneralSettings() {
+        const contextCountValue = parseInt(document.getElementById('translation-context-count').value);
+        const paragraphCharLimitValue = parseInt(document.getElementById('translation-paragraph-char-limit').value);
+        
+        return {
+            contextCount: isNaN(contextCountValue) ? 1 : contextCountValue,
+            paragraphCharLimit: isNaN(paragraphCharLimitValue) ? 0 : paragraphCharLimitValue,
+            sidebarCollapsed: this.sidebarCollapsed
+        };
+    }
+
+    saveProviderSettings(type, provider) {
+        const prefix = type === 'translation' ? 'translation' : 'proofread';
+        const endpoint = document.getElementById(`${prefix}-api-endpoint`).value;
+        const modelName = document.getElementById(`${prefix}-model-name`).value;
+        
+        if (type === 'translation') {
+            this.saveApiEndpoint(provider, endpoint);
+            this.saveModelName(provider, modelName);
+        } else {
+            this.saveProofreadApiEndpoint(provider, endpoint);
+            this.saveProofreadModelName(provider, modelName);
+        }
     }
 
     onProviderChange() {
@@ -267,100 +324,93 @@ class MarkdownTranslator {
         this.saveSettings();
     }
 
-    loadApiEndpoint(provider) {
-        const endpoints = this.getStoredEndpoints();
-        const defaultEndpoints = {
+    getDefaultEndpoints() {
+        return {
             'openai': 'https://api.openai.com/v1/chat/completions',
             'anthropic': 'https://api.anthropic.com/v1/messages',
             'ollama': 'http://localhost:11434/api/chat',
             'custom': ''
         };
-        
-        const endpoint = endpoints[provider] ?? defaultEndpoints[provider] ?? '';
-        document.getElementById('translation-api-endpoint').value = endpoint;
     }
 
-    saveApiEndpoint(provider, endpoint) {
-        const endpoints = this.getStoredEndpoints();
-        endpoints[provider] = endpoint;
-        localStorage.setItem('markdown-translator-endpoints', JSON.stringify(endpoints));
-    }
-
-    getStoredEndpoints() {
-        const stored = localStorage.getItem('markdown-translator-endpoints');
-        return stored ? JSON.parse(stored) : {};
-    }
-
-    loadModelName(provider) {
-        const models = this.getStoredModels();
-        const defaultModels = {
+    getDefaultModels(type = 'translation') {
+        const translationModels = {
             'openai': 'gpt-3.5-turbo',
             'anthropic': 'claude-3-sonnet-20240229',
             'ollama': 'llama2',
             'custom': ''
         };
         
-        const model = models[provider] ?? defaultModels[provider] ?? '';
-        document.getElementById('translation-model-name').value = model;
-    }
-
-    saveModelName(provider, modelName) {
-        const models = this.getStoredModels();
-        models[provider] = modelName;
-        localStorage.setItem('markdown-translator-models', JSON.stringify(models));
-    }
-
-    getStoredModels() {
-        const stored = localStorage.getItem('markdown-translator-models');
-        return stored ? JSON.parse(stored) : {};
-    }
-
-    loadProofreadApiEndpoint(provider) {
-        const endpoints = this.getStoredProofreadEndpoints();
-        const defaultEndpoints = {
-            'openai': 'https://api.openai.com/v1/chat/completions',
-            'anthropic': 'https://api.anthropic.com/v1/messages',
-            'ollama': 'http://localhost:11434/api/chat',
-            'custom': ''
-        };
-        
-        const endpoint = endpoints[provider] ?? defaultEndpoints[provider] ?? '';
-        document.getElementById('proofread-api-endpoint').value = endpoint;
-    }
-
-    saveProofreadApiEndpoint(provider, endpoint) {
-        const endpoints = this.getStoredProofreadEndpoints();
-        endpoints[provider] = endpoint;
-        localStorage.setItem('markdown-translator-proofread-endpoints', JSON.stringify(endpoints));
-    }
-
-    getStoredProofreadEndpoints() {
-        const stored = localStorage.getItem('markdown-translator-proofread-endpoints');
-        return stored ? JSON.parse(stored) : {};
-    }
-
-    loadProofreadModelName(provider) {
-        const models = this.getStoredProofreadModels();
-        const defaultModels = {
+        const proofreadModels = {
             'openai': 'gpt-4',
             'anthropic': 'claude-3-sonnet-20240229',
             'ollama': 'llama2',
             'custom': ''
         };
         
-        const model = models[provider] ?? defaultModels[provider] ?? '';
+        return type === 'translation' ? translationModels : proofreadModels;
+    }
+
+    getStoredEndpoint(type, provider) {
+        const storageKey = type === 'translation' ? 'markdown-translator-endpoints' : 'markdown-translator-proofread-endpoints';
+        const stored = localStorage.getItem(storageKey);
+        const endpoints = stored ? JSON.parse(stored) : {};
+        return endpoints[provider] ?? this.getDefaultEndpoints()[provider] ?? '';
+    }
+
+    getStoredModel(type, provider) {
+        const storageKey = type === 'translation' ? 'markdown-translator-models' : 'markdown-translator-proofread-models';
+        const stored = localStorage.getItem(storageKey);
+        const models = stored ? JSON.parse(stored) : {};
+        return models[provider] ?? this.getDefaultModels(type)[provider] ?? '';
+    }
+
+    loadApiEndpoint(provider) {
+        const endpoint = this.getStoredEndpoint('translation', provider);
+        document.getElementById('translation-api-endpoint').value = endpoint;
+    }
+
+    saveApiEndpoint(provider, endpoint) {
+        const stored = localStorage.getItem('markdown-translator-endpoints');
+        const endpoints = stored ? JSON.parse(stored) : {};
+        endpoints[provider] = endpoint;
+        localStorage.setItem('markdown-translator-endpoints', JSON.stringify(endpoints));
+    }
+
+    loadModelName(provider) {
+        const model = this.getStoredModel('translation', provider);
+        document.getElementById('translation-model-name').value = model;
+    }
+
+    saveModelName(provider, modelName) {
+        const stored = localStorage.getItem('markdown-translator-models');
+        const models = stored ? JSON.parse(stored) : {};
+        models[provider] = modelName;
+        localStorage.setItem('markdown-translator-models', JSON.stringify(models));
+    }
+
+    loadProofreadApiEndpoint(provider) {
+        const endpoint = this.getStoredEndpoint('proofread', provider);
+        document.getElementById('proofread-api-endpoint').value = endpoint;
+    }
+
+    saveProofreadApiEndpoint(provider, endpoint) {
+        const stored = localStorage.getItem('markdown-translator-proofread-endpoints');
+        const endpoints = stored ? JSON.parse(stored) : {};
+        endpoints[provider] = endpoint;
+        localStorage.setItem('markdown-translator-proofread-endpoints', JSON.stringify(endpoints));
+    }
+
+    loadProofreadModelName(provider) {
+        const model = this.getStoredModel('proofread', provider);
         document.getElementById('proofread-model-name').value = model;
     }
 
     saveProofreadModelName(provider, modelName) {
-        const models = this.getStoredProofreadModels();
+        const stored = localStorage.getItem('markdown-translator-proofread-models');
+        const models = stored ? JSON.parse(stored) : {};
         models[provider] = modelName;
         localStorage.setItem('markdown-translator-proofread-models', JSON.stringify(models));
-    }
-
-    getStoredProofreadModels() {
-        const stored = localStorage.getItem('markdown-translator-proofread-models');
-        return stored ? JSON.parse(stored) : {};
     }
 
     handleFileUpload(event) {
