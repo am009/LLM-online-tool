@@ -33,25 +33,26 @@
 }
 
 .btn-primary {
-    background: #3498db;
+    background: #0366d6;
     color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: #2980b9;
+    background: #0256c7;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .btn-secondary {
-    background: #95a5a6;
+    background: #586069;
     color: white;
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background: #7f8c8d;
+    background: #484e54;
 }
 
 .btn:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
@@ -85,7 +86,7 @@
 
 .translation-content-container {
     flex: 1;
-    padding: 60px 20px 20px;
+    padding: 40px 20px 20px;
     overflow-y: auto;
     background: #fff;
 }

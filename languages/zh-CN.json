@@ -4,7 +4,7 @@
     "settings": "设置",
     "tabs": {
       "pdfOcr": "PDF OCR",
-      "translation": "Translation"
+      "translation": "翻译"
     },
     "settingsPanel": {
       "apiProvider": "API提供商",
@@ -63,8 +63,8 @@
       "reorganizeParagraphs": "重新划分段落"
     },
     "placeholders": {
-      "uploadPrompt": "请上传Markdown文件开始翻译",
-      "pdfOcrComingSoon": "PDF OCR功能即将推出..."
+      "uploadPrompt": "请上传Markdown/Latex文件以开始翻译",
+      "noFileSelected": "未选择文件"
     },
     "modal": {
       "error": "错误",

@@ -63,8 +63,8 @@
       "reorganizeParagraphs": "Reorganize Paragraphs"
     },
     "placeholders": {
-      "uploadPrompt": "Please upload a Markdown file to start translation",
-      "pdfOcrComingSoon": "PDF OCR feature coming soon..."
+      "uploadPrompt": "Please upload a Markdown/Latex file to start translation",
+      "noFileSelected": "No file selected"
     },
     "modal": {
       "error": "Error",

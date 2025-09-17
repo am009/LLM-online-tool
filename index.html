@@ -7,6 +7,7 @@
     <title data-i18n="ui.title">markdown/latex在线翻译工具</title>
     <link rel="stylesheet" href="common.css">
     <link rel="stylesheet" href="markdown-translator.css">
+    <link rel="stylesheet" href="pdfocr.css">
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script>
         window.MathJax = {
@@ -30,6 +31,7 @@
             }
         };
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 
 <body>
@@ -46,8 +48,98 @@
         <div class="tab-content-wrapper">
             <!-- PDF OCR Tab -->
             <div id="pdf-ocr-content" class="tab-content">
-                <div class="placeholder">
-                    <p data-i18n="ui.placeholders.pdfOcrComingSoon">PDF OCR功能即将推出...</p>
+                <!-- 左侧设置栏 -->
+                <aside class="settings-panel" id="ocr-settings-panel">
+                    <button class="collapse-btn" id="ocr-collapse-btn" title="折叠/展开">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                    <div class="settings-content">
+                        <h2>设置</h2>
+                        <div class="settings-section">
+                            <h3 class="section-header" onclick="toggleSection(this)">
+                                <svg class="section-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg> API 设置
+                            </h3>
+                            <div class="setting-group">
+                                <label for="ocr-api-base">API 基础 URL:</label>
+                                <input type="text" id="ocr-api-base" class="form-control" value="http://172.19.193.39:5123" placeholder="http://172.19.193.39:5123">
+                            </div>
+                        </div>
+                        <div class="settings-section">
+                            <h3 class="section-header" onclick="toggleSection(this)">
+                                <svg class="section-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg> 识别选项
+                            </h3>
+                            <div class="setting-group">
+                                <label class="checkbox-label" for="ocr-auto-scroll">
+                                    <input type="checkbox" id="ocr-auto-scroll" checked>
+                                    自动识别时，滚动到当前识别页面
+                                </label>
+                            </div>
+                        </div>
+                        <div class="settings-section">
+
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- 主体OCR栏 -->
+                <div class="main-content">
+                    <header class="content-header">
+                        <div class="header-left">
+                            <h1 data-i18n="ui.tabs.pdfOcr">PDF OCR</h1>
+                            <span id="ocr-file-info" data-i18n="ui.placeholders.noFileSelected">未选择文件</span>
+                            <span id="ocr-page-count"></span>
+                        </div>
+                        <div class="header-right">
+                            <input type="file" id="ocr-pdf-input" accept=".pdf" style="display: none;">
+                            <button class="btn btn-primary" onclick="document.getElementById('ocr-pdf-input').click()">
+                                上传 PDF
+                            </button>
+                            <input type="file" id="ocr-progress-input" accept=".json" style="display: none;">
+                            <button class="btn btn-secondary" id="ocr-load-progress-btn" onclick="document.getElementById('ocr-progress-input').click()">
+                                加载进度
+                            </button>
+                            <button class="btn btn-secondary" id="ocr-save-progress-btn">
+                                保存进度
+                            </button>
+                            <button class="btn btn-secondary" id="ocr-export-btn" disabled>
+                                导出markdown
+                            </button>
+                            <button class="btn btn-primary" id="ocr-recognize-all-btn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                    <polyline points="10 9 9 9 8 9"/>
+                                </svg>
+                                识别所有
+                            </button>
+                            
+                        </div>
+                    </header>
+
+                    <!-- 批量识别进度 -->
+                    <span class="progress-info" id="ocr-progress-info"></span>
+
+                    <!-- 页面列表区域 -->
+                    <div class="pages-container" id="ocr-pages-container">
+                        <div class="empty-state">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                <path d="M13 3v5a2 2 0 002 2h4"/>
+                            </svg>
+                            <p>请上传 PDF 文件开始</p>
+                            <button class="btn btn-primary" onclick="document.getElementById('ocr-pdf-input').click()">
+                                选择 PDF 文件
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -241,13 +333,14 @@
                 <div class="main-content">
                     <div class="content-header">
                         <div class="header-left">
-                            <div class="translation-file-info" id="translation-file-info"></div>
+                            <h1 data-i18n="ui.tabs.translation">Translation</h1>
+                            <div class="translation-file-info" id="translation-file-info" data-i18n="ui.placeholders.noFileSelected">未选择文件</div>
                         </div>
                         <div class="header-right">
                             <button id="translation-upload-btn" class="btn btn-primary" data-i18n="ui.buttons.uploadOriginal">上传原文</button>
                             <input type="file" id="translation-file-input" accept=".md,.markdown" style="display: none;">
-                            <button id="translation-save-progress-btn" class="btn btn-secondary" disabled data-i18n="ui.buttons.saveProgress">保存进度</button>
                             <button id="translation-load-progress-btn" class="btn btn-secondary" data-i18n="ui.buttons.loadProgress">加载进度</button>
+                            <button id="translation-save-progress-btn" class="btn btn-secondary" disabled data-i18n="ui.buttons.saveProgress">保存进度</button>
                             <input type="file" id="translation-progress-input" accept=".json" style="display: none;">
                             <button id="translation-export-original-btn" class="btn btn-secondary" disabled data-i18n="ui.buttons.exportOriginal">导出原文</button>
                             <button id="translation-export-btn" class="btn btn-primary" disabled data-i18n="ui.buttons.exportTranslation">导出译文</button>
@@ -255,7 +348,11 @@
                     </div>
                     <div class="translation-content-container" id="translation-content-container">
                         <div class="placeholder">
-                            <p data-i18n="ui.placeholders.uploadPrompt">请上传Markdown文件开始翻译</p>
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                <path d="M13 3v5a2 2 0 002 2h4"/>
+                            </svg>
+                            <p data-i18n="ui.placeholders.uploadPrompt">请上传Markdown/Latex文件以开始翻译</p>
                         </div>
                     </div>
                 </div>
@@ -322,6 +419,7 @@
         });
     </script>
     <script src="markdown-translator.js"></script>
+    <script src="pdfocr.js"></script>
 </body>
 
 </html>

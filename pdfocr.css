@@ -1,0 +1,232 @@
+
+/* 页面行 */
+.page-row {
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    padding: 20px;
+    display: flex;
+    gap: 5px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.2s ease;
+    width: 100%;
+}
+
+.page-row:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 删除页面编号相关样式 */
+
+.page-image-container {
+    flex: 0 0 45%;
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #f6f8fa;
+    position: relative;
+}
+
+.page-image-container canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.action-container {
+    flex: 0 0 10%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding-top: 20px;
+}
+
+.result-container {
+    flex: 1;
+    min-height: 200px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 标签页头部 */
+.result-tabs {
+    display: flex;
+    border-bottom: 1px solid #e1e4e8;
+    margin-bottom: 8px;
+}
+
+.result-tab {
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #586069;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.result-tab.active {
+    color: #0366d6;
+    border-bottom-color: #0366d6;
+}
+
+.result-tab:hover {
+    color: #0366d6;
+    background: #f6f8fa;
+}
+
+/* 标签页内容 */
+.result-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.result-view {
+    display: none;
+    flex: 1;
+}
+
+.result-view.active {
+    display: flex;
+    height: 0;
+    flex-direction: column;
+}
+
+/* JSON视图 */
+.json-view {
+    flex: 1;
+}
+
+.json-view .result-text {
+    height: 100%;
+}
+
+/* 分块markdown视图 */
+.blocks-view {
+    flex: auto;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+}
+
+.markdown-block {
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.markdown-block:hover {
+    border-color: #0366d6;
+    box-shadow: 0 0 0 2px rgba(3, 102, 214, 0.1);
+}
+
+.markdown-block-header {
+    padding: 6px 12px;
+    background: #f6f8fa;
+    border-bottom: 1px solid #e1e4e8;
+    font-size: 12px;
+    font-weight: 500;
+    color: #586069;
+}
+
+.markdown-block-content {
+    padding: 8px 12px;
+}
+
+.markdown-block-textarea {
+    width: 100%;
+    min-height: 60px;
+    padding: 8px;
+    border: none;
+    resize: vertical;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    background: transparent;
+    outline: none;
+}
+
+/* PDF页面高亮覆盖层 */
+.page-highlight-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.page-highlight-box {
+    position: absolute;
+    background: rgba(3, 102, 214, 0.2);
+    /* border: 2px solid #0366d6; */
+    /* border-radius: 2px; */
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.page-highlight-box.visible {
+    opacity: 1;
+}
+
+.result-placeholder {
+    color: #999;
+    font-style: italic;
+    padding: 20px;
+    text-align: center;
+    background: #f6f8fa;
+    border-radius: 4px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.result-text {
+    width: 100%;
+    min-height: 200px;
+    padding: 12px;
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: vertical;
+    background: white;
+}
+
+.result-text:focus {
+    outline: none;
+    border-color: #0366d6;
+    box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+}
+
+
+/* 加载状态 */
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #586069;
+    font-size: 16px;
+}
+
+.loading-text {
+    color: #586069;
+    text-align: center;
+    padding: 20px;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
