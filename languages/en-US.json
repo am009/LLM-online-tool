@@ -2,6 +2,10 @@
   "ui": {
     "title": "Markdown Online Translation Tool",
     "settings": "Settings",
+    "tabs": {
+      "pdfOcr": "PDF OCR",
+      "translation": "Translation"
+    },
     "settingsPanel": {
       "apiProvider": "API Provider",
       "modelName": "Model Name",
@@ -59,7 +63,8 @@
       "reorganizeParagraphs": "Reorganize Paragraphs"
     },
     "placeholders": {
-      "uploadPrompt": "Please upload a Markdown file to start translation"
+      "uploadPrompt": "Please upload a Markdown file to start translation",
+      "pdfOcrComingSoon": "PDF OCR feature coming soon..."
     },
     "modal": {
       "error": "Error",

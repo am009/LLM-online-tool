@@ -2,6 +2,10 @@
   "ui": {
     "title": "Markdown在线翻译工具",
     "settings": "设置",
+    "tabs": {
+      "pdfOcr": "PDF OCR",
+      "translation": "Translation"
+    },
     "settingsPanel": {
       "apiProvider": "API提供商",
       "modelName": "模型名称",
@@ -59,7 +63,8 @@
       "reorganizeParagraphs": "重新划分段落"
     },
     "placeholders": {
-      "uploadPrompt": "请上传Markdown文件开始翻译"
+      "uploadPrompt": "请上传Markdown文件开始翻译",
+      "pdfOcrComingSoon": "PDF OCR功能即将推出..."
     },
     "modal": {
       "error": "错误",
