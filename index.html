@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="ui.title">markdown/latex在线翻译工具</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="common.css">
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script>
         window.MathJax = {
@@ -34,11 +35,11 @@
 <body>
     <div class="app-container">
         <!-- 左侧设置栏 -->
-        <div class="settings-panel" id="settings-panel">
+        <div class="translation-settings-panel" id="translation-settings-panel">
 
             <div class="settings-header">
                 <h2 data-i18n="ui.settings">设置</h2>
-                <button class="collapse-btn" id="collapse-btn">‹</button>
+                <button class="translation-collapse-btn" id="translation-collapse-btn">‹</button>
             </div>
 
             <div class="setting-group">
@@ -51,33 +52,33 @@
 
             <!-- 分段设置折叠区域 -->
             <div class="settings-section">
-                <div class="settings-section-header" onclick="toggleSettingsSection('paragraph-settings')">
+                <div class="settings-section-header" onclick="toggleSettingsSection('translation-paragraph-settings')">
                     <span data-i18n="ui.settingsPanel.paragraphSettings">分段</span>
                     <span class="section-toggle">▼</span>
                 </div>
-                <div id="paragraph-settings" class="settings-section-content">
+                <div id="translation-paragraph-settings" class="settings-section-content">
                     <div class="setting-group">
-                        <label for="paragraph-char-limit" data-i18n="ui.settingsPanel.paragraphCharLimit">单段字符数:</label>
-                        <input type="number" id="paragraph-char-limit" min="0" value="0">
+                        <label for="translation-paragraph-char-limit" data-i18n="ui.settingsPanel.paragraphCharLimit">单段字符数:</label>
+                        <input type="number" id="translation-paragraph-char-limit" min="0" value="0">
                         <small class="setting-hint" data-i18n="ui.settingsPanel.paragraphCharLimitHint">设置为0表示不限制，大于0时会合并段落以减少API调用</small>
                     </div>
 
                     <div class="setting-group">
-                        <button id="reorganize-paragraphs-btn" class="btn btn-secondary btn-full-width" disabled data-i18n="ui.buttons.reorganizeParagraphs">重新划分段落</button>
+                        <button id="translation-reorganize-paragraphs-btn" class="btn btn-secondary btn-full-width" disabled data-i18n="ui.buttons.reorganizeParagraphs">重新划分段落</button>
                     </div>
                 </div>
             </div>
 
             <!-- 常规设置折叠区域 -->
             <div class="settings-section">
-                <div class="settings-section-header" onclick="toggleSettingsSection('general-settings')">
+                <div class="settings-section-header" onclick="toggleSettingsSection('translation-general-settings')">
                     <span data-i18n="ui.settingsPanel.translationSettings">翻译</span>
                     <span class="section-toggle">▼</span>
                 </div>
-                <div id="general-settings" class="settings-section-content">
+                <div id="translation-general-settings" class="settings-section-content">
                     <div class="setting-group">
-                        <label for="api-provider" data-i18n="ui.settingsPanel.apiProvider">API提供商:</label>
-                        <select id="api-provider">
+                        <label for="translation-api-provider" data-i18n="ui.settingsPanel.apiProvider">API提供商:</label>
+                        <select id="translation-api-provider">
                             <option value="ollama" data-i18n="messages.apiProviders.ollama">Ollama</option>
                             <option value="openai" data-i18n="messages.apiProviders.openai">OpenAI</option>
                             <option value="anthropic" data-i18n="messages.apiProviders.anthropic">Anthropic</option>
@@ -86,29 +87,29 @@
                     </div>
 
                     <div class="setting-group">
-                        <label for="model-name" data-i18n="ui.settingsPanel.modelName">模型名称:</label>
-                        <input type="text" id="model-name" data-i18n-placeholder="ui.settingsPanel.modelNamePlaceholder" placeholder="请输入模型名称">
+                        <label for="translation-model-name" data-i18n="ui.settingsPanel.modelName">模型名称:</label>
+                        <input type="text" id="translation-model-name" data-i18n-placeholder="ui.settingsPanel.modelNamePlaceholder" placeholder="请输入模型名称">
                     </div>
 
                     <div class="setting-group">
-                        <label for="api-endpoint" data-i18n="ui.settingsPanel.apiEndpoint">API端点:</label>
-                        <input type="text" id="api-endpoint" data-i18n-placeholder="ui.settingsPanel.apiEndpointPlaceholder" placeholder="请输入API端点URL">
+                        <label for="translation-api-endpoint" data-i18n="ui.settingsPanel.apiEndpoint">API端点:</label>
+                        <input type="text" id="translation-api-endpoint" data-i18n-placeholder="ui.settingsPanel.apiEndpointPlaceholder" placeholder="请输入API端点URL">
                     </div>
 
                     <div class="setting-group">
-                        <label for="api-key" data-i18n="ui.settingsPanel.apiKey">API Key:</label>
-                        <input type="password" id="api-key" data-i18n-placeholder="ui.settingsPanel.apiKeyPlaceholder" placeholder="请输入您的API Key">
+                        <label for="translation-api-key" data-i18n="ui.settingsPanel.apiKey">API Key:</label>
+                        <input type="password" id="translation-api-key" data-i18n-placeholder="ui.settingsPanel.apiKeyPlaceholder" placeholder="请输入您的API Key">
                     </div>
 
                     <div class="setting-group">
-                        <label for="temperature" data-i18n="ui.settingsPanel.temperature">Temperature:</label>
-                        <input type="number" id="temperature" min="0" max="2" step="0.1" data-i18n-placeholder="ui.settingsPanel.temperaturePlaceholder" placeholder="留空使用默认值">
+                        <label for="translation-temperature" data-i18n="ui.settingsPanel.temperature">Temperature:</label>
+                        <input type="number" id="translation-temperature" min="0" max="2" step="0.1" data-i18n-placeholder="ui.settingsPanel.temperaturePlaceholder" placeholder="留空使用默认值">
                         <small class="setting-hint" data-i18n="ui.settingsPanel.temperatureHint">控制输出随机性，0.0-2.0，留空则不设置（建议降低一些temperature）</small>
                     </div>
 
                     <div class="setting-group">
                         <label>
-                            <input type="checkbox" id="enable-thinking" />
+                            <input type="checkbox" id="translation-enable-thinking" />
                             <span data-i18n="ui.settingsPanel.enableThinking">启用thinking</span>
                         </label>
                         <small class="setting-hint" data-i18n="ui.settingsPanel.enableThinkingHint">为支持的API提供商启用thinking功能（如Ollama）</small>
@@ -121,8 +122,8 @@
                     </div>
 
                     <div class="setting-group">
-                        <label for="context-count" data-i18n="ui.settingsPanel.contextCount">上下文数量:</label>
-                        <input type="number" id="context-count" min="0" max="5" value="0">
+                        <label for="translation-context-count" data-i18n="ui.settingsPanel.contextCount">上下文数量:</label>
+                        <input type="number" id="translation-context-count" min="0" max="5" value="0">
                         <small class="setting-hint" data-i18n="ui.settingsPanel.contextCountHint">提供前文以提升翻译准确性，留空则不提供（对于小模型推荐设置为0）</small>
                     </div>
 
@@ -130,7 +131,7 @@
                         <button id="translate-all-btn" class="btn btn-primary btn-full-width" disabled data-i18n="ui.buttons.translateAll">全部翻译</button>
                     </div>
                     <div class="setting-group">
-                        <button id="export-alternating-btn" class="btn btn-secondary btn-full-width" disabled data-i18n="ui.buttons.exportAlternating">导出交替翻译结果</button>
+                        <button id="translation-export-alternating-btn" class="btn btn-secondary btn-full-width" disabled data-i18n="ui.buttons.exportAlternating">导出交替翻译结果</button>
                     </div>
                 </div>
             </div>
@@ -210,19 +211,19 @@
         <div class="main-content-panel">
             <div class="content-header">
                 <div class="header-left">
-                    <div class="file-info" id="file-info"></div>
+                    <div class="translation-file-info" id="translation-file-info"></div>
                 </div>
                 <div class="header-right">
-                    <button id="upload-btn" class="btn btn-primary" data-i18n="ui.buttons.uploadOriginal">上传原文</button>
-                    <input type="file" id="file-input" accept=".md,.markdown" style="display: none;">
-                    <button id="save-progress-btn" class="btn btn-secondary" disabled data-i18n="ui.buttons.saveProgress">保存进度</button>
-                    <button id="load-progress-btn" class="btn btn-secondary" data-i18n="ui.buttons.loadProgress">加载进度</button>
-                    <input type="file" id="progress-input" accept=".json" style="display: none;">
-                    <button id="export-original-btn" class="btn btn-secondary" disabled data-i18n="ui.buttons.exportOriginal">导出原文</button>
-                    <button id="export-btn" class="btn btn-primary" disabled data-i18n="ui.buttons.exportTranslation">导出译文</button>
+                    <button id="translation-upload-btn" class="btn btn-primary" data-i18n="ui.buttons.uploadOriginal">上传原文</button>
+                    <input type="file" id="translation-file-input" accept=".md,.markdown" style="display: none;">
+                    <button id="translation-save-progress-btn" class="btn btn-secondary" disabled data-i18n="ui.buttons.saveProgress">保存进度</button>
+                    <button id="translation-load-progress-btn" class="btn btn-secondary" data-i18n="ui.buttons.loadProgress">加载进度</button>
+                    <input type="file" id="translation-progress-input" accept=".json" style="display: none;">
+                    <button id="translation-export-original-btn" class="btn btn-secondary" disabled data-i18n="ui.buttons.exportOriginal">导出原文</button>
+                    <button id="translation-export-btn" class="btn btn-primary" disabled data-i18n="ui.buttons.exportTranslation">导出译文</button>
                 </div>
             </div>
-            <div class="content-container" id="content-container">
+            <div class="translation-content-container" id="translation-content-container">
                 <div class="placeholder">
                     <p data-i18n="ui.placeholders.uploadPrompt">请上传Markdown文件开始翻译</p>
                 </div>
@@ -258,7 +259,7 @@
         
         // 页面加载时展开常规设置部分
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('general-settings').style.display = 'block';
+            document.getElementById('translation-general-settings').style.display = 'block';
         });
     </script>
     <script src="app.js"></script>

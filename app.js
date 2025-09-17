@@ -31,30 +31,30 @@ class MarkdownTranslator {
 
     setupEventListeners() {
         // 文件上传
-        const uploadBtn = document.getElementById('upload-btn');
-        const fileInput = document.getElementById('file-input');
+        const uploadBtn = document.getElementById('translation-upload-btn');
+        const fileInput = document.getElementById('translation-file-input');
         
         uploadBtn.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
 
         // 导出功能
-        document.getElementById('export-btn').addEventListener('click', () => this.exportTranslation());
+        document.getElementById('translation-export-btn').addEventListener('click', () => this.exportTranslation());
 
         // 保存进度
-        document.getElementById('save-progress-btn').addEventListener('click', () => this.saveProgress());
+        document.getElementById('translation-save-progress-btn').addEventListener('click', () => this.saveProgress());
 
         // 加载进度
-        const loadProgressBtn = document.getElementById('load-progress-btn');
-        const progressInput = document.getElementById('progress-input');
+        const loadProgressBtn = document.getElementById('translation-load-progress-btn');
+        const progressInput = document.getElementById('translation-progress-input');
         
         loadProgressBtn.addEventListener('click', () => progressInput.click());
         progressInput.addEventListener('change', (e) => this.handleProgressUpload(e));
 
         // 导出原文
-        document.getElementById('export-original-btn').addEventListener('click', () => this.exportOriginal());
+        document.getElementById('translation-export-original-btn').addEventListener('click', () => this.exportOriginal());
         
         // 导出交替翻译结果
-        document.getElementById('export-alternating-btn').addEventListener('click', () => this.exportAlternatingTranslation());
+        document.getElementById('translation-export-alternating-btn').addEventListener('click', () => this.exportAlternatingTranslation());
 
         // 全部翻译
         document.getElementById('translate-all-btn').addEventListener('click', () => this.translateAll());
@@ -64,25 +64,25 @@ class MarkdownTranslator {
         document.getElementById('proofread-all-btn').addEventListener('click', () => this.proofreadAll());
 
         // 段落重新划分功能
-        document.getElementById('reorganize-paragraphs-btn').addEventListener('click', () => this.reorganizeParagraphs());
-        document.getElementById('paragraph-char-limit').addEventListener('input', () => this.saveSettings());
+        document.getElementById('translation-reorganize-paragraphs-btn').addEventListener('click', () => this.reorganizeParagraphs());
+        document.getElementById('translation-paragraph-char-limit').addEventListener('input', () => this.saveSettings());
 
         // 设置变更
         document.getElementById('translation-prompt').addEventListener('input', () => this.saveSettings());
-        document.getElementById('api-key').addEventListener('input', () => this.saveSettings());
-        document.getElementById('api-endpoint').addEventListener('input', () => this.saveSettings());
-        document.getElementById('model-name').addEventListener('input', () => this.saveSettings());
-        document.getElementById('api-provider').addEventListener('change', () => this.onProviderChange());
+        document.getElementById('translation-api-key').addEventListener('input', () => this.saveSettings());
+        document.getElementById('translation-api-endpoint').addEventListener('input', () => this.saveSettings());
+        document.getElementById('translation-model-name').addEventListener('input', () => this.saveSettings());
+        document.getElementById('translation-api-provider').addEventListener('change', () => this.onProviderChange());
         document.getElementById('interface-language').addEventListener('change', (e) => this.onLanguageChange(e));
         
         // 上下文数量控制
-        document.getElementById('context-count').addEventListener('input', () => this.saveSettings());
+        document.getElementById('translation-context-count').addEventListener('input', () => this.saveSettings());
         
         // temperature控制
-        document.getElementById('temperature').addEventListener('input', () => this.saveSettings());
+        document.getElementById('translation-temperature').addEventListener('input', () => this.saveSettings());
         
         // thinking控制
-        document.getElementById('enable-thinking').addEventListener('change', () => this.saveSettings());
+        document.getElementById('translation-enable-thinking').addEventListener('change', () => this.saveSettings());
         
         // 校对设置变更
         document.getElementById('proofread-prompt').addEventListener('input', () => this.saveSettings());
@@ -96,7 +96,7 @@ class MarkdownTranslator {
         document.getElementById('proofread-enable-thinking').addEventListener('change', () => this.saveSettings());
         
         // 侧边栏折叠
-        document.getElementById('collapse-btn').addEventListener('click', () => this.toggleSidebar());
+        document.getElementById('translation-collapse-btn').addEventListener('click', () => this.toggleSidebar());
     }
 
     setupModal() {
@@ -129,19 +129,19 @@ class MarkdownTranslator {
         if (settings) {
             const parsed = JSON.parse(settings);
             document.getElementById('translation-prompt').value = parsed.prompt ?? languageManager.get('ui.settingsPanel.translationPromptDefault');
-            document.getElementById('api-key').value = parsed.apiKey ?? '';
+            document.getElementById('translation-api-key').value = parsed.apiKey ?? '';
             const provider = parsed.apiProvider ?? 'ollama';
-            document.getElementById('api-provider').value = provider;
-            document.getElementById('context-count').value = (isNaN(parsed.contextCount) ? 1 : parsed.contextCount);
+            document.getElementById('translation-api-provider').value = provider;
+            document.getElementById('translation-context-count').value = (isNaN(parsed.contextCount) ? 1 : parsed.contextCount);
             
             // 加载段落字符数限制设置
-            document.getElementById('paragraph-char-limit').value = parsed.paragraphCharLimit ?? 0;
+            document.getElementById('translation-paragraph-char-limit').value = parsed.paragraphCharLimit ?? 0;
             
             // 加载temperature设置，如果没有设置则留空
             if (parsed.temperature !== undefined && parsed.temperature !== null && parsed.temperature !== '') {
-                document.getElementById('temperature').value = parsed.temperature;
+                document.getElementById('translation-temperature').value = parsed.temperature;
             } else {
-                document.getElementById('temperature').value = '';
+                document.getElementById('translation-temperature').value = '';
             }
             
             // 加载对应提供商的API端点
@@ -169,7 +169,7 @@ class MarkdownTranslator {
             }
             
             // 加载thinking设置
-            document.getElementById('enable-thinking').checked = parsed.enableThinking ?? false;
+            document.getElementById('translation-enable-thinking').checked = parsed.enableThinking ?? false;
             document.getElementById('proofread-enable-thinking').checked = parsed.proofreadEnableThinking ?? false;
             
             // 设置校对模式状态
@@ -193,9 +193,9 @@ class MarkdownTranslator {
     }
 
     saveSettings() {
-        const provider = document.getElementById('api-provider').value;
-        const endpoint = document.getElementById('api-endpoint').value;
-        const modelName = document.getElementById('model-name').value;
+        const provider = document.getElementById('translation-api-provider').value;
+        const endpoint = document.getElementById('translation-api-endpoint').value;
+        const modelName = document.getElementById('translation-model-name').value;
         
         // 保存当前提供商的API端点
         this.saveApiEndpoint(provider, endpoint);
@@ -211,18 +211,18 @@ class MarkdownTranslator {
         this.saveProofreadApiEndpoint(proofreadProvider, proofreadEndpoint);
         this.saveProofreadModelName(proofreadProvider, proofreadModelName);
         
-        const contextCountValue = parseInt(document.getElementById('context-count').value);
-        const paragraphCharLimitValue = parseInt(document.getElementById('paragraph-char-limit').value);
-        const temperatureValue = document.getElementById('temperature').value;
+        const contextCountValue = parseInt(document.getElementById('translation-context-count').value);
+        const paragraphCharLimitValue = parseInt(document.getElementById('translation-paragraph-char-limit').value);
+        const temperatureValue = document.getElementById('translation-temperature').value;
         
         const settings = {
             prompt: document.getElementById('translation-prompt').value,
-            apiKey: document.getElementById('api-key').value,
+            apiKey: document.getElementById('translation-api-key').value,
             apiProvider: provider,
             contextCount: isNaN(contextCountValue) ? 1 : contextCountValue,
             paragraphCharLimit: isNaN(paragraphCharLimitValue) ? 0 : paragraphCharLimitValue,
             sidebarCollapsed: this.sidebarCollapsed,
-            enableThinking: document.getElementById('enable-thinking').checked,
+            enableThinking: document.getElementById('translation-enable-thinking').checked,
             // 校对设置
             proofreadingMode: this.proofreadingMode,
             proofreadPrompt: document.getElementById('proofread-prompt').value,
@@ -255,7 +255,7 @@ class MarkdownTranslator {
     }
 
     onProviderChange() {
-        const provider = document.getElementById('api-provider').value;
+        const provider = document.getElementById('translation-api-provider').value;
         this.loadApiEndpoint(provider);
         this.loadModelName(provider);
         this.saveSettings();
@@ -299,7 +299,7 @@ class MarkdownTranslator {
         };
         
         const endpoint = endpoints[provider] ?? defaultEndpoints[provider] ?? '';
-        document.getElementById('api-endpoint').value = endpoint;
+        document.getElementById('translation-api-endpoint').value = endpoint;
     }
 
     saveApiEndpoint(provider, endpoint) {
@@ -323,7 +323,7 @@ class MarkdownTranslator {
         };
         
         const model = models[provider] ?? defaultModels[provider] ?? '';
-        document.getElementById('model-name').value = model;
+        document.getElementById('translation-model-name').value = model;
     }
 
     saveModelName(provider, modelName) {
@@ -405,11 +405,11 @@ class MarkdownTranslator {
                 this.parseContent(e.target.result);
                 this.updateFileInfo();
                 document.getElementById('translate-all-btn').disabled = false;
-                document.getElementById('export-btn').disabled = false;
-                document.getElementById('export-alternating-btn').disabled = false;
-                document.getElementById('save-progress-btn').disabled = false;
-                document.getElementById('export-original-btn').disabled = false;
-                document.getElementById('reorganize-paragraphs-btn').disabled = false;
+                document.getElementById('translation-export-btn').disabled = false;
+                document.getElementById('translation-export-alternating-btn').disabled = false;
+                document.getElementById('translation-save-progress-btn').disabled = false;
+                document.getElementById('translation-export-original-btn').disabled = false;
+                document.getElementById('translation-reorganize-paragraphs-btn').disabled = false;
                 // 如果处于校对模式，启用校对所有按钮
                 if (this.proofreadingMode) {
                     document.getElementById('proofread-all-btn').disabled = false;
@@ -447,7 +447,7 @@ class MarkdownTranslator {
     }
 
     renderBlocks() {
-        const contentContainer = document.getElementById('content-container');
+        const contentContainer = document.getElementById('translation-content-container');
         
         contentContainer.innerHTML = '';
         
@@ -579,7 +579,7 @@ class MarkdownTranslator {
     }
 
     updateFileInfo() {
-        const fileInfo = document.getElementById('file-info');
+        const fileInfo = document.getElementById('translation-file-info');
         if (this.currentFile) {
             fileInfo.textContent = `${this.currentFile.name} (${this.originalBlocks.length} ${languageManager.get('messages.fileInfo')})`;
         }
@@ -622,15 +622,15 @@ class MarkdownTranslator {
             return;
         }
         
-        const apiKey = document.getElementById('api-key').value;
+        const apiKey = document.getElementById('translation-api-key').value;
         const prompt = document.getElementById('translation-prompt').value;
-        const provider = document.getElementById('api-provider').value;
-        const customEndpoint = document.getElementById('api-endpoint').value;
-        const modelName = document.getElementById('model-name').value;
-        const contextCountValue = parseInt(document.getElementById('context-count').value);
+        const provider = document.getElementById('translation-api-provider').value;
+        const customEndpoint = document.getElementById('translation-api-endpoint').value;
+        const modelName = document.getElementById('translation-model-name').value;
+        const contextCountValue = parseInt(document.getElementById('translation-context-count').value);
         const contextCount = isNaN(contextCountValue) ? 1 : contextCountValue;
-        const temperatureValue = document.getElementById('temperature').value;
-        const enableThinking = document.getElementById('enable-thinking').checked;
+        const temperatureValue = document.getElementById('translation-temperature').value;
+        const enableThinking = document.getElementById('translation-enable-thinking').checked;
         
         if (!apiKey && provider !== 'ollama') {
             this.showError(languageManager.get('errors.apiKeyRequired'));
@@ -987,9 +987,9 @@ class MarkdownTranslator {
             return;
         }
 
-        const apiKey = document.getElementById('api-key').value;
-        const provider = document.getElementById('api-provider').value;
-        const modelName = document.getElementById('model-name').value;
+        const apiKey = document.getElementById('translation-api-key').value;
+        const provider = document.getElementById('translation-api-provider').value;
+        const modelName = document.getElementById('translation-model-name').value;
         
         if (!apiKey && provider !== 'ollama') {
             this.showError(languageManager.get('errors.apiKeyRequired'));
@@ -1053,7 +1053,7 @@ class MarkdownTranslator {
             return;
         }
 
-        const apiKey = document.getElementById('api-key').value;
+        const apiKey = document.getElementById('translation-api-key').value;
         const prompt = document.getElementById('proofread-prompt').value;
         const provider = document.getElementById('proofread-api-provider').value ?? 'ollama';
         const customEndpoint = document.getElementById('proofread-api-endpoint').value;
@@ -1605,11 +1605,11 @@ class MarkdownTranslator {
                 
                 // 启用相关按钮
                 document.getElementById('translate-all-btn').disabled = false;
-                document.getElementById('export-btn').disabled = false;
-                document.getElementById('export-alternating-btn').disabled = false;
-                document.getElementById('save-progress-btn').disabled = false;
-                document.getElementById('export-original-btn').disabled = false;
-                document.getElementById('reorganize-paragraphs-btn').disabled = false;
+                document.getElementById('translation-export-btn').disabled = false;
+                document.getElementById('translation-export-alternating-btn').disabled = false;
+                document.getElementById('translation-save-progress-btn').disabled = false;
+                document.getElementById('translation-export-original-btn').disabled = false;
+                document.getElementById('translation-reorganize-paragraphs-btn').disabled = false;
                 
                 // 如果处于校对模式，启用校对所有按钮
                 if (this.proofreadingMode) {
@@ -1727,14 +1727,14 @@ class MarkdownTranslator {
 
     // 设置侧边栏功能
     setupSidebar() {
-        const settingsPanel = document.getElementById('settings-panel');
+        const settingsPanel = document.getElementById('translation-settings-panel');
         if (this.sidebarCollapsed) {
             settingsPanel.classList.add('collapsed');
         }
     }
     
     toggleSidebar() {
-        const settingsPanel = document.getElementById('settings-panel');
+        const settingsPanel = document.getElementById('translation-settings-panel');
         this.sidebarCollapsed = !this.sidebarCollapsed;
         
         if (this.sidebarCollapsed) {
@@ -1862,7 +1862,7 @@ class MarkdownTranslator {
             return;
         }
 
-        const charLimit = parseInt(document.getElementById('paragraph-char-limit').value);
+        const charLimit = parseInt(document.getElementById('translation-paragraph-char-limit').value);
         
         if (charLimit <= 0) {
             this.showError(languageManager.get('errors.invalidCharacterLimit'));
@@ -1932,5 +1932,5 @@ class MarkdownTranslator {
 
 // 初始化应用
 document.addEventListener('DOMContentLoaded', async () => {
-    new MarkdownTranslator();
+    markdown_translator_instance = new MarkdownTranslator();
 });
