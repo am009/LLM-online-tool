@@ -5,6 +5,7 @@
         "mathjax",
         "ollama",
         "ORIGTEXT",
+        "pdfocr",
         "Proofreadings",
         "TRANSTEXT"
     ]
