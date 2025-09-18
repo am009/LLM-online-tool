@@ -65,15 +65,15 @@
       "loadProgress": "加载进度",
       "exportOriginal": "导出原文",
       "reorganizeParagraphs": "重新划分段落",
-      "uploadPdf": "上传 PDF",
+      "selectPdf": "选择 PDF",
       "exportMarkdown": "导出markdown",
       "recognizeAll": "识别所有",
       "selectPdfFile": "选择 PDF 文件"
     },
     "placeholders": {
-      "uploadPrompt": "请上传Markdown/Latex文件以开始翻译",
+      "selectPrompt": "请选择Markdown/Latex文件以开始翻译",
       "noFileSelected": "未选择文件",
-      "uploadPdfPrompt": "请上传 PDF 文件开始"
+      "selectPdfPrompt": "请选择 PDF 文件开始"
     },
     "modal": {
       "error": "错误",

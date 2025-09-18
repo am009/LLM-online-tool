@@ -165,8 +165,8 @@ class MarkdownTranslator {
             apiKey: settings[`${prefix}ApiKey`] ?? '',
             endpoint: this.getStoredEndpoint(type, provider),
             modelName: this.getStoredModel(type, provider),
-            temperature: settings[`${prefix}Temperature`],
-            enableThinking: settings[`${prefix}EnableThinking`] ?? false
+            temperature: this.getProviderSpecificSetting(type, provider, 'Temperature'),
+            enableThinking: this.getProviderSpecificSetting(type, provider, 'EnableThinking', false)
         };
     }
 
@@ -279,7 +279,10 @@ class MarkdownTranslator {
         const prefix = type === 'translation' ? 'translation' : 'proofread';
         const endpoint = document.getElementById(`${prefix}-api-endpoint`).value;
         const modelName = document.getElementById(`${prefix}-model-name`).value;
+        const enableThinking = document.getElementById(`${prefix}-enable-thinking`).checked;
+        const temperatureValue = document.getElementById(`${prefix}-temperature`).value;
         
+        // 保存 endpoint 和 modelName (原有逻辑)
         if (type === 'translation') {
             this.saveApiEndpoint(provider, endpoint);
             this.saveModelName(provider, modelName);
@@ -287,6 +290,37 @@ class MarkdownTranslator {
             this.saveProofreadApiEndpoint(provider, endpoint);
             this.saveProofreadModelName(provider, modelName);
         }
+        
+        // 保存 enableThinking 和 temperature 设置
+        this.saveProviderSpecificSetting(type, provider, 'EnableThinking', enableThinking);
+        
+        if (temperatureValue && temperatureValue.trim() !== '') {
+            const tempFloat = parseFloat(temperatureValue);
+            if (!isNaN(tempFloat)) {
+                this.saveProviderSpecificSetting(type, provider, 'Temperature', tempFloat);
+            }
+        }
+    }
+
+    saveProviderSpecificSetting(type, provider, settingName, value) {
+        const storageKey = type === 'translation' ? 
+            `markdown-translator-${settingName.toLowerCase()}` : 
+            `markdown-translator-proofread-${settingName.toLowerCase()}`;
+        
+        const stored = localStorage.getItem(storageKey);
+        const settings = stored ? JSON.parse(stored) : {};
+        settings[provider] = value;
+        localStorage.setItem(storageKey, JSON.stringify(settings));
+    }
+
+    getProviderSpecificSetting(type, provider, settingName, defaultValue = null) {
+        const storageKey = type === 'translation' ? 
+            `markdown-translator-${settingName.toLowerCase()}` : 
+            `markdown-translator-proofread-${settingName.toLowerCase()}`;
+        
+        const stored = localStorage.getItem(storageKey);
+        const settings = stored ? JSON.parse(stored) : {};
+        return settings[provider] ?? defaultValue;
     }
 
     onProviderChange() {
@@ -352,17 +386,11 @@ class MarkdownTranslator {
     }
 
     getStoredEndpoint(type, provider) {
-        const storageKey = type === 'translation' ? 'markdown-translator-endpoints' : 'markdown-translator-proofread-endpoints';
-        const stored = localStorage.getItem(storageKey);
-        const endpoints = stored ? JSON.parse(stored) : {};
-        return endpoints[provider] ?? this.getDefaultEndpoints()[provider] ?? '';
+        return this.getProviderSpecificSetting(type, provider, 'endpoints', this.getDefaultEndpoints()[provider] ?? '');
     }
 
     getStoredModel(type, provider) {
-        const storageKey = type === 'translation' ? 'markdown-translator-models' : 'markdown-translator-proofread-models';
-        const stored = localStorage.getItem(storageKey);
-        const models = stored ? JSON.parse(stored) : {};
-        return models[provider] ?? this.getDefaultModels(type)[provider] ?? '';
+        return this.getProviderSpecificSetting(type, provider, 'models', this.getDefaultModels(type)[provider] ?? '');
     }
 
     loadApiEndpoint(provider) {
@@ -371,10 +399,7 @@ class MarkdownTranslator {
     }
 
     saveApiEndpoint(provider, endpoint) {
-        const stored = localStorage.getItem('markdown-translator-endpoints');
-        const endpoints = stored ? JSON.parse(stored) : {};
-        endpoints[provider] = endpoint;
-        localStorage.setItem('markdown-translator-endpoints', JSON.stringify(endpoints));
+        this.saveProviderSpecificSetting('translation', provider, 'endpoints', endpoint);
     }
 
     loadModelName(provider) {
@@ -383,10 +408,7 @@ class MarkdownTranslator {
     }
 
     saveModelName(provider, modelName) {
-        const stored = localStorage.getItem('markdown-translator-models');
-        const models = stored ? JSON.parse(stored) : {};
-        models[provider] = modelName;
-        localStorage.setItem('markdown-translator-models', JSON.stringify(models));
+        this.saveProviderSpecificSetting('translation', provider, 'models', modelName);
     }
 
     loadProofreadApiEndpoint(provider) {
@@ -395,10 +417,7 @@ class MarkdownTranslator {
     }
 
     saveProofreadApiEndpoint(provider, endpoint) {
-        const stored = localStorage.getItem('markdown-translator-proofread-endpoints');
-        const endpoints = stored ? JSON.parse(stored) : {};
-        endpoints[provider] = endpoint;
-        localStorage.setItem('markdown-translator-proofread-endpoints', JSON.stringify(endpoints));
+        this.saveProviderSpecificSetting('proofread', provider, 'endpoints', endpoint);
     }
 
     loadProofreadModelName(provider) {
@@ -407,10 +426,7 @@ class MarkdownTranslator {
     }
 
     saveProofreadModelName(provider, modelName) {
-        const stored = localStorage.getItem('markdown-translator-proofread-models');
-        const models = stored ? JSON.parse(stored) : {};
-        models[provider] = modelName;
-        localStorage.setItem('markdown-translator-proofread-models', JSON.stringify(models));
+        this.saveProviderSpecificSetting('proofread', provider, 'models', modelName);
     }
 
     handleFileUpload(event) {
@@ -646,7 +662,6 @@ class MarkdownTranslator {
             translateBtn.innerHTML = '→';
             translateBtn.title = languageManager.get('ui.buttons.translate');
             translateBtn.disabled = false;
-            translateBtn.classList.remove('loading');
             return;
         }
         
@@ -678,7 +693,6 @@ class MarkdownTranslator {
         translateBtn.innerHTML = '⏹';
         translateBtn.title = languageManager.get('ui.buttons.stopTranslation');
         translateBtn.disabled = false;
-        translateBtn.classList.add('loading');
         
         try {
             // 获取上下文块
@@ -731,7 +745,6 @@ class MarkdownTranslator {
             translateBtn.innerHTML = '→';
             translateBtn.title = languageManager.get('ui.buttons.translate');
             translateBtn.disabled = false;
-            translateBtn.classList.remove('loading');
         }
     }
 
@@ -1032,7 +1045,7 @@ class MarkdownTranslator {
         this.isTranslatingAll = true;
         const translateAllBtn = document.getElementById('translate-all-btn');
         translateAllBtn.disabled = false; // 保持按钮可点击以便停止
-        translateAllBtn.innerHTML = '<span class="loading-spinner"></span>' + languageManager.get('ui.buttons.stopTranslation');
+        translateAllBtn.innerHTML = '<span class="translation-loading-spinner"></span>' + languageManager.get('ui.buttons.stopTranslation');
         
         try {
             for (let i = 0; i < this.originalBlocks.length; i++) {
@@ -1077,7 +1090,6 @@ class MarkdownTranslator {
             translateBtn.innerHTML = '✓';
             translateBtn.title = languageManager.get('ui.tooltips.proofreadParagraph');
             translateBtn.disabled = false;
-            translateBtn.classList.remove('loading');
             return;
         }
 
@@ -1112,7 +1124,6 @@ class MarkdownTranslator {
         translateBtn.innerHTML = '⏹';
         translateBtn.title = languageManager.get('ui.tooltips.stopProofreading');
         translateBtn.disabled = false;
-        translateBtn.classList.add('loading');
         
         try {
             const proofreadResult = await this.callProofreadingAPI(
@@ -1162,7 +1173,6 @@ class MarkdownTranslator {
             translateBtn.innerHTML = '✓';
             translateBtn.title = languageManager.get('ui.tooltips.proofreadParagraph');
             translateBtn.disabled = false;
-            translateBtn.classList.remove('loading');
         }
     }
 
@@ -1505,7 +1515,7 @@ class MarkdownTranslator {
         
         const proofreadAllBtn = document.getElementById('proofread-all-btn');
         proofreadAllBtn.disabled = true;
-        proofreadAllBtn.innerHTML = '<span class="loading-spinner"></span>' + languageManager.get('messages.proofreading');
+        proofreadAllBtn.innerHTML = '<span class="translation-loading-spinner"></span>' + languageManager.get('messages.proofreading');
         
         try {
             for (let i = 0; i < this.originalBlocks.length; i++) {
@@ -1575,7 +1585,7 @@ class MarkdownTranslator {
         
         const a = document.createElement('a');
         a.href = url;
-        a.download = this.currentFile.name.replace(/\.(md|markdown)$/, '_progress.json');
+        a.download = this.currentFile.name.replace(/\.(md|markdown)$/, '.translation_progress.json');
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -1879,8 +1889,8 @@ class MarkdownTranslator {
         
         // 更新按钮文本
         const translateAllBtn = document.getElementById('translate-all-btn');
-        if (translateAllBtn.innerHTML.includes('loading-spinner')) {
-            translateAllBtn.innerHTML = '<span class="loading-spinner"></span>' + languageManager.get('messages.translating');
+        if (translateAllBtn.innerHTML.includes('translation-loading-spinner')) {
+            translateAllBtn.innerHTML = '<span class="translation-loading-spinner"></span>' + languageManager.get('messages.translating');
         } else {
             translateAllBtn.innerHTML = languageManager.get('ui.buttons.translateAll');
         }

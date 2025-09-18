@@ -65,15 +65,15 @@
       "loadProgress": "Load Progress",
       "exportOriginal": "Export Original",
       "reorganizeParagraphs": "Reorganize Paragraphs",
-      "uploadPdf": "Upload PDF",
+      "selectPdf": "Select PDF",
       "exportMarkdown": "Export Markdown",
       "recognizeAll": "Recognize All",
       "selectPdfFile": "Select PDF File"
     },
     "placeholders": {
-      "uploadPrompt": "Please upload a Markdown/Latex file to start translation",
+      "selectPrompt": "Please select a Markdown/Latex file to start translation",
       "noFileSelected": "No file selected",
-      "uploadPdfPrompt": "Please upload a PDF file to start"
+      "selectPdfPrompt": "Please select a PDF file to start"
     },
     "modal": {
       "error": "Error",

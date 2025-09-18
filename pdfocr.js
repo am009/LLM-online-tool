@@ -97,7 +97,7 @@ class PDFOCR {
     async loadPDF(file) {
         try {
             // 显示加载状态
-            this.pagesContainer.innerHTML = `<div class="loading">${window.languageManager.get('pdfOcr.messages.loadingPdf')}</div>`;
+            this.pagesContainer.innerHTML = `<div class="pdfocr-loading">${window.languageManager.get('pdfOcr.messages.loadingPdf')}</div>`;
             
             // 读取文件
             const arrayBuffer = await file.arrayBuffer();
@@ -154,8 +154,8 @@ class PDFOCR {
         canvas.width = renderViewport.width;
         canvas.height = renderViewport.height;
         
-        console.log(`Canvas width ${canvas.width} height ${canvas.height}`)
-        console.log(`renderViewport width ${renderViewport.width} height ${renderViewport.height}`)
+        // console.log(`Canvas width ${canvas.width} height ${canvas.height}`)
+        // console.log(`renderViewport width ${renderViewport.width} height ${renderViewport.height}`)
         // canvas显示尺寸将由CSS控制，实现自适应缩放
         
         await page.render({
@@ -227,7 +227,7 @@ class PDFOCR {
         
         const blocksPlaceholder = document.createElement('div');
         blocksPlaceholder.className = 'result-placeholder';
-        blocksPlaceholder.textContent = '完成OCR识别后可查看分块内容';
+        blocksPlaceholder.textContent = window.languageManager.get('pdfOcr.placeholders.viewBlocks');
         blocksView.appendChild(blocksPlaceholder);
         
         resultContent.appendChild(jsonView);
@@ -414,7 +414,7 @@ class PDFOCR {
         // 显示加载状态
         ocrButton.disabled = true;
         ocrButton.innerHTML = `
-            <svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="pdfocr-spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2v4m0 12v4m10-10h-4M6 12H2"/>
             </svg>
             识别中...
@@ -589,7 +589,7 @@ class PDFOCR {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${progressData.filename}_progress.json`;
+        a.download = `${progressData.filename}.ocr_progress.json`;
         a.click();
         URL.revokeObjectURL(url);
         
@@ -650,6 +650,9 @@ class PDFOCR {
                     
                     // 存储OCR结果
                     this.pageResults.set(pageNum, progressData.pages[pageNum]);
+
+                    // 切换到分块视图
+                    this.switchResultView(pageNum, 'blocks')
                 }
             }
             
@@ -805,7 +808,7 @@ class PDFOCR {
     // 停止批量识别
     stopRecognizing() {
         this.shouldStopRecognizing = true;
-        this.progressInfo.textContent = '正在停止识别...';
+        this.progressInfo.textContent = window.languageManager.get('pdfOcr.messages.stopping');
         
         // 立即更新按钮状态为停止中
         this.recognizeAllBtn.innerHTML = `
@@ -836,7 +839,7 @@ class PDFOCR {
         }
         
         if (unrecognizedPages.length === 0) {
-            alert('所有页面都已识别完成');
+            alert(window.languageManager.get('pdfOcr.messages.allPagesRecognized'));
             return;
         }
         

@@ -209,20 +209,14 @@
 
 
 /* 加载状态 */
-.loading {
+.pdfocr-loading {
     text-align: center;
     padding: 40px;
     color: #586069;
     font-size: 16px;
 }
 
-.loading-text {
-    color: #586069;
-    text-align: center;
-    padding: 20px;
-}
-
-.spinner {
+.pdfocr-spinner {
     animation: spin 1s linear infinite;
 }
 
