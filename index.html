@@ -63,15 +63,15 @@
                         </svg>
                     </button>
                     <div class="settings-content">
-                        <h2>设置</h2>
+                        <h2 data-i18n="ui.settings">设置</h2>
                         <div class="settings-section">
                             <h3 class="section-header" onclick="toggleSection(this)">
                                 <svg class="section-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="6 9 12 15 18 9"></polyline>
-                                </svg> API 设置
+                                </svg> <span data-i18n="ui.settingsPanel.apiSettings">API 设置</span>
                             </h3>
                             <div class="setting-group">
-                                <label for="ocr-api-base">API 基础 URL:</label>
+                                <label for="ocr-api-base" data-i18n="ui.settingsPanel.apiBaseUrl">API 基础 URL:</label>
                                 <input type="text" id="ocr-api-base" class="form-control" value="http://172.19.193.39:5123" placeholder="http://172.19.193.39:5123">
                             </div>
                         </div>
@@ -79,12 +79,12 @@
                             <h3 class="section-header" onclick="toggleSection(this)">
                                 <svg class="section-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="6 9 12 15 18 9"></polyline>
-                                </svg> 识别选项
+                                </svg> <span data-i18n="ui.settingsPanel.recognitionOptions">识别选项</span>
                             </h3>
                             <div class="setting-group">
                                 <label class="checkbox-label" for="ocr-auto-scroll">
                                     <input type="checkbox" id="ocr-auto-scroll" checked>
-                                    自动识别时，滚动到当前识别页面
+                                    <span data-i18n="ui.settingsPanel.autoScrollToCurrentPage">自动识别时，滚动到当前识别页面</span>
                                 </label>
                             </div>
                         </div>
@@ -104,17 +104,17 @@
                         </div>
                         <div class="header-right">
                             <input type="file" id="ocr-pdf-input" accept=".pdf" style="display: none;">
-                            <button class="btn btn-primary" onclick="document.getElementById('ocr-pdf-input').click()">
+                            <button class="btn btn-primary" onclick="document.getElementById('ocr-pdf-input').click()" data-i18n="ui.buttons.uploadPdf">
                                 上传 PDF
                             </button>
                             <input type="file" id="ocr-progress-input" accept=".json" style="display: none;">
-                            <button class="btn btn-secondary" id="ocr-load-progress-btn" onclick="document.getElementById('ocr-progress-input').click()">
+                            <button class="btn btn-secondary" id="ocr-load-progress-btn" onclick="document.getElementById('ocr-progress-input').click()" data-i18n="ui.buttons.loadProgress">
                                 加载进度
                             </button>
-                            <button class="btn btn-secondary" id="ocr-save-progress-btn">
+                            <button class="btn btn-secondary" id="ocr-save-progress-btn" data-i18n="ui.buttons.saveProgress">
                                 保存进度
                             </button>
-                            <button class="btn btn-secondary" id="ocr-export-btn" disabled>
+                            <button class="btn btn-secondary" id="ocr-export-btn" disabled data-i18n="ui.buttons.exportMarkdown">
                                 导出markdown
                             </button>
                             <button class="btn btn-primary" id="ocr-recognize-all-btn">
@@ -125,7 +125,7 @@
                                     <line x1="16" y1="17" x2="8" y2="17"/>
                                     <polyline points="10 9 9 9 8 9"/>
                                 </svg>
-                                识别所有
+                                <span data-i18n="ui.buttons.recognizeAll">识别所有</span>
                             </button>
                             
                         </div>
@@ -141,8 +141,8 @@
                                 <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 <path d="M13 3v5a2 2 0 002 2h4"/>
                             </svg>
-                            <p>请上传 PDF 文件开始</p>
-                            <button class="btn btn-primary" onclick="document.getElementById('ocr-pdf-input').click()">
+                            <p data-i18n="ui.placeholders.uploadPdfPrompt">请上传 PDF 文件开始</p>
+                            <button class="btn btn-primary" onclick="document.getElementById('ocr-pdf-input').click()" data-i18n="ui.buttons.selectPdfFile">
                                 选择 PDF 文件
                             </button>
                         </div>
@@ -169,7 +169,7 @@
                                 <svg class="section-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg>
-                                分段
+                                <span data-i18n="ui.settingsPanel.paragraphSettings">分段</span>
                             </h3>
                             <div id="translation-paragraph-settings" class="section-content">
                                 <div class="setting-group">
@@ -190,7 +190,7 @@
                                 <svg class="section-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg>
-                                翻译
+                                <span data-i18n="ui.settingsPanel.translationSettings">翻译</span>
                             </h3>
                             <div id="translation-general-settings" class="section-content">
                                 <div class="setting-group">
@@ -259,7 +259,7 @@
                                 <svg class="section-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg>
-                                校对
+                                <span data-i18n="ui.settingsPanel.proofreadSettings">校对</span>
                             </h3>
                             <div id="proofread-settings" class="section-content">
                                 <!-- 校对模式开关 -->

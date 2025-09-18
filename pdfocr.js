@@ -43,7 +43,7 @@ class PDFOCR {
         this.pdfInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file || file.type !== 'application/pdf') {
-                showError('请选择有效的PDF文件');
+                showError(window.languageManager.get('pdfOcr.errors.invalidPdfFile'));
                 return;
             }
 
@@ -58,7 +58,7 @@ class PDFOCR {
         this.progressInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file || file.type !== 'application/json') {
-                alert('请选择有效的JSON文件');
+                alert(window.languageManager.get('pdfOcr.errors.invalidJsonFile'));
                 return;
             }
             
@@ -97,7 +97,7 @@ class PDFOCR {
     async loadPDF(file) {
         try {
             // 显示加载状态
-            this.pagesContainer.innerHTML = '<div class="loading">正在加载PDF...</div>';
+            this.pagesContainer.innerHTML = `<div class="loading">${window.languageManager.get('pdfOcr.messages.loadingPdf')}</div>`;
             
             // 读取文件
             const arrayBuffer = await file.arrayBuffer();
@@ -105,7 +105,7 @@ class PDFOCR {
             this.currentPDF = await loadingTask.promise;
             
             const numPages = this.currentPDF.numPages;
-            this.pageCount.textContent = `共 ${numPages} 页`;
+            this.pageCount.textContent = window.languageManager.get('pdfOcr.messages.pageCount', {count: numPages});
             
             // 清空容器并渲染所有页面
             this.pagesContainer.innerHTML = '';
@@ -120,8 +120,8 @@ class PDFOCR {
             
         } catch (error) {
             console.error('加载PDF失败:', error);
-            showError('加载PDF失败，请重试')
-            this.pagesContainer.innerHTML = '<div class="error">加载PDF失败，请重试</div>';
+            showError(window.languageManager.get('pdfOcr.errors.loadPdfFailed'))
+            this.pagesContainer.innerHTML = `<div class="error">${window.languageManager.get('pdfOcr.errors.loadPdfFailed')}</div>`;
         }
     }
 
@@ -179,9 +179,9 @@ class PDFOCR {
                 <line x1="16" y1="17" x2="8" y2="17"/>
                 <polyline points="10 9 9 9 8 9"/>
             </svg>
-            识别
+            ${window.languageManager.get('pdfOcr.buttons.recognize')}
         `;
-        ocrButton.title = '识别此页面';
+        ocrButton.title = window.languageManager.get('pdfOcr.tooltips.recognizePage');
         ocrButton.onclick = () => this.performOCR(pageNum);
         
         actionContainer.appendChild(ocrButton);
@@ -202,7 +202,7 @@ class PDFOCR {
         
         const blocksTab = document.createElement('button');
         blocksTab.className = 'result-tab';
-        blocksTab.textContent = '分块视图';
+        blocksTab.textContent = window.languageManager.get('pdfOcr.ui.blocksView');
         blocksTab.onclick = () => this.switchResultView(pageNum, 'blocks');
         
         tabsHeader.appendChild(jsonTab);
@@ -218,7 +218,7 @@ class PDFOCR {
         
         const jsonPlaceholder = document.createElement('div');
         jsonPlaceholder.className = 'result-placeholder';
-        jsonPlaceholder.textContent = '点击"识别"按钮开始OCR';
+        jsonPlaceholder.textContent = window.languageManager.get('pdfOcr.placeholders.clickRecognize');
         jsonView.appendChild(jsonPlaceholder);
         
         // 分块视图
