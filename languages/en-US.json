@@ -16,7 +16,7 @@
       "apiKeyPlaceholder": "Enter your API Key",
       "translationPrompt": "Translation Prompt",
       "translationPromptPlaceholder": "Please translate the following text to English, maintaining the original format and structure...",
-      "translationPromptDefault": "Please translate the following text to English, maintaining the original format and structure, without adding additional explanations or comments.",
+      "translationPromptDefault": "Please translate the following text to English, maintaining the original format and structure, without adding additional explanations or comments.\n\nText to translate:\n\nORIGTEXT",
       "contextCount": "Context Count",
       "contextCountHint": "Provide previous text to improve translation accuracy, default is none",
       "temperature": "Temperature",

@@ -1571,10 +1571,13 @@ class MarkdownTranslator {
             return;
         }
         
-        const progressData = [];
+        const progressData = {
+            filename: this.currentFile.name,
+            blocks: []
+        };
         
         for (let i = 0; i < this.originalBlocks.length; i++) {
-            progressData.push({
+            progressData.blocks.push({
                 original_text: this.originalBlocks[i],
                 translated_text: this.translationBlocks[i] ?? ''
             });
@@ -1607,14 +1610,24 @@ class MarkdownTranslator {
             try {
                 const progressData = JSON.parse(e.target.result);
                 
-                if (!Array.isArray(progressData)) {
+                // 兼容旧格式（数组）和新格式（包含filename的对象）
+                let blocks, filename;
+                if (Array.isArray(progressData)) {
+                    // 旧格式
+                    blocks = progressData;
+                    filename = 'loaded_progress.md';
+                } else if (progressData.blocks && Array.isArray(progressData.blocks)) {
+                    // 新格式
+                    blocks = progressData.blocks;
+                    filename = progressData.filename || 'loaded_progress.md';
+                } else {
                     showError(languageManager.get('errors.loadProgressInvalidData'));
                     return;
                 }
                 
                 // 验证数据格式
-                for (let i = 0; i < progressData.length; i++) {
-                    const item = progressData[i];
+                for (let i = 0; i < blocks.length; i++) {
+                    const item = blocks[i];
                     if (!item.hasOwnProperty('original_text') || !item.hasOwnProperty('translated_text')) {
                         showError(languageManager.get('errors.loadProgressInvalidObject', {index: i+1}));
                         return;
@@ -1622,8 +1635,8 @@ class MarkdownTranslator {
                 }
                 
                 // 加载数据到数组中
-                this.originalBlocks = progressData.map(item => item.original_text);
-                this.translationBlocks = progressData.map(item => item.translated_text);
+                this.originalBlocks = blocks.map(item => item.original_text);
+                this.translationBlocks = blocks.map(item => item.translated_text);
                 
                 // 初始化渲染模式数组
                 this.originalRenderMode = new Array(this.originalBlocks.length).fill('mathjax');
@@ -1632,9 +1645,9 @@ class MarkdownTranslator {
                 // 重置导出标记
                 this.hasExported = false;
                 
-                // 创建一个虚拟文件对象
+                // 使用保存的文件名创建文件对象
                 this.currentFile = {
-                    name: 'loaded_progress.md'
+                    name: filename
                 };
                 
                 // 重新渲染页面

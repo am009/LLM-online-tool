@@ -16,7 +16,7 @@
       "apiKeyPlaceholder": "请输入您的API Key",
       "translationPrompt": "翻译提示词",
       "translationPromptPlaceholder": "请将以下文本翻译成中文，保持原文的格式和结构...",
-      "translationPromptDefault": "请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。",
+      "translationPromptDefault": "请将以下文本翻译成中文，保持原文的格式和结构，不要添加额外的解释或注释。\n\n待翻译文本：\n\nORIGTEXT",
       "contextCount": "上下文数量",
       "contextCountHint": "提供前文以提升翻译准确性，默认不提供",
       "temperature": "Temperature",
