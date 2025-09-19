@@ -925,13 +925,28 @@ class MarkdownTranslator {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let result = '';
+        let thinkingContent = '';
+        let isThinkingPhase = true;
         
         // 获取对应的翻译块DOM元素
-        let translationBlock, markdownDiv, mathjaxDiv;
+        let translationBlock, markdownDiv, mathjaxDiv, thinkingDiv;
         if (blockIndex !== null) {
             translationBlock = document.querySelector(`[data-index="${blockIndex}"] .translation-block`);
             markdownDiv = translationBlock?.querySelector('.translation-content-markdown');
             mathjaxDiv = translationBlock?.querySelector('.translation-content-mathjax');
+            
+            // 创建thinking显示区域
+            thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'translation-thinking-display';
+            thinkingDiv.style.color = '#888';
+            thinkingDiv.style.fontStyle = 'italic';
+            thinkingDiv.style.fontSize = '0.9em';
+            thinkingDiv.style.marginBottom = '8px';
+            
+            // 插入到翻译内容之前
+            if (markdownDiv && markdownDiv.parentNode) {
+                markdownDiv.parentNode.insertBefore(thinkingDiv, markdownDiv);
+            }
         }
         
         try {
@@ -949,11 +964,26 @@ class MarkdownTranslator {
                     try {
                         const data = JSON.parse(line);
 
+                        // 处理thinking内容
                         if (data.message && data.message.thinking) {
-                            console.log(data.message.thinking)
+                            thinkingContent += data.message.thinking;
+                            
+                            // 实时更新thinking显示
+                            if (thinkingDiv && isThinkingPhase) {
+                                thinkingDiv.textContent = thinkingContent;
+                                // 自动滚动到底部
+                                thinkingDiv.scrollTop = thinkingDiv.scrollHeight;
+                            }
                         }
                         
+                        // 处理实际翻译内容
                         if (data.message && data.message.content) {
+                            // 第一次收到content时，清空thinking显示，开始显示翻译内容
+                            if (isThinkingPhase && thinkingDiv) {
+                                thinkingDiv.style.display = 'none';
+                                isThinkingPhase = false;
+                            }
+                            
                             result += data.message.content;
                             
                             // 实时更新界面显示
@@ -989,6 +1019,11 @@ class MarkdownTranslator {
             }
         } finally {
             reader.releaseLock();
+            
+            // 清理thinking显示元素
+            if (thinkingDiv && thinkingDiv.parentNode) {
+                thinkingDiv.parentNode.removeChild(thinkingDiv);
+            }
         }
         
         return result ?? languageManager.get('errors.translationFailed');
@@ -1355,13 +1390,30 @@ class MarkdownTranslator {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let result = '';
+        let thinkingContent = '';
+        let isThinkingPhase = true;
         
         // 获取对应的翻译块DOM元素
-        let translationBlock, markdownDiv, mathjaxDiv;
+        let translationBlock, markdownDiv, mathjaxDiv, thinkingDiv;
         if (blockIndex !== null) {
             translationBlock = document.querySelector(`[data-index="${blockIndex}"] .translation-block`);
             markdownDiv = translationBlock?.querySelector('.translation-content-markdown');
             mathjaxDiv = translationBlock?.querySelector('.translation-content-mathjax');
+            
+            // 为Ollama创建thinking显示区域
+            if (provider === 'ollama') {
+                thinkingDiv = document.createElement('div');
+                thinkingDiv.className = 'translation-thinking-display';
+                thinkingDiv.style.color = '#888';
+                thinkingDiv.style.fontStyle = 'italic';
+                thinkingDiv.style.fontSize = '0.9em';
+                thinkingDiv.style.marginBottom = '8px';
+                
+                // 插入到翻译内容之前
+                if (markdownDiv && markdownDiv.parentNode) {
+                    markdownDiv.parentNode.insertBefore(thinkingDiv, markdownDiv);
+                }
+            }
         }
         
         try {
@@ -1382,30 +1434,39 @@ class MarkdownTranslator {
                         try {
                             const data = JSON.parse(line);
 
+                            // 处理thinking内容
                             if (data.message && data.message.thinking) {
-                                console.log(data.message.thinking)
+                                thinkingContent += data.message.thinking;
+                                
+                                // 实时更新thinking显示
+                                if (thinkingDiv && isThinkingPhase) {
+                                    thinkingDiv.textContent = thinkingContent;
+                                    // 自动滚动到底部
+                                    thinkingDiv.scrollTop = thinkingDiv.scrollHeight;
+                                }
                             }
                             
+                            // 处理实际校对内容
                             if (data.message && data.message.content) {
+                                // 第一次收到content时，清空thinking显示，开始显示校对内容
+                                if (isThinkingPhase && thinkingDiv) {
+                                    thinkingDiv.style.display = 'none';
+                                    isThinkingPhase = false;
+                                }
+                                
                                 result += data.message.content;
                                 
-                                // 实时更新界面显示（但不包含thinking部分）
-                                let displayResult = result;
-                                // const thinkingMatch = displayResult.match(/<think>[\s\S]*?<\/think>\s*/);
-                                // if (thinkingMatch) {
-                                //     displayResult = displayResult.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
-                                // }
-                                
-                                if (markdownDiv && blockIndex !== null && displayResult) {
-                                    markdownDiv.value = displayResult;
+                                // 实时更新界面显示
+                                if (markdownDiv && blockIndex !== null) {
+                                    markdownDiv.value = result;
                                     // 触发自动调整高度
                                     markdownDiv.style.height = '';
                                     markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
-                                    this.translationBlocks[blockIndex] = displayResult;
+                                    this.translationBlocks[blockIndex] = result;
                                     
                                     // 同步更新mathjax版本
                                     if (mathjaxDiv) {
-                                        mathjaxDiv.innerHTML = displayResult;
+                                        mathjaxDiv.innerHTML = result;
                                         
                                         // 如果当前显示的是MathJax模式，重新渲染
                                         if (this.translationRenderMode && this.translationRenderMode[blockIndex] === 'mathjax') {
@@ -1485,6 +1546,11 @@ class MarkdownTranslator {
             }
         } finally {
             reader.releaseLock();
+            
+            // 清理thinking显示元素
+            if (thinkingDiv && thinkingDiv.parentNode) {
+                thinkingDiv.parentNode.removeChild(thinkingDiv);
+            }
         }
         
         // 提取thinking部分并打印到控制台

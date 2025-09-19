@@ -8,9 +8,9 @@ HTTP： http://translate.latexdiff.cn/
 
 HTTPS： https://translate.latexdiff.cn/
 
-- 推荐的翻译模型：OLLAMA的qwen3:30b-a3b-instruct-2507-q4_K_M  （2025年9月2日）
-- 推荐的校对模型：OLLAMA的qwen3:30b-a3b-thinking-2507-q4_K_M  （2025年9月2日）
+- Ollama推荐的模型：qwen3:30b-a3b-thinking-2507-q4_K_M  （2025年9月2日）
 
+<!-- 
 推荐的翻译Prompt形式：（上下文数量设置为0）
 
 ```
@@ -23,7 +23,7 @@ contravariant: 翻译为“逆变”，
 soundness需要保留原英文，
 preorder 翻译为 “前序”
 monotype environment 翻译为单态类型环境
-```
+``` -->
 
 ## 使用
 

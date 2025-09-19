@@ -4,6 +4,22 @@
     --translate-button-width: 60px;
 }
 
+/* Thinking 显示样式 */
+.translation-thinking-display {
+    color: #888;
+    font-size: 0.9em;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border-left: 3px solid #dee2e6;
+    border-radius: 4px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
 /* 按钮全宽样式 */
 .btn-full-width {
     width: 100%;
