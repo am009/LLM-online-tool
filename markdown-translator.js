@@ -26,6 +26,7 @@ class MarkdownTranslator {
         this.setupSidebar();
         this.setupBeforeUnloadWarning();
         this.initLanguageSettings();
+        this.loadAutoSavedProgress();
     }
 
     setupEventListeners() {
@@ -441,6 +442,8 @@ class MarkdownTranslator {
         this.currentFile = file;
         // 重置导出标记
         this.hasExported = false;
+        // 清除之前的自动保存进度，因为要开始新的文件
+        this.clearAutoSavedProgress();
         
         const reader = new FileReader();
         
@@ -448,16 +451,7 @@ class MarkdownTranslator {
             try {
                 this.parseContent(e.target.result);
                 this.updateFileInfo();
-                document.getElementById('translate-all-btn').disabled = false;
-                document.getElementById('translation-export-btn').disabled = false;
-                document.getElementById('translation-export-alternating-btn').disabled = false;
-                document.getElementById('translation-save-progress-btn').disabled = false;
-                document.getElementById('translation-export-original-btn').disabled = false;
-                document.getElementById('translation-reorganize-paragraphs-btn').disabled = false;
-                // 如果处于校对模式，启用校对所有按钮
-                if (this.proofreadingMode) {
-                    document.getElementById('proofread-all-btn').disabled = false;
-                }
+                this.enableProgressButtons();
             } catch (error) {
                 showError(languageManager.get('errors.parseMarkdownFailed') + error.message);
             }
@@ -603,6 +597,8 @@ class MarkdownTranslator {
             if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
                 MathJax.typesetPromise([translationMathjax]).catch((err) => console.log(err.message));
             }
+            // 自动保存翻译进度
+            this.autoSaveProgress();
         });
         
         // 翻译mathjax版本
@@ -733,6 +729,9 @@ class MarkdownTranslator {
                 
                 // 有新翻译内容时，重置导出标记
                 this.hasExported = false;
+                
+                // 自动保存翻译进度
+                this.autoSaveProgress();
             }
             
         } catch (error) {
@@ -1005,6 +1004,9 @@ class MarkdownTranslator {
                                         }
                                     }
                                 }
+                                
+                                // 自动保存翻译进度
+                                this.autoSaveProgress();
                             }
                         }
                         
@@ -1196,6 +1198,9 @@ class MarkdownTranslator {
                 
                 // 有新校对内容时，重置导出标记
                 this.hasExported = false;
+                
+                // 自动保存翻译进度
+                this.autoSaveProgress();
             }
             
         } catch (error) {
@@ -1475,6 +1480,9 @@ class MarkdownTranslator {
                                             }
                                         }
                                     }
+                                    
+                                    // 自动保存翻译进度
+                                    this.autoSaveProgress();
                                 }
                             }
                             
@@ -1535,6 +1543,9 @@ class MarkdownTranslator {
                                             }
                                         }
                                     }
+                                    
+                                    // 自动保存翻译进度
+                                    this.autoSaveProgress();
                                 }
                             }
                         } catch (e) {
@@ -1632,21 +1643,10 @@ class MarkdownTranslator {
     }
 
     saveProgress() {
-        if (!this.currentFile || this.originalBlocks.length === 0) {
+        const progressData = this.createProgressData();
+        if (!progressData) {
             showError(languageManager.get('errors.noProgressToSave'));
             return;
-        }
-        
-        const progressData = {
-            filename: this.currentFile.name,
-            blocks: []
-        };
-        
-        for (let i = 0; i < this.originalBlocks.length; i++) {
-            progressData.blocks.push({
-                original_text: this.originalBlocks[i],
-                translated_text: this.translationBlocks[i] ?? ''
-            });
         }
         
         const blob = new Blob([JSON.stringify(progressData, null, 2)], { type: 'application/json;charset=utf-8' });
@@ -1677,61 +1677,19 @@ class MarkdownTranslator {
                 const progressData = JSON.parse(e.target.result);
                 
                 // 兼容旧格式（数组）和新格式（包含filename的对象）
-                let blocks, filename;
+                let formattedData;
                 if (Array.isArray(progressData)) {
-                    // 旧格式
-                    blocks = progressData;
-                    filename = 'loaded_progress.md';
-                } else if (progressData.blocks && Array.isArray(progressData.blocks)) {
-                    // 新格式
-                    blocks = progressData.blocks;
-                    filename = progressData.filename || 'loaded_progress.md';
+                    // 旧格式，转换为新格式
+                    formattedData = {
+                        filename: 'loaded_progress.md',
+                        blocks: progressData
+                    };
                 } else {
-                    showError(languageManager.get('errors.loadProgressInvalidData'));
-                    return;
+                    formattedData = progressData;
                 }
                 
-                // 验证数据格式
-                for (let i = 0; i < blocks.length; i++) {
-                    const item = blocks[i];
-                    if (!item.hasOwnProperty('original_text') || !item.hasOwnProperty('translated_text')) {
-                        showError(languageManager.get('errors.loadProgressInvalidObject', {index: i+1}));
-                        return;
-                    }
-                }
-                
-                // 加载数据到数组中
-                this.originalBlocks = blocks.map(item => item.original_text);
-                this.translationBlocks = blocks.map(item => item.translated_text);
-                
-                // 初始化渲染模式数组
-                this.originalRenderMode = new Array(this.originalBlocks.length).fill('mathjax');
-                this.translationRenderMode = new Array(this.originalBlocks.length).fill('markdown');
-                
-                // 重置导出标记
-                this.hasExported = false;
-                
-                // 使用保存的文件名创建文件对象
-                this.currentFile = {
-                    name: filename
-                };
-                
-                // 重新渲染页面
-                this.renderBlocks();
-                this.updateFileInfo();
-                
-                // 启用相关按钮
-                document.getElementById('translate-all-btn').disabled = false;
-                document.getElementById('translation-export-btn').disabled = false;
-                document.getElementById('translation-export-alternating-btn').disabled = false;
-                document.getElementById('translation-save-progress-btn').disabled = false;
-                document.getElementById('translation-export-original-btn').disabled = false;
-                document.getElementById('translation-reorganize-paragraphs-btn').disabled = false;
-                
-                // 如果处于校对模式，启用校对所有按钮
-                if (this.proofreadingMode) {
-                    document.getElementById('proofread-all-btn').disabled = false;
-                }
+                // 使用通用函数加载数据
+                this.loadProgressFromData(formattedData, false);
                 
             } catch (error) {
                 showError(languageManager.get('errors.loadProgressFailed') + error.message);
@@ -2049,6 +2007,129 @@ class MarkdownTranslator {
             originalBlocks: mergedOriginalBlocks,
             translationBlocks: mergedTranslationBlocks
         };
+    }
+
+    // 创建进度数据对象的通用函数
+    createProgressData() {
+        if (!this.currentFile || this.originalBlocks.length === 0) {
+            return null;
+        }
+        
+        const progressData = {
+            filename: this.currentFile.name,
+            timestamp: Date.now(),
+            blocks: []
+        };
+        
+        for (let i = 0; i < this.originalBlocks.length; i++) {
+            progressData.blocks.push({
+                original_text: this.originalBlocks[i],
+                translated_text: this.translationBlocks[i] ?? ''
+            });
+        }
+        
+        return progressData;
+    }
+
+    // 从进度数据加载到页面的通用函数
+    loadProgressFromData(progressData, isAutoLoad = false) {
+        try {
+            // 验证数据格式
+            if (!progressData || !progressData.blocks || !Array.isArray(progressData.blocks)) {
+                throw new Error('Invalid progress data format');
+            }
+            
+            // 验证每个block的格式
+            for (let i = 0; i < progressData.blocks.length; i++) {
+                const item = progressData.blocks[i];
+                if (!item.hasOwnProperty('original_text') || !item.hasOwnProperty('translated_text')) {
+                    throw new Error(languageManager.get('errors.loadProgressInvalidObject', {index: i+1}));
+                }
+            }
+            
+            // 加载数据到数组中
+            this.originalBlocks = progressData.blocks.map(item => item.original_text);
+            this.translationBlocks = progressData.blocks.map(item => item.translated_text);
+            
+            // 初始化渲染模式数组
+            this.originalRenderMode = new Array(this.originalBlocks.length).fill('mathjax');
+            this.translationRenderMode = new Array(this.originalBlocks.length).fill('markdown');
+            
+            // 重置导出标记
+            this.hasExported = false;
+            
+            // 使用保存的文件名创建文件对象
+            this.currentFile = {
+                name: progressData.filename || (isAutoLoad ? 'auto-saved.md' : 'loaded_progress.md')
+            };
+            
+            // 重新渲染页面
+            this.renderBlocks();
+            this.updateFileInfo();
+            
+            // 启用相关按钮
+            this.enableProgressButtons();
+            
+            if (isAutoLoad) {
+                console.log('Auto-loaded translation progress for:', progressData.filename);
+            }
+            
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // 启用进度相关按钮的通用函数
+    enableProgressButtons() {
+        document.getElementById('translate-all-btn').disabled = false;
+        document.getElementById('translation-export-btn').disabled = false;
+        document.getElementById('translation-export-alternating-btn').disabled = false;
+        document.getElementById('translation-save-progress-btn').disabled = false;
+        document.getElementById('translation-export-original-btn').disabled = false;
+        document.getElementById('translation-reorganize-paragraphs-btn').disabled = false;
+        
+        // 如果处于校对模式，启用校对所有按钮
+        if (this.proofreadingMode) {
+            document.getElementById('proofread-all-btn').disabled = false;
+        }
+    }
+
+    // 自动保存翻译进度到本地存储
+    autoSaveProgress() {
+        const progressData = this.createProgressData();
+        if (!progressData) {
+            return;
+        }
+        
+        try {
+            localStorage.setItem('markdown-translator-auto-save', JSON.stringify(progressData));
+        } catch (error) {
+            console.warn('Failed to auto-save translation progress:', error);
+        }
+        this.hasExported = true;
+    }
+
+    // 自动加载保存的翻译进度
+    loadAutoSavedProgress() {
+        try {
+            const savedData = localStorage.getItem('markdown-translator-auto-save');
+            if (!savedData) {
+                return;
+            }
+            
+            const progressData = JSON.parse(savedData);
+            this.loadProgressFromData(progressData, true);
+            
+        } catch (error) {
+            console.warn('Failed to load auto-saved translation progress:', error);
+            // 如果加载失败，清除损坏的数据
+            localStorage.removeItem('markdown-translator-auto-save');
+        }
+    }
+
+    // 清除自动保存的进度
+    clearAutoSavedProgress() {
+        localStorage.removeItem('markdown-translator-auto-save');
     }
 }
 
