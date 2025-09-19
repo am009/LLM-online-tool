@@ -291,11 +291,6 @@ class PDFOCR {
         
         // 为每个块创建可编辑区域
         ocrResult.forEach((block, index) => {
-            // 跳过Picture类型的块，因为它们没有text字段
-            if (block.category === 'Picture') {
-                return;
-            }
-            
             const blockDiv = document.createElement('div');
             blockDiv.className = 'markdown-block';
             blockDiv.dataset.blockIndex = index;
@@ -303,20 +298,6 @@ class PDFOCR {
             const header = document.createElement('div');
             header.className = 'markdown-block-header';
             header.textContent = `${block.category} [${block.bbox?.join(', ') || 'No bbox'}]`;
-            
-            const content = document.createElement('div');
-            content.className = 'markdown-block-content';
-            
-            const textarea = document.createElement('textarea');
-            textarea.className = 'markdown-block-textarea';
-            textarea.value = block.text || '';
-            textarea.placeholder = '此块暂无文本内容';
-            textarea.setAttribute('oninput', 'this.style.height = "";this.style.height = (this.scrollHeight + 1) + "px"');
-
-            // 绑定文本变化事件，同步到JSON数据
-            textarea.addEventListener('input', (e) => {
-                this.updateBlockText(pageNum, index, e.target.value);
-            });
             
             // 添加鼠标悬停高亮功能
             blockDiv.addEventListener('mouseenter', () => {
@@ -329,9 +310,28 @@ class PDFOCR {
                 this.hideHighlight(pageNum);
             });
             
-            content.appendChild(textarea);
             blockDiv.appendChild(header);
-            blockDiv.appendChild(content);
+            
+            // 对于Picture类型的块，只显示header，不添加文本框
+            if (block.category !== 'Picture') {
+                const content = document.createElement('div');
+                content.className = 'markdown-block-content';
+                
+                const textarea = document.createElement('textarea');
+                textarea.className = 'markdown-block-textarea';
+                textarea.value = block.text || '';
+                textarea.placeholder = '此块暂无文本内容';
+                textarea.setAttribute('oninput', 'this.style.height = "";this.style.height = (this.scrollHeight + 1) + "px"');
+
+                // 绑定文本变化事件，同步到JSON数据
+                textarea.addEventListener('input', (e) => {
+                    this.updateBlockText(pageNum, index, e.target.value);
+                });
+                
+                content.appendChild(textarea);
+                blockDiv.appendChild(content);
+            }
+            
             blocksView.appendChild(blockDiv);
         });
     }
