@@ -1,8 +1,8 @@
-# Latexdiff工具站
+# tool.latexdiff.cn
 
 ## PDF OCR 识别
 
-![screenshot-pdfocr](screenshot-pdfocr.png.png)
+![screenshot-pdfocr](screenshot-pdfocr.png)
 
 - SOTA高准确度的OCR识别：基于[准确度远超其他方案](https://github.com/rednote-hilab/dots.ocr?tab=readme-ov-file#benchmark-results)的dots.ocr模型API，支持使用docker一键启动API端点：https://github.com/am009/dots.ocr
    - 自动过滤页眉页脚
