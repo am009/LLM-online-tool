@@ -4,9 +4,9 @@
 
 ![screenshot-pdfocr](screenshot-pdfocr.png.png)
 
-- SOTA高准确度的OCR识别：基于[准确度远超其他方案](https://github.com/rednote-hilab/dots.ocr?tab=readme-ov-file#benchmark-results)的dots.ocr模型API，支持使用docker一键启动API端点。
+- SOTA高准确度的OCR识别：基于[准确度远超其他方案](https://github.com/rednote-hilab/dots.ocr?tab=readme-ov-file#benchmark-results)的dots.ocr模型API，支持使用docker一键启动API端点：https://github.com/am009/dots.ocr
+   - 自动过滤页眉页脚
 - 双栏展示，迅速校对：双列展示pdf页面和OCR结果，鼠标悬停高亮对应页面文本区域，可直接编辑结果。
-- 自动过滤
 
 ### 特性
 
