@@ -363,7 +363,7 @@ class MarkdownTranslator {
         return {
             'openai': 'https://api.openai.com/v1/chat/completions',
             'anthropic': 'https://api.anthropic.com/v1/messages',
-            'ollama': 'http://localhost:11434/api/chat',
+            'ollama': '//localhost:11434/api/chat',
             'custom': ''
         };
     }
@@ -774,7 +774,7 @@ class MarkdownTranslator {
                     apiUrl = 'https://api.anthropic.com/v1/messages';
                     break;
                 case 'ollama':
-                    apiUrl = 'http://localhost:11434/api/chat';
+                    apiUrl = '//localhost:11434/api/chat';
                     break;
                 default:
                     throw new Error(languageManager.get('errors.unsupportedApiProvider'));
@@ -1246,7 +1246,7 @@ class MarkdownTranslator {
                     apiUrl = 'https://api.anthropic.com/v1/messages';
                     break;
                 case 'ollama':
-                    apiUrl = 'http://localhost:11434/api/chat';
+                    apiUrl = '//localhost:11434/api/chat';
                     break;
                 default:
                     throw new Error(languageManager.get('errors.unsupportedProofreadApiProvider'));
