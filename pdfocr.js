@@ -30,6 +30,9 @@ class PDFOCR {
         // 初始化事件监听器
         this.initEventListeners();
         
+        // 初始化拖放功能
+        this.initDragAndDrop();
+        
         // 加载保存的设置
         this.loadSettings();
     }
@@ -96,6 +99,65 @@ class PDFOCR {
         // 自动滚动复选框
         if (this.autoScrollCheckbox) {
             this.autoScrollCheckbox.addEventListener('change', () => this.saveSettings());
+        }
+    }
+    
+    // 初始化拖放功能
+    initDragAndDrop() {
+        const dropZone = this.pagesContainer;
+        
+        // 防止默认的拖放行为
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, this.preventDefaults, false);
+            document.body.addEventListener(eventName, this.preventDefaults, false);
+        });
+        
+        // 拖放高亮效果
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => this.highlightDropZone(), false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => this.unhighlightDropZone(), false);
+        });
+        
+        // 处理文件拖放
+        dropZone.addEventListener('drop', (e) => this.handleDrop(e), false);
+    }
+    
+    // 防止默认拖放行为
+    preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    // 高亮拖放区域
+    highlightDropZone() {
+        this.pagesContainer.classList.add('drag-over');
+    }
+    
+    // 取消高亮拖放区域
+    unhighlightDropZone() {
+        this.pagesContainer.classList.remove('drag-over');
+    }
+    
+    // 处理文件拖放
+    async handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            const file = files[0];
+            
+            // 检查文件类型
+            if (file.type !== 'application/pdf') {
+                showError(window.languageManager.get('pdfOcr.errors.invalidPdfFile'));
+                return;
+            }
+            
+            // 更新文件信息并加载PDF
+            this.fileInfo.textContent = file.name;
+            await this.loadPDF(file);
         }
     }
     

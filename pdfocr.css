@@ -224,3 +224,24 @@
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+/* 拖放样式 */
+.drag-over {
+    border: 2px dashed #0366d6 !important;
+    background-color: rgba(3, 102, 214, 0.05) !important;
+}
+
+.drag-over .empty-state {
+    background-color: rgba(3, 102, 214, 0.1);
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.drag-over .empty-state p {
+    color: #0366d6;
+    font-weight: 500;
+}
+
+.drag-over .empty-state svg {
+    color: #0366d6;
+}
