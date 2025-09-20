@@ -50,7 +50,8 @@
       "apiSettings": "API Settings",
       "apiBaseUrl": "API Base URL",
       "recognitionOptions": "Recognition Options",
-      "autoScrollToCurrentPage": "Auto scroll to current page during recognition"
+      "autoScrollToCurrentPage": "Auto scroll to current page during recognition",
+      "localDeploy": "Deploy local API endpoint"
     },
     "buttons": {
       "uploadFile": "Upload Markdown File",

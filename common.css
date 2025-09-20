@@ -19,6 +19,10 @@ body {
     height: 100vh;
 }
 
+.link-text {
+    color: #3498db;
+}
+
 /* 导航栏样式 */
 .tab-navigation {
     background: white;
