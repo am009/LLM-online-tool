@@ -29,6 +29,9 @@ class PDFOCR {
         
         // 初始化事件监听器
         this.initEventListeners();
+        
+        // 加载保存的设置
+        this.loadSettings();
     }
 
     initEventListeners() {
@@ -77,6 +80,58 @@ class PDFOCR {
                 this.recognizeAllPages();
             }
         });
+
+        // 设置项自动保存事件监听
+        this.initSettingsAutoSave();
+    }
+    
+    // 初始化设置项自动保存
+    initSettingsAutoSave() {
+        // API 基础 URL
+        const apiBaseInput = document.getElementById('ocr-api-base');
+        if (apiBaseInput) {
+            apiBaseInput.addEventListener('input', () => this.saveSettings());
+        }
+        
+        // 自动滚动复选框
+        if (this.autoScrollCheckbox) {
+            this.autoScrollCheckbox.addEventListener('change', () => this.saveSettings());
+        }
+    }
+    
+    // 保存设置到本地存储
+    saveSettings() {
+        const settings = {
+            apiBaseUrl: document.getElementById('ocr-api-base')?.value || '',
+            autoScroll: this.autoScrollCheckbox?.checked || false,
+            timestamp: Date.now()
+        };
+        
+        localStorage.setItem('pdf-ocr-settings', JSON.stringify(settings));
+    }
+    
+    // 从本地存储加载设置
+    loadSettings() {
+        try {
+            const stored = localStorage.getItem('pdf-ocr-settings');
+            if (!stored) return;
+            
+            const settings = JSON.parse(stored);
+            
+            // 应用API基础URL设置
+            const apiBaseInput = document.getElementById('ocr-api-base');
+            if (apiBaseInput && settings.apiBaseUrl) {
+                apiBaseInput.value = settings.apiBaseUrl;
+            }
+            
+            // 应用自动滚动设置
+            if (this.autoScrollCheckbox && typeof settings.autoScroll === 'boolean') {
+                this.autoScrollCheckbox.checked = settings.autoScroll;
+            }
+            
+        } catch (error) {
+            console.error('加载PDF OCR设置失败:', error);
+        }
     }
     
     // 切换设置区块折叠状态
