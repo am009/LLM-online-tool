@@ -922,6 +922,29 @@ class PDFOCR {
         }
     }
 
+    // 检查页面状态
+    getPageStatus(pageNum) {
+        const pageRow = document.querySelector(`.page-row[data-page-num="${pageNum}"]`);
+        if (!pageRow) return 'unknown';
+        
+        const ocrButton = pageRow.querySelector('.btn-ocr');
+        if (!ocrButton) return 'unknown';
+        
+        // 检查是否有成功结果
+        if (this.pageResults.has(pageNum)) {
+            return 'success';
+        }
+        
+        // 检查是否有错误（按钮文本包含"重试"）
+        const BtmText = ocrButton.textContent.trim();
+        if (BtmText.includes('重试') || BtmText.includes('Retry')) {
+            return 'error';
+        }
+        
+        // 默认为未处理
+        return 'unprocessed';
+    }
+
     // 停止批量识别
     stopRecognizing() {
         this.shouldStopRecognizing = true;
@@ -946,16 +969,23 @@ class PDFOCR {
         }
         
         const numPages = this.currentPDF.numPages;
-        const unrecognizedPages = [];
+        const unprocessedPages = [];
+        const errorPages = [];
         
-        // 查找未识别的页面
+        // 查找未识别的页面，按优先级排序：先处理未处理的页面，后处理错误页面
         for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-            if (!this.pageResults.has(pageNum)) {
-                unrecognizedPages.push(pageNum);
+            const status = this.getPageStatus(pageNum);
+            if (status === 'unprocessed') {
+                unprocessedPages.push(pageNum);
+            } else if (status === 'error') {
+                errorPages.push(pageNum);
             }
         }
         
-        if (unrecognizedPages.length === 0) {
+        // 合并页面列表：未处理的页面优先，错误页面放在后面
+        const allPagesToProcess = [...unprocessedPages, ...errorPages];
+        
+        if (allPagesToProcess.length === 0) {
             alert(window.languageManager.get('pdfOcr.messages.allPagesRecognized'));
             return;
         }
@@ -975,18 +1005,22 @@ class PDFOCR {
         this.recognizeAllBtn.disabled = false;
         
         let completedCount = 0;
-        let hasErrors = false;
+        let totalPages = allPagesToProcess.length;
+        let failedCount = 0;
         
         try {
-            // 顺序识别每个未识别的页面
-            for (const pageNum of unrecognizedPages) {
+            this.progressInfo.textContent = `开始批量识别，共 ${totalPages} 页（${unprocessedPages.length} 页未处理，${errorPages.length} 页重试）`;
+            
+            for (const pageNum of allPagesToProcess) {
                 // 检查是否需要停止
                 if (this.shouldStopRecognizing) {
-                    this.progressInfo.textContent = `识别已停止，已完成 ${completedCount}/${unrecognizedPages.length} 页`;
+                    this.progressInfo.textContent = `识别已停止，已完成 ${completedCount}/${totalPages} 页`;
                     break;
                 }
                 
-                this.progressInfo.textContent = `正在识别第 ${pageNum} 页 (${completedCount + 1}/${unrecognizedPages.length})`;
+                const isRetry = errorPages.includes(pageNum);
+                const progressType = isRetry ? '重试' : '识别';
+                this.progressInfo.textContent = `正在${progressType}第 ${pageNum} 页 (${completedCount + 1}/${totalPages})`;
                 
                 // 如果启用了自动滚动，滚动到当前页面
                 if (this.autoScrollCheckbox.checked) {
@@ -1001,23 +1035,24 @@ class PDFOCR {
                     
                     // 检查是否在识别过程中被停止
                     if (this.shouldStopRecognizing) {
-                        this.progressInfo.textContent = `识别已停止，已完成 ${completedCount}/${unrecognizedPages.length} 页`;
+                        this.progressInfo.textContent = `识别已停止，已完成 ${completedCount}/${totalPages} 页`;
                         break;
                     }
                     
-                    this.progressInfo.textContent = `已完成 ${completedCount}/${unrecognizedPages.length} 页`;
+                    this.progressInfo.textContent = `已完成 ${completedCount}/${totalPages} 页`;
                 } catch (error) {
                     console.error(`识别第 ${pageNum} 页失败:`, error);
-                    hasErrors = true;
+                    failedCount++;
+                    this.progressInfo.textContent = `已完成 ${completedCount}/${totalPages} 页，失败 ${failedCount} 页`;
                 }
             }
             
             // 显示完成信息
             if (this.shouldStopRecognizing) {
                 alert(`识别已停止！已完成 ${completedCount} 页。`);
-            } else if (hasErrors) {
-                this.progressInfo.textContent = `批量识别完成，共 ${completedCount}/${unrecognizedPages.length} 页成功`;
-                alert(`批量识别完成！成功识别 ${completedCount} 页，${unrecognizedPages.length - completedCount} 页失败。请查看具体页面的错误信息。`);
+            } else if (failedCount > 0) {
+                this.progressInfo.textContent = `批量识别完成，共 ${completedCount}/${totalPages} 页成功，${failedCount} 页失败`;
+                alert(`批量识别完成！成功识别 ${completedCount} 页，${failedCount} 页失败。请查看具体页面的错误信息。`);
             } else {
                 this.progressInfo.textContent = `批量识别完成，共 ${completedCount} 页`;
                 alert(`批量识别完成！成功识别所有 ${completedCount} 页。`);
