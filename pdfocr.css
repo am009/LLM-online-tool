@@ -245,3 +245,36 @@
 .drag-over .empty-state svg {
     color: #0366d6;
 }
+
+/* JSON错误状态样式 */
+.result-text.json-error {
+    border-color: #d73a49;
+    background-color: #fff5f5;
+}
+
+.result-text.json-error:focus {
+    border-color: #d73a49;
+    box-shadow: 0 0 0 3px rgba(215, 58, 73, 0.1);
+}
+
+/* 按钮警告状态样式 */
+.btn.warning {
+    background-color: #fff8dc;
+    border-color: #f9c513;
+    color: #735c0f;
+}
+
+.btn.warning:hover {
+    background-color: #fff0a5;
+}
+
+/* 按钮成功状态样式 */
+.btn.success {
+    background-color: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.btn.success:hover {
+    background-color: #c3e6cb;
+}

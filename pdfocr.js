@@ -287,7 +287,7 @@ class PDFOCR {
         actionContainer.className = 'action-container';
         
         const ocrButton = document.createElement('button');
-        ocrButton.className = 'btn btn-ocr';
+        ocrButton.className = 'btn';
         ocrButton.innerHTML = `
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -519,11 +519,72 @@ class PDFOCR {
         }
     }
 
+    // 为JSON文本区域添加修复监听器
+    addJsonFixListener(pageNum, textarea) {
+        let fixTimeout;
+        
+        textarea.addEventListener('input', () => {
+            // 清除之前的定时器
+            if (fixTimeout) {
+                clearTimeout(fixTimeout);
+            }
+            
+            // 延迟500ms执行解析，避免频繁解析
+            fixTimeout = setTimeout(() => {
+                this.tryFixJson(pageNum, textarea);
+            }, 500);
+        });
+    }
+
+    // 尝试修复JSON并更新分块视图
+    tryFixJson(pageNum, textarea) {
+        try {
+            const jsonContent = textarea.value;
+            const parsed = JSON.parse(jsonContent);
+            
+            // 验证解析后的数据格式
+            if (!Array.isArray(parsed)) {
+                throw new Error('数据格式必须是数组');
+            }
+            
+            // 解析成功，更新页面状态
+            this.pageResults.set(pageNum, parsed);
+            
+            // 移除错误样式
+            textarea.className = 'result-text';
+            
+            // 重新创建分块视图
+            this.createBlocksView(pageNum, parsed);
+            
+            // 更新按钮状态为成功
+            const pageRow = document.querySelector(`.page-row[data-page-num="${pageNum}"]`);
+            const ocrButton = pageRow.querySelector('.btn');
+            ocrButton.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                已识别
+            `;
+            ocrButton.classList.remove('warning');
+            ocrButton.classList.add('success');
+            
+        } catch (parseError) {
+            // 解析仍然失败，保持错误状态
+            if (!textarea.className.includes('json-error')) {
+                textarea.className = 'result-text json-error';
+            }
+            
+            // 清空分块视图或显示错误提示
+            const pageRow = document.querySelector(`.page-row[data-page-num="${pageNum}"]`);
+            const blocksView = pageRow.querySelector('.blocks-view');
+            blocksView.innerHTML = '<div class="result-placeholder">JSON格式不正确，请修复后重试</div>';
+        }
+    }
+
     // 执行OCR（使用dots.ocr流式API）
     async performOCR(pageNum) {
         const pageRow = document.querySelector(`.page-row[data-page-num="${pageNum}"]`);
-        const resultContainer = pageRow.querySelector('.result-container');
-        const ocrButton = pageRow.querySelector('.btn-ocr');
+        const ocrButton = pageRow.querySelector('.btn');
         const apiBaseUrl = document.getElementById('ocr-api-base').value;
         const jsonView = pageRow.querySelector('.json-view');
         const tabsHeader = pageRow.querySelector('.result-tabs');
@@ -644,8 +705,32 @@ class PDFOCR {
                 
             } catch (parseError) {
                 console.error('解析最终JSON结果失败:', parseError);
+                
+                // 显示JSON解析错误，但不阻止UI渲染
                 resultTextarea.value = `JSON解析错误: ${parseError.message}\n\n原始响应:\n${combinedResponse}`;
-                throw parseError;
+                resultTextarea.className = 'result-text json-error';
+                
+                // 显示标签页，让用户可以看到JSON和分栏视图
+                tabsHeader.style.display = 'flex';
+                
+                // 创建空的分块视图
+                this.createBlocksView(pageNum, []);
+                
+                // 为JSON文本区域添加修复监听器
+                this.addJsonFixListener(pageNum, resultTextarea);
+                
+                // 更新按钮状态为部分成功（有响应但解析失败）
+                ocrButton.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    需修复JSON
+                `;
+                ocrButton.classList.add('warning');
+                
+                // 不抛出错误，让流程继续
             }
 
         } catch (error) {
@@ -740,7 +825,7 @@ class PDFOCR {
                 if (pageRow) {
                     const jsonView = pageRow.querySelector('.json-view');
                     const tabsHeader = pageRow.querySelector('.result-tabs');
-                    const ocrButton = pageRow.querySelector('.btn-ocr');
+                    const ocrButton = pageRow.querySelector('.btn');
                     
                     // 创建结果文本区域
                     const resultTextarea = document.createElement('textarea');
@@ -927,7 +1012,7 @@ class PDFOCR {
         const pageRow = document.querySelector(`.page-row[data-page-num="${pageNum}"]`);
         if (!pageRow) return 'unknown';
         
-        const ocrButton = pageRow.querySelector('.btn-ocr');
+        const ocrButton = pageRow.querySelector('.btn');
         if (!ocrButton) return 'unknown';
         
         // 检查是否有成功结果
