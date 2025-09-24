@@ -452,6 +452,9 @@ class MarkdownTranslator {
                 this.parseContent(e.target.result);
                 this.updateFileInfo();
                 this.enableProgressButtons();
+                
+                // 文件加载完成后自动保存进度
+                this.autoSaveProgress();
             } catch (error) {
                 showError(languageManager.get('errors.parseMarkdownFailed') + error.message);
             }
@@ -1690,6 +1693,9 @@ class MarkdownTranslator {
                 
                 // 使用通用函数加载数据
                 this.loadProgressFromData(formattedData, false);
+                
+                // 加载完成后自动保存进度
+                this.autoSaveProgress();
                 
             } catch (error) {
                 showError(languageManager.get('errors.loadProgressFailed') + error.message);
