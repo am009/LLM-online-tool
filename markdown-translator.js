@@ -797,7 +797,8 @@ class MarkdownTranslator {
                     messages: [
                         { role: 'user', content: fullPrompt }
                     ],
-                    max_tokens: 2000
+                    max_tokens: 2000,
+                    stream: true
                 };
                 
                 // 根据enableThinking状态设置think参数（如果API支持）
@@ -825,7 +826,8 @@ class MarkdownTranslator {
                     max_tokens: 2000,
                     messages: [
                         { role: 'user', content: fullPrompt }
-                    ]
+                    ],
+                    stream: true
                 };
                 
                 // 根据enableThinking状态设置think参数（如果API支持）
@@ -891,9 +893,13 @@ class MarkdownTranslator {
             throw new Error(`${languageManager.get('errors.apiRequestFailed')}: ${response.status} - ${error}`);
         }
         
-        // 处理流式响应（仅适用于Ollama）
-        if (provider === 'ollama' && body.stream) {
-            return await this.handleOllamaStreamResponse(response, blockIndex);
+        // 处理流式响应
+        if (body.stream) {
+            if (provider === 'ollama') {
+                return await this.handleOllamaStreamResponse(response, blockIndex);
+            } else {
+                return await this.handleTranslationStreamResponse(response, blockIndex, provider);
+            }
         }
         
         // 处理非流式响应
@@ -1029,6 +1035,99 @@ class MarkdownTranslator {
             if (thinkingDiv && thinkingDiv.parentNode) {
                 thinkingDiv.parentNode.removeChild(thinkingDiv);
             }
+        }
+        
+        return result ?? languageManager.get('errors.translationFailed');
+    }
+
+    async handleTranslationStreamResponse(response, blockIndex, provider) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let result = '';
+        
+        // 获取对应的翻译块DOM元素
+        let translationBlock, markdownDiv, mathjaxDiv;
+        if (blockIndex !== null) {
+            translationBlock = document.querySelector(`[data-index="${blockIndex}"] .translation-block`);
+            markdownDiv = translationBlock?.querySelector('.translation-content-markdown');
+            mathjaxDiv = translationBlock?.querySelector('.translation-content-mathjax');
+        }
+        
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                
+                if (done) break;
+                
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+                
+                for (const line of lines) {
+                    if (line.trim() === '' || !line.startsWith('data: ')) continue;
+                    
+                    const data = line.substring(6); // 移除 'data: ' 前缀
+                    
+                    if (data === '[DONE]') break;
+                    
+                    try {
+                        const parsed = JSON.parse(data);
+                        let content = '';
+                        
+                        if (provider === 'openai' || provider === 'custom') {
+                            content = parsed.choices?.[0]?.delta?.content ?? '';
+                        } else if (provider === 'anthropic') {
+                            content = parsed.delta?.text ?? '';
+                        }
+                        
+                        if (content) {
+                            result += content;
+                            
+                            // 实时更新界面显示（但不包含thinking部分）
+                            let displayResult = result;
+                            const thinkingMatch = displayResult.match(/<think>[\s\S]*?<\/think>\s*/);
+                            if (thinkingMatch) {
+                                displayResult = displayResult.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
+                            }
+                            
+                            if (markdownDiv && blockIndex !== null) {
+                                markdownDiv.value = displayResult;
+                                // 触发自动调整高度
+                                markdownDiv.style.height = '';
+                                markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
+                                this.translationBlocks[blockIndex] = displayResult;
+                                
+                                // 同步更新mathjax版本
+                                if (mathjaxDiv) {
+                                    mathjaxDiv.innerHTML = displayResult;
+                                    
+                                    // 如果当前显示的是MathJax模式，重新渲染
+                                    if (this.translationRenderMode[blockIndex] === 'mathjax') {
+                                        if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
+                                            MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
+                                        }
+                                    }
+                                }
+                                
+                                // 自动保存翻译进度
+                                this.autoSaveProgress();
+                            }
+                        }
+                    } catch (e) {
+                        // 忽略JSON解析错误，继续处理下一行
+                        continue;
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+        
+        // 提取thinking部分并打印到控制台
+        const thinkingMatch = result.match(/<think>([\s\S]*?)<\/think>/);
+        if (thinkingMatch) {
+            console.log(languageManager.get('prompts.translationThinking'), thinkingMatch[1].trim());
+            // 删除thinking部分
+            result = result.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
         }
         
         return result ?? languageManager.get('errors.translationFailed');
