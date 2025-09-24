@@ -131,7 +131,7 @@ class MarkdownTranslator {
         document.getElementById('translation-prompt').value = settings.prompt ?? languageManager.get('ui.settingsPanel.translationPromptDefault');
         
         // 加载该provider的设置
-        const providerSettings = this.getProviderSettings('translation', provider, settings);
+        const providerSettings = this.getProviderSettings('translation', provider);
         this.applyProviderSettings('translation', providerSettings);
     }
 
@@ -148,7 +148,7 @@ class MarkdownTranslator {
         this.onProofreadingModeChange({ target: { checked: this.proofreadingMode } });
         
         // 加载该provider的设置
-        const providerSettings = this.getProviderSettings('proofread', provider, settings);
+        const providerSettings = this.getProviderSettings('proofread', provider);
         this.applyProviderSettings('proofread', providerSettings);
     }
 
@@ -158,12 +158,9 @@ class MarkdownTranslator {
         this.sidebarCollapsed = settings.sidebarCollapsed ?? false;
     }
 
-    getProviderSettings(type, provider, settings) {
-        const prefix = type === 'translation' ? '' : 'proofread';
-        const providerKey = prefix ? `${prefix}${provider.charAt(0).toUpperCase() + provider.slice(1)}` : provider;
-        
+    getProviderSettings(type, provider) {
         return {
-            apiKey: settings[`${prefix}ApiKey`] ?? '',
+            apiKey: this.getProviderSpecificSetting(type, provider, 'ApiKey', ''),
             endpoint: this.getStoredEndpoint(type, provider),
             modelName: this.getStoredModel(type, provider),
             temperature: this.getProviderSpecificSetting(type, provider, 'Temperature'),
@@ -228,7 +225,6 @@ class MarkdownTranslator {
         
         const settings = {
             prompt: document.getElementById('translation-prompt').value,
-            apiKey: document.getElementById('translation-api-key').value,
             apiProvider: provider,
             enableThinking: document.getElementById('translation-enable-thinking').checked
         };
@@ -250,7 +246,6 @@ class MarkdownTranslator {
         const settings = {
             proofreadingMode: this.proofreadingMode,
             proofreadPrompt: document.getElementById('proofread-prompt').value,
-            proofreadApiKey: document.getElementById('proofread-api-key').value,
             proofreadApiProvider: provider,
             proofreadEnableThinking: document.getElementById('proofread-enable-thinking').checked
         };
@@ -282,6 +277,7 @@ class MarkdownTranslator {
         const modelName = document.getElementById(`${prefix}-model-name`).value;
         const enableThinking = document.getElementById(`${prefix}-enable-thinking`).checked;
         const temperatureValue = document.getElementById(`${prefix}-temperature`).value;
+        const apiKey = document.getElementById(`${prefix}-api-key`).value;
         
         // 保存 endpoint 和 modelName (原有逻辑)
         if (type === 'translation') {
@@ -291,6 +287,9 @@ class MarkdownTranslator {
             this.saveProofreadApiEndpoint(provider, endpoint);
             this.saveProofreadModelName(provider, modelName);
         }
+        
+        // 保存 API Key 按provider分开
+        this.saveProviderSpecificSetting(type, provider, 'ApiKey', apiKey);
         
         // 保存 enableThinking 和 temperature 设置
         this.saveProviderSpecificSetting(type, provider, 'EnableThinking', enableThinking);
@@ -328,6 +327,22 @@ class MarkdownTranslator {
         const provider = document.getElementById('translation-api-provider').value;
         this.loadApiEndpoint(provider);
         this.loadModelName(provider);
+        
+        // 加载对应provider的API Key
+        const apiKey = this.getProviderSpecificSetting('translation', provider, 'ApiKey', '');
+        document.getElementById('translation-api-key').value = apiKey;
+        
+        // 加载其他provider特定设置
+        const temperature = this.getProviderSpecificSetting('translation', provider, 'Temperature');
+        const enableThinking = this.getProviderSpecificSetting('translation', provider, 'EnableThinking', false);
+        
+        if (temperature !== undefined && temperature !== null && temperature !== '') {
+            document.getElementById('translation-temperature').value = temperature;
+        } else {
+            document.getElementById('translation-temperature').value = '';
+        }
+        document.getElementById('translation-enable-thinking').checked = enableThinking;
+        
         this.saveSettings();
     }
 
@@ -335,6 +350,22 @@ class MarkdownTranslator {
         const provider = document.getElementById('proofread-api-provider').value;
         this.loadProofreadApiEndpoint(provider);
         this.loadProofreadModelName(provider);
+        
+        // 加载对应provider的API Key
+        const apiKey = this.getProviderSpecificSetting('proofread', provider, 'ApiKey', '');
+        document.getElementById('proofread-api-key').value = apiKey;
+        
+        // 加载其他provider特定设置
+        const temperature = this.getProviderSpecificSetting('proofread', provider, 'Temperature');
+        const enableThinking = this.getProviderSpecificSetting('proofread', provider, 'EnableThinking', false);
+        
+        if (temperature !== undefined && temperature !== null && temperature !== '') {
+            document.getElementById('proofread-temperature').value = temperature;
+        } else {
+            document.getElementById('proofread-temperature').value = '';
+        }
+        document.getElementById('proofread-enable-thinking').checked = enableThinking;
+        
         this.saveSettings();
     }
 
