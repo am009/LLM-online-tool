@@ -43,6 +43,16 @@ class ErrorModal {
     }
 }
 
+// HTML escaping function for special characters
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 // 创建全局实例
 let errorModal;
 

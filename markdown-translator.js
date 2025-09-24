@@ -569,7 +569,7 @@ class MarkdownTranslator {
         originalMarkdown.addEventListener('input', () => {
             this.originalBlocks[index] = originalMarkdown.value;
             // 同步更新mathjax版本的内容
-            originalMathjax.innerHTML = originalMarkdown.value;
+            originalMathjax.innerHTML = escapeHtml(originalMarkdown.value);
             // 重新渲染MathJax版本
             if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
                 MathJax.typesetPromise([originalMathjax]).catch((err) => console.log(err.message));
@@ -579,7 +579,7 @@ class MarkdownTranslator {
         // 原文mathjax版本
         const originalMathjax = document.createElement('div');
         originalMathjax.className = 'translation-content-mathjax tex2jax_process';
-        originalMathjax.innerHTML = originalContent;
+        originalMathjax.innerHTML = escapeHtml(originalContent);
         // 根据默认渲染模式决定是否隐藏
         originalMathjax.style.display = this.originalRenderMode[index] === 'mathjax' ? 'block' : 'none';
         
@@ -626,7 +626,7 @@ class MarkdownTranslator {
         translationMarkdown.addEventListener('input', () => {
             this.translationBlocks[index] = translationMarkdown.value;
             // 同步更新mathjax版本的内容
-            translationMathjax.innerHTML = translationMarkdown.value;
+            translationMathjax.innerHTML = escapeHtml(translationMarkdown.value);
             // 重新渲染MathJax版本
             if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
                 MathJax.typesetPromise([translationMathjax]).catch((err) => console.log(err.message));
@@ -638,7 +638,7 @@ class MarkdownTranslator {
         // 翻译mathjax版本
         const translationMathjax = document.createElement('div');
         translationMathjax.className = 'translation-content-mathjax tex2jax_process';
-        translationMathjax.innerHTML = translationContent ?? '';
+        translationMathjax.innerHTML = escapeHtml(translationContent ?? '');
         translationMathjax.style.display = 'none';
         
         translationContainer.appendChild(translationToggle);
@@ -754,7 +754,7 @@ class MarkdownTranslator {
                 // 触发自动调整高度
                 markdownDiv.style.height = '';
                 markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
-                mathjaxDiv.innerHTML = translation;
+                mathjaxDiv.innerHTML = escapeHtml(translation);
                 
                 // 重新渲染MathJax版本（无论当前显示的是哪个版本）
                 if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
@@ -1035,7 +1035,7 @@ class MarkdownTranslator {
                                 
                                 // 同步更新mathjax版本
                                 if (mathjaxDiv) {
-                                    mathjaxDiv.innerHTML = result;
+                                    mathjaxDiv.innerHTML = escapeHtml(result);
                                     
                                     // 如果当前显示的是MathJax模式，重新渲染
                                     if (this.translationRenderMode[blockIndex] === 'mathjax') {
@@ -1129,7 +1129,7 @@ class MarkdownTranslator {
                                 
                                 // 同步更新mathjax版本
                                 if (mathjaxDiv) {
-                                    mathjaxDiv.innerHTML = displayResult;
+                                    mathjaxDiv.innerHTML = escapeHtml(displayResult);
                                     
                                     // 如果当前显示的是MathJax模式，重新渲染
                                     if (this.translationRenderMode[blockIndex] === 'mathjax') {
@@ -1322,7 +1322,7 @@ class MarkdownTranslator {
                 // 触发自动调整高度
                 markdownDiv.style.height = '';
                 markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
-                mathjaxDiv.innerHTML = proofreadResult;
+                mathjaxDiv.innerHTML = escapeHtml(proofreadResult);
 
                 // 重新渲染MathJax版本
                 if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
@@ -1604,7 +1604,7 @@ class MarkdownTranslator {
                                     
                                     // 同步更新mathjax版本
                                     if (mathjaxDiv) {
-                                        mathjaxDiv.innerHTML = result;
+                                        mathjaxDiv.innerHTML = escapeHtml(result);
                                         
                                         // 如果当前显示的是MathJax模式，重新渲染
                                         if (this.translationRenderMode && this.translationRenderMode[blockIndex] === 'mathjax') {
@@ -1667,7 +1667,7 @@ class MarkdownTranslator {
                                     
                                     // 同步更新mathjax版本
                                     if (mathjaxDiv) {
-                                        mathjaxDiv.innerHTML = displayResult;
+                                        mathjaxDiv.innerHTML = escapeHtml(displayResult);
                                         
                                         // 如果当前显示的是MathJax模式，重新渲染
                                         if (this.translationRenderMode && this.translationRenderMode[blockIndex] === 'mathjax') {
