@@ -574,6 +574,8 @@ class MarkdownTranslator {
             if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
                 MathJax.typesetPromise([originalMathjax]).catch((err) => console.log(err.message));
             }
+            // 自动保存翻译进度
+            this.autoSaveProgress();
         });
         
         // 原文mathjax版本
