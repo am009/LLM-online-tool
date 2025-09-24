@@ -781,69 +781,95 @@ class MarkdownTranslator {
         }
     }
 
-    async callTranslationAPI(text, prompt, apiKey, provider, customEndpoint, modelName, context = null, abortController = null, blockIndex = null, temperature = null, enableThinking = false) {
-        // Assert that prompt contains ORIGTEXT exactly once
-        const origTextCount = (prompt.match(/ORIGTEXT/g) || []).length;
-        if (origTextCount !== 1) {
-            throw new Error(languageManager.get('messages.noOrigTextOnce'));
-        }
-        
-        let fullPrompt = prompt;
-        
-        // Replace ORIGTEXT with the actual text and context
-        fullPrompt = fullPrompt.replace('ORIGTEXT', text);
-        
-        let apiUrl, headers, body;
-        
-        // 如果有自定义端点，使用自定义端点，否则使用默认端点
-        if (customEndpoint && customEndpoint.trim()) {
-            apiUrl = customEndpoint.trim();
-        } else {
-            // 使用默认端点
-            switch (provider) {
-                case 'openai':
-                    apiUrl = 'https://api.openai.com/v1/chat/completions';
-                    break;
-                case 'anthropic':
-                    apiUrl = 'https://api.anthropic.com/v1/messages';
-                    break;
-                case 'ollama':
-                    apiUrl = '//localhost:11434/api/chat';
-                    break;
-                default:
-                    throw new Error(languageManager.get('errors.unsupportedApiProvider'));
+    // 通用API调用方法
+    async callLLMAPI(text, prompt, apiKey, provider, customEndpoint, modelName, context = null, abortController = null, blockIndex = null, temperature = null, enableThinking = false, apiType = 'translation') {
+        // 验证prompt格式
+        if (apiType === 'translation') {
+            const origTextCount = (prompt.match(/ORIGTEXT/g) || []).length;
+            if (origTextCount !== 1) {
+                throw new Error(languageManager.get('messages.noOrigTextOnce'));
+            }
+            prompt = prompt.replace('ORIGTEXT', text);
+        } else if (apiType === 'proofreading') {
+            if (prompt.includes('ORIGTEXT')) {
+                prompt = prompt.replace(/ORIGTEXT/g, text);
+            }
+            if (prompt.includes('TRANSTEXT')) {
+                prompt = prompt.replace(/TRANSTEXT/g, context);
+            } else {
+                throw new Error(languageManager.get('messages.noOrigText'));
             }
         }
         
-        // 设置请求头和请求体
+        const { apiUrl, headers, body } = this.buildAPIRequest(provider, customEndpoint, apiKey, modelName, prompt, temperature, enableThinking, apiType);
+        
+        const fetchOptions = {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(body)
+        };
+        
+        if (abortController) {
+            fetchOptions.signal = abortController.signal;
+        }
+        
+        const response = await fetch(apiUrl, fetchOptions);
+        
+        if (!response.ok) {
+            const error = await response.text();
+            const errorKey = apiType === 'translation' ? 'errors.apiRequestFailed' : 'errors.proofreadApiRequestFailed';
+            throw new Error(`${languageManager.get(errorKey)}: ${response.status} - ${error}`);
+        }
+        
+        // 处理流式响应
+        if (body.stream) {
+            return await this.handleStreamResponse(response, blockIndex, provider, apiType);
+        }
+        
+        // 处理非流式响应
+        return await this.handleNonStreamResponse(response, provider, apiType);
+    }
+
+    // 构建API请求配置
+    buildAPIRequest(provider, customEndpoint, apiKey, modelName, prompt, temperature, enableThinking, apiType) {
+        let apiUrl;
+        
+        if (customEndpoint && customEndpoint.trim()) {
+            apiUrl = customEndpoint.trim();
+        } else {
+            const endpoints = {
+                'openai': 'https://api.openai.com/v1/chat/completions',
+                'anthropic': 'https://api.anthropic.com/v1/messages',
+                'ollama': '//localhost:11434/api/chat'
+            };
+            apiUrl = endpoints[provider];
+            if (!apiUrl) {
+                const errorKey = apiType === 'translation' ? 'errors.unsupportedApiProvider' : 'errors.unsupportedProofreadApiProvider';
+                throw new Error(languageManager.get(errorKey));
+            }
+        }
+        
+        let headers, body;
+        const maxTokens = apiType === 'translation' ? 2000 : 4000;
+        const defaultModels = {
+            'openai': apiType === 'translation' ? 'gpt-3.5-turbo' : 'gpt-4',
+            'anthropic': 'claude-3-sonnet-20240229',
+            'ollama': 'llama3.2'
+        };
+        
         switch (provider) {
             case 'openai':
-            case 'custom': // 自定义端点也可以使用OpenAI格式
+            case 'custom':
                 headers = {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${apiKey}`
                 };
                 body = {
-                    model: modelName ?? 'gpt-3.5-turbo',
-                    messages: [
-                        { role: 'user', content: fullPrompt }
-                    ],
-                    max_tokens: 2000,
+                    model: modelName ?? defaultModels.openai,
+                    messages: [{ role: 'user', content: prompt }],
+                    max_tokens: maxTokens,
                     stream: true
                 };
-                
-                // 根据enableThinking状态设置think参数（如果API支持）
-                if (enableThinking) {
-                    body.think = true;
-                }
-                
-                // 只有当temperature有值时才添加到请求中
-                if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
-                    const tempFloat = parseFloat(temperature);
-                    if (!isNaN(tempFloat)) {
-                        body.temperature = tempFloat;
-                    }
-                }
                 break;
                 
             case 'anthropic':
@@ -853,114 +879,93 @@ class MarkdownTranslator {
                     'anthropic-version': '2023-06-01'
                 };
                 body = {
-                    model: modelName ?? 'claude-3-sonnet-20240229',
-                    max_tokens: 2000,
-                    messages: [
-                        { role: 'user', content: fullPrompt }
-                    ],
+                    model: modelName ?? defaultModels.anthropic,
+                    max_tokens: maxTokens,
+                    messages: [{ role: 'user', content: prompt }],
                     stream: true
                 };
-                
-                // 根据enableThinking状态设置think参数（如果API支持）
-                if (enableThinking) {
-                    body.think = true;
-                }
-                
-                // 只有当temperature有值时才添加到请求中
-                if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
-                    const tempFloat = parseFloat(temperature);
-                    if (!isNaN(tempFloat)) {
-                        body.temperature = tempFloat;
-                    }
-                }
                 break;
                 
             case 'ollama':
-                headers = {
-                    'Content-Type': 'application/json'
-                };
+                headers = { 'Content-Type': 'application/json' };
                 body = {
-                    model: modelName ?? 'llama3.2',
-                    messages: [
-                        { role: 'user', content: fullPrompt }
-                    ],
-                    stream: true  // 启用流式输出
+                    model: modelName ?? defaultModels.ollama,
+                    messages: [{ role: 'user', content: prompt }],
+                    stream: true
                 };
-                
-                // 根据enableThinking状态设置think参数
-                if (enableThinking) {
-                    body.think = true;
-                }
-                
-                // 只有当temperature有值时才添加到请求中
-                if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
-                    const tempFloat = parseFloat(temperature);
-                    if (!isNaN(tempFloat)) {
-                        body.options = body.options ?? {};
-                        body.options.temperature = tempFloat;
-                    }
-                }
                 break;
-                
-            default:
-                throw new Error(languageManager.get('errors.unsupportedApiProvider'));
         }
         
-        const fetchOptions = {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify(body)
-        };
-        
-        // 添加AbortController信号
-        if (abortController) {
-            fetchOptions.signal = abortController.signal;
+        // 添加thinking支持
+        if (enableThinking) {
+            body.think = true;
         }
         
-        const response = await fetch(apiUrl, fetchOptions);
-        
-        if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`${languageManager.get('errors.apiRequestFailed')}: ${response.status} - ${error}`);
-        }
-        
-        // 处理流式响应
-        if (body.stream) {
-            if (provider === 'ollama') {
-                return await this.handleOllamaStreamResponse(response, blockIndex);
-            } else {
-                return await this.handleTranslationStreamResponse(response, blockIndex, provider);
+        // 添加temperature支持
+        if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
+            const tempFloat = parseFloat(temperature);
+            if (!isNaN(tempFloat)) {
+                if (provider === 'ollama') {
+                    body.options = body.options ?? {};
+                    body.options.temperature = tempFloat;
+                } else {
+                    body.temperature = tempFloat;
+                }
             }
         }
         
-        // 处理非流式响应
-        const data = await response.json();
-        
-        // 根据提供商类型解析响应
-        let result = '';
-        if (provider === 'openai' || provider === 'custom') {
-            result = data.choices[0]?.message?.content ?? languageManager.get('errors.translationFailed');
-        } else if (provider === 'anthropic') {
-            result = data.content[0]?.text ?? languageManager.get('errors.translationFailed');
-        } else if (provider === 'ollama') {
-            if (data.message && data.message.thinking) {
-                console.log(languageManager.get('prompts.translationThinking'), data.message.thinking)
-            }
-            result = data.message?.content ?? languageManager.get('errors.translationFailed');
-        }
-
-        // 提取thinking部分并打印到控制台
-        const thinkingMatch = result.match(/<think>([\s\S]*?)<\/think>/);
-        if (thinkingMatch) {
-            console.log(languageManager.get('prompts.translationThinking'), thinkingMatch[1].trim());
-            // 删除thinking部分
-            result = result.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
-        }
-
-        return result ?? languageManager.get('errors.parseApiResponseFailed')
+        return { apiUrl, headers, body };
     }
 
-    async handleOllamaStreamResponse(response, blockIndex) {
+    // 处理非流式响应
+    async handleNonStreamResponse(response, provider, apiType) {
+        const data = await response.json();
+        let result = '';
+        
+        if (provider === 'openai' || provider === 'custom') {
+            result = data.choices[0]?.message?.content;
+        } else if (provider === 'anthropic') {
+            result = data.content[0]?.text;
+        } else if (provider === 'ollama') {
+            if (data.message && data.message.thinking) {
+                const thinkingKey = apiType === 'translation' ? 'prompts.translationThinking' : 'prompts.proofreadingThinking';
+                console.log(languageManager.get(thinkingKey), data.message.thinking);
+            }
+            result = data.message?.content;
+        }
+        
+        if (!result) {
+            const errorKey = apiType === 'translation' ? 'errors.translationFailed' : 'errors.proofreadFailed';
+            result = languageManager.get(errorKey);
+        }
+        
+        // 提取并移除thinking标签
+        const thinkingMatch = result.match(/<think>([\s\S]*?)<\/think>/);
+        if (thinkingMatch) {
+            const thinkingKey = apiType === 'translation' ? 'prompts.translationThinking' : 'prompts.proofreadingThinking';
+            console.log(languageManager.get(thinkingKey), thinkingMatch[1].trim());
+            result = result.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
+        }
+        
+        return result || languageManager.get('errors.parseApiResponseFailed');
+    }
+
+    // 更新callTranslationAPI方法使用通用方法
+    async callTranslationAPI(text, prompt, apiKey, provider, customEndpoint, modelName, context = null, abortController = null, blockIndex = null, temperature = null, enableThinking = false) {
+        return await this.callLLMAPI(text, prompt, apiKey, provider, customEndpoint, modelName, context, abortController, blockIndex, temperature, enableThinking, 'translation');
+    }
+
+    // 通用流式响应处理方法
+    async handleStreamResponse(response, blockIndex, provider, apiType) {
+        if (provider === 'ollama') {
+            return await this.handleOllamaStream(response, blockIndex, apiType);
+        } else {
+            return await this.handleSSEStream(response, blockIndex, provider, apiType);
+        }
+    }
+
+    // 处理Ollama的流式响应（支持翻译和校对）
+    async handleOllamaStream(response, blockIndex, apiType) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let result = '';
@@ -1010,14 +1015,13 @@ class MarkdownTranslator {
                             // 实时更新thinking显示
                             if (thinkingDiv && isThinkingPhase) {
                                 thinkingDiv.textContent = thinkingContent;
-                                // 自动滚动到底部
                                 thinkingDiv.scrollTop = thinkingDiv.scrollHeight;
                             }
                         }
                         
-                        // 处理实际翻译内容
+                        // 处理实际内容
                         if (data.message && data.message.content) {
-                            // 第一次收到content时，清空thinking显示，开始显示翻译内容
+                            // 第一次收到content时，清空thinking显示，开始显示内容
                             if (isThinkingPhase && thinkingDiv) {
                                 thinkingDiv.style.display = 'none';
                                 isThinkingPhase = false;
@@ -1026,36 +1030,13 @@ class MarkdownTranslator {
                             result += data.message.content;
                             
                             // 实时更新界面显示
-                            if (markdownDiv && blockIndex !== null) {
-                                markdownDiv.value = result;
-                                // 触发自动调整高度
-                                markdownDiv.style.height = '';
-                                markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
-                                this.translationBlocks[blockIndex] = result;
-                                
-                                // 同步更新mathjax版本
-                                if (mathjaxDiv) {
-                                    mathjaxDiv.innerHTML = escapeHtml(result);
-                                    
-                                    // 如果当前显示的是MathJax模式，重新渲染
-                                    if (this.translationRenderMode[blockIndex] === 'mathjax') {
-                                        if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
-                                            MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
-                                        }
-                                    }
-                                }
-                                
-                                // 自动保存翻译进度
-                                this.autoSaveProgress();
-                            }
+                            this.updateBlockContent(markdownDiv, mathjaxDiv, result, blockIndex);
                         }
                         
-                        if (data.done) {
-                            break;
-                        }
+                        if (data.done) break;
+                        
                     } catch (e) {
-                        // 忽略JSON解析错误，继续处理下一行
-                        continue;
+                        continue; // 忽略JSON解析错误
                     }
                 }
             }
@@ -1068,10 +1049,12 @@ class MarkdownTranslator {
             }
         }
         
-        return result ?? languageManager.get('errors.translationFailed');
+        const errorKey = apiType === 'translation' ? 'errors.translationFailed' : 'errors.proofreadFailed';
+        return result || languageManager.get(errorKey);
     }
 
-    async handleTranslationStreamResponse(response, blockIndex, provider) {
+    // 处理SSE流式响应（OpenAI/Anthropic，支持翻译和校对）
+    async handleSSEStream(response, blockIndex, provider, apiType) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let result = '';
@@ -1120,32 +1103,10 @@ class MarkdownTranslator {
                                 displayResult = displayResult.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
                             }
                             
-                            if (markdownDiv && blockIndex !== null) {
-                                markdownDiv.value = displayResult;
-                                // 触发自动调整高度
-                                markdownDiv.style.height = '';
-                                markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
-                                this.translationBlocks[blockIndex] = displayResult;
-                                
-                                // 同步更新mathjax版本
-                                if (mathjaxDiv) {
-                                    mathjaxDiv.innerHTML = escapeHtml(displayResult);
-                                    
-                                    // 如果当前显示的是MathJax模式，重新渲染
-                                    if (this.translationRenderMode[blockIndex] === 'mathjax') {
-                                        if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
-                                            MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
-                                        }
-                                    }
-                                }
-                                
-                                // 自动保存翻译进度
-                                this.autoSaveProgress();
-                            }
+                            this.updateBlockContent(markdownDiv, mathjaxDiv, displayResult, blockIndex);
                         }
                     } catch (e) {
-                        // 忽略JSON解析错误，继续处理下一行
-                        continue;
+                        continue; // 忽略JSON解析错误
                     }
                 }
             }
@@ -1156,12 +1117,43 @@ class MarkdownTranslator {
         // 提取thinking部分并打印到控制台
         const thinkingMatch = result.match(/<think>([\s\S]*?)<\/think>/);
         if (thinkingMatch) {
-            console.log(languageManager.get('prompts.translationThinking'), thinkingMatch[1].trim());
-            // 删除thinking部分
+            const thinkingKey = apiType === 'translation' ? 'prompts.translationThinking' : 'prompts.proofreadingThinking';
+            console.log(languageManager.get(thinkingKey), thinkingMatch[1].trim());
             result = result.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
         }
         
-        return result ?? languageManager.get('errors.translationFailed');
+        const errorKey = apiType === 'translation' ? 'errors.translationFailed' : 'errors.proofreadFailed';
+        return result || languageManager.get(errorKey);
+    }
+
+    // 通用的块内容更新方法
+    updateBlockContent(markdownDiv, mathjaxDiv, content, blockIndex) {
+        if (markdownDiv && blockIndex !== null) {
+            markdownDiv.value = content;
+            // 触发自动调整高度
+            markdownDiv.style.height = '';
+            markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
+            this.translationBlocks[blockIndex] = content;
+            
+            // 同步更新mathjax版本
+            if (mathjaxDiv) {
+                mathjaxDiv.innerHTML = escapeHtml(content);
+                
+                // 如果当前显示的是MathJax模式，重新渲染
+                if (this.translationRenderMode && this.translationRenderMode[blockIndex] === 'mathjax') {
+                    if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
+                        MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
+                    }
+                }
+            }
+            
+            // 自动保存翻译进度
+            this.autoSaveProgress();
+        }
+    }
+    // 更新callProofreadingAPI方法使用通用方法
+    async callProofreadingAPI(originalText, translationText, prompt, apiKey, provider, customEndpoint, modelName, abortController = null, blockIndex = null, temperature = null, enableThinking = false) {
+        return await this.callLLMAPI(originalText, prompt, apiKey, provider, customEndpoint, modelName, translationText, abortController, blockIndex, temperature, enableThinking, 'proofreading');
     }
 
     switchToProofreadingMode() {
@@ -1349,364 +1341,6 @@ class MarkdownTranslator {
         }
     }
 
-
-    async callProofreadingAPI(originalText, translationText, prompt, apiKey, provider, customEndpoint, modelName, abortController = null, blockIndex = null, temperature = null, enableThinking = false) {
-        // Replace ORIGTEXT and TRANSTEXT in the prompt if they exist
-        let fullPrompt = prompt;
-        
-        if (fullPrompt.includes('ORIGTEXT')) {
-            fullPrompt = fullPrompt.replace(/ORIGTEXT/g, originalText);
-        }
-        
-        if (fullPrompt.includes('TRANSTEXT')) {
-            fullPrompt = fullPrompt.replace(/TRANSTEXT/g, translationText);
-        } else {
-            throw new Error(languageManager.get('messages.noOrigText'));
-        }
-        
-        let apiUrl, headers, body;
-        
-        // 如果有自定义端点，使用自定义端点，否则使用默认端点
-        if (customEndpoint && customEndpoint.trim()) {
-            apiUrl = customEndpoint.trim();
-        } else {
-            // 使用默认端点
-            switch (provider) {
-                case 'openai':
-                    apiUrl = 'https://api.openai.com/v1/chat/completions';
-                    break;
-                case 'anthropic':
-                    apiUrl = 'https://api.anthropic.com/v1/messages';
-                    break;
-                case 'ollama':
-                    apiUrl = '//localhost:11434/api/chat';
-                    break;
-                default:
-                    throw new Error(languageManager.get('errors.unsupportedProofreadApiProvider'));
-            }
-        }
-        
-        // 设置请求头和请求体
-        switch (provider) {
-            case 'openai':
-            case 'custom': // 自定义端点也可以使用OpenAI格式
-                headers = {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
-                };
-                body = {
-                    model: modelName ?? 'gpt-4',
-                    messages: [
-                        { role: 'user', content: fullPrompt }
-                    ],
-                    max_tokens: 4000,
-                    stream: true
-                };
-                
-                // 根据enableThinking状态设置think参数（如果API支持）
-                if (enableThinking) {
-                    body.think = true;
-                }
-                
-                // 只有当temperature有值时才添加到请求中
-                if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
-                    const tempFloat = parseFloat(temperature);
-                    if (!isNaN(tempFloat)) {
-                        body.temperature = tempFloat;
-                    }
-                }
-                break;
-                
-            case 'anthropic':
-                headers = {
-                    'Content-Type': 'application/json',
-                    'x-api-key': apiKey,
-                    'anthropic-version': '2023-06-01'
-                };
-                body = {
-                    model: modelName ?? 'claude-3-sonnet-20240229',
-                    max_tokens: 4000,
-                    messages: [
-                        { role: 'user', content: fullPrompt }
-                    ],
-                    stream: true
-                };
-                
-                // 根据enableThinking状态设置think参数（如果API支持）
-                if (enableThinking) {
-                    body.think = true;
-                }
-                
-                // 只有当temperature有值时才添加到请求中
-                if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
-                    const tempFloat = parseFloat(temperature);
-                    if (!isNaN(tempFloat)) {
-                        body.temperature = tempFloat;
-                    }
-                }
-                break;
-                
-            case 'ollama':
-                headers = {
-                    'Content-Type': 'application/json'
-                };
-                body = {
-                    model: modelName,
-                    messages: [
-                        { role: 'user', content: fullPrompt }
-                    ],
-                    stream: true  // 启用流式输出
-                };
-                
-                // 根据enableThinking状态设置think参数
-                if (enableThinking) {
-                    body.think = true;
-                }
-                
-                // 只有当temperature有值时才添加到请求中
-                if (temperature !== null && temperature !== undefined && temperature.trim() !== '') {
-                    const tempFloat = parseFloat(temperature);
-                    if (!isNaN(tempFloat)) {
-                        body.options = body.options ?? {};
-                        body.options.temperature = tempFloat;
-                    }
-                }
-                break;
-                
-            default:
-                throw new Error(languageManager.get('errors.unsupportedProofreadApiProvider'));
-        }
-        
-        const fetchOptions = {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify(body)
-        };
-        
-        // 添加AbortController信号
-        if (abortController) {
-            fetchOptions.signal = abortController.signal;
-        }
-        
-        const response = await fetch(apiUrl, fetchOptions);
-        
-        if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`校对API请求失败: ${response.status} - ${error}`);
-        }
-        
-        // 处理流式响应
-        if (body.stream) {
-            return await this.handleProofreadingStreamResponse(response, blockIndex, provider);
-        }
-        
-        // 处理非流式响应（备用）
-        const data = await response.json();
-        
-        // 根据提供商类型解析响应
-        let result = '';
-        if (provider === 'openai' || provider === 'custom') {
-            result = data.choices[0]?.message?.content ?? languageManager.get('errors.proofreadFailed');
-        } else if (provider === 'anthropic') {
-            result = data.content[0]?.text ?? languageManager.get('errors.proofreadFailed');
-        } else if (provider === 'ollama') {
-            result = data.message?.content ?? languageManager.get('errors.proofreadFailed');
-        }
-        
-        // 提取thinking部分并打印到控制台
-        const thinkingMatch = result.match(/<think>([\s\S]*?)<\/think>/);
-        if (thinkingMatch) {
-            console.log(languageManager.get('prompts.proofreadingThinking'), thinkingMatch[1].trim());
-            // 删除thinking部分
-            result = result.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
-        }
-        
-        return result ?? languageManager.get('errors.proofreadFailed');
-    }
-
-    async handleProofreadingStreamResponse(response, blockIndex, provider) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let result = '';
-        let thinkingContent = '';
-        let isThinkingPhase = true;
-        
-        // 获取对应的翻译块DOM元素
-        let translationBlock, markdownDiv, mathjaxDiv, thinkingDiv;
-        if (blockIndex !== null) {
-            translationBlock = document.querySelector(`[data-index="${blockIndex}"] .translation-block`);
-            markdownDiv = translationBlock?.querySelector('.translation-content-markdown');
-            mathjaxDiv = translationBlock?.querySelector('.translation-content-mathjax');
-            
-            // 为Ollama创建thinking显示区域
-            if (provider === 'ollama') {
-                thinkingDiv = document.createElement('div');
-                thinkingDiv.className = 'translation-thinking-display';
-                thinkingDiv.style.color = '#888';
-                thinkingDiv.style.fontStyle = 'italic';
-                thinkingDiv.style.fontSize = '0.9em';
-                thinkingDiv.style.marginBottom = '8px';
-                
-                // 插入到翻译内容之前
-                if (markdownDiv && markdownDiv.parentNode) {
-                    markdownDiv.parentNode.insertBefore(thinkingDiv, markdownDiv);
-                }
-            }
-        }
-        
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                
-                if (done) break;
-                
-                const chunk = decoder.decode(value);
-                
-                if (provider === 'ollama') {
-                    // 处理Ollama流式响应
-                    const lines = chunk.split('\n');
-                    
-                    for (const line of lines) {
-                        if (line.trim() === '') continue;
-                        
-                        try {
-                            const data = JSON.parse(line);
-
-                            // 处理thinking内容
-                            if (data.message && data.message.thinking) {
-                                thinkingContent += data.message.thinking;
-                                
-                                // 实时更新thinking显示
-                                if (thinkingDiv && isThinkingPhase) {
-                                    thinkingDiv.textContent = thinkingContent;
-                                    // 自动滚动到底部
-                                    thinkingDiv.scrollTop = thinkingDiv.scrollHeight;
-                                }
-                            }
-                            
-                            // 处理实际校对内容
-                            if (data.message && data.message.content) {
-                                // 第一次收到content时，清空thinking显示，开始显示校对内容
-                                if (isThinkingPhase && thinkingDiv) {
-                                    thinkingDiv.style.display = 'none';
-                                    isThinkingPhase = false;
-                                }
-                                
-                                result += data.message.content;
-                                
-                                // 实时更新界面显示
-                                if (markdownDiv && blockIndex !== null) {
-                                    markdownDiv.value = result;
-                                    // 触发自动调整高度
-                                    markdownDiv.style.height = '';
-                                    markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
-                                    this.translationBlocks[blockIndex] = result;
-                                    
-                                    // 同步更新mathjax版本
-                                    if (mathjaxDiv) {
-                                        mathjaxDiv.innerHTML = escapeHtml(result);
-                                        
-                                        // 如果当前显示的是MathJax模式，重新渲染
-                                        if (this.translationRenderMode && this.translationRenderMode[blockIndex] === 'mathjax') {
-                                            if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
-                                                MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
-                                            }
-                                        }
-                                    }
-                                    
-                                    // 自动保存翻译进度
-                                    this.autoSaveProgress();
-                                }
-                            }
-                            
-                            if (data.done) {
-                                break;
-                            }
-                        } catch (e) {
-                            // 忽略JSON解析错误，继续处理下一行
-                            continue;
-                        }
-                    }
-                } else {
-                    // 处理OpenAI/Anthropic流式响应
-                    const lines = chunk.split('\n');
-                    
-                    for (const line of lines) {
-                        if (line.trim() === '' || !line.startsWith('data: ')) continue;
-                        
-                        const data = line.substring(6); // 移除 'data: ' 前缀
-                        
-                        if (data === '[DONE]') break;
-                        
-                        try {
-                            const parsed = JSON.parse(data);
-                            let content = '';
-                            
-                            if (provider === 'openai' || provider === 'custom') {
-                                content = parsed.choices?.[0]?.delta?.content ?? '';
-                            } else if (provider === 'anthropic') {
-                                content = parsed.delta?.text ?? '';
-                            }
-                            
-                            if (content) {
-                                result += content;
-                                
-                                // 实时更新界面显示（但不包含thinking部分）
-                                let displayResult = result;
-                                const thinkingMatch = displayResult.match(/<think>[\s\S]*?<\/think>\s*/);
-                                if (thinkingMatch) {
-                                    displayResult = displayResult.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
-                                }
-                                
-                                if (markdownDiv && blockIndex !== null && displayResult) {
-                                    markdownDiv.value = displayResult;
-                                    // 触发自动调整高度
-                                    markdownDiv.style.height = '';
-                                    markdownDiv.style.height = markdownDiv.scrollHeight + 'px';
-                                    this.translationBlocks[blockIndex] = displayResult;
-                                    
-                                    // 同步更新mathjax版本
-                                    if (mathjaxDiv) {
-                                        mathjaxDiv.innerHTML = escapeHtml(displayResult);
-                                        
-                                        // 如果当前显示的是MathJax模式，重新渲染
-                                        if (this.translationRenderMode && this.translationRenderMode[blockIndex] === 'mathjax') {
-                                            if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise !== 'undefined') {
-                                                MathJax.typesetPromise([mathjaxDiv]).catch((err) => console.log(err.message));
-                                            }
-                                        }
-                                    }
-                                    
-                                    // 自动保存翻译进度
-                                    this.autoSaveProgress();
-                                }
-                            }
-                        } catch (e) {
-                            // 忽略JSON解析错误，继续处理下一行
-                            continue;
-                        }
-                    }
-                }
-            }
-        } finally {
-            reader.releaseLock();
-            
-            // 清理thinking显示元素
-            if (thinkingDiv && thinkingDiv.parentNode) {
-                thinkingDiv.parentNode.removeChild(thinkingDiv);
-            }
-        }
-        
-        // 提取thinking部分并打印到控制台
-        const thinkingMatch = result.match(/<think>([\s\S]*?)<\/think>/);
-        if (thinkingMatch) {
-            console.log(languageManager.get('prompts.proofreadingThinking'), thinkingMatch[1].trim());
-            // 删除thinking部分
-            result = result.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim();
-        }
-        
-        return result ?? languageManager.get('errors.proofreadFailed');
-    }
 
     async proofreadAll() {
         const apiKey = document.getElementById('proofread-api-key').value;
