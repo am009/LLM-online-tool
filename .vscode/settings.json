@@ -3,6 +3,7 @@
         "bboldx",
         "bbox",
         "contenteditable",
+        "LLMAPI",
         "mathjax",
         "ollama",
         "ORIGTEXT",

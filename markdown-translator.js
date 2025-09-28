@@ -126,30 +126,36 @@ class MarkdownTranslator {
     }
 
     loadTranslationSettings(settings) {
-        const provider = settings.apiProvider ?? 'ollama';
-        document.getElementById('translation-api-provider').value = provider;
-        document.getElementById('translation-prompt').value = settings.prompt ?? languageManager.get('ui.settingsPanel.translationPromptDefault');
-        
-        // 加载该provider的设置
-        const providerSettings = this.getProviderSettings('translation', provider);
-        this.applyProviderSettings('translation', providerSettings);
+        this.loadProviderSettings('translation', settings);
     }
 
     loadProofreadSettings(settings) {
-        const provider = settings.proofreadApiProvider ?? 'ollama';
-        document.getElementById('proofread-api-provider').value = provider;
-        if (settings.proofreadPrompt) {
-            document.getElementById('proofread-prompt').value = settings.proofreadPrompt;
-        }
+        this.loadProviderSettings('proofread', settings);
         
         // 设置校对模式
         this.proofreadingMode = settings.proofreadingMode ?? false;
         document.getElementById('proofreading-mode').checked = this.proofreadingMode;
         this.onProofreadingModeChange({ target: { checked: this.proofreadingMode } });
+    }
+
+    loadProviderSettings(type, settings) {
+        const prefix = type === 'translation' ? 'translation' : 'proofread';
+        const providerKey = type === 'translation' ? 'apiProvider' : 'proofreadApiProvider';
+        const promptKey = type === 'translation' ? 'prompt' : 'proofreadPrompt';
+        
+        const provider = settings[providerKey] ?? 'ollama';
+        document.getElementById(`${prefix}-api-provider`).value = provider;
+        
+        // 设置提示词
+        if (type === 'translation') {
+            document.getElementById(`${prefix}-prompt`).value = settings[promptKey] ?? languageManager.get('ui.settingsPanel.translationPromptDefault');
+        } else if (settings[promptKey]) {
+            document.getElementById(`${prefix}-prompt`).value = settings[promptKey];
+        }
         
         // 加载该provider的设置
-        const providerSettings = this.getProviderSettings('proofread', provider);
-        this.applyProviderSettings('proofread', providerSettings);
+        const providerSettings = this.getProviderSettings(type, provider);
+        this.applyProviderSettings(type, providerSettings);
     }
 
     loadGeneralSettings(settings) {
@@ -161,8 +167,8 @@ class MarkdownTranslator {
     getProviderSettings(type, provider) {
         return {
             apiKey: this.getProviderSpecificSetting(type, provider, 'ApiKey', ''),
-            endpoint: this.getStoredEndpoint(type, provider),
-            modelName: this.getStoredModel(type, provider),
+            endpoint: this.getStoredValue(type, provider, 'endpoints'),
+            modelName: this.getStoredValue(type, provider, 'models'),
             temperature: this.getProviderSpecificSetting(type, provider, 'Temperature'),
             enableThinking: this.getProviderSpecificSetting(type, provider, 'EnableThinking', false)
         };
@@ -184,11 +190,19 @@ class MarkdownTranslator {
     }
 
     loadDefaultSettings() {
-        this.loadApiEndpoint('openai');
-        this.loadModelName('openai');
-        this.loadProofreadApiEndpoint('openai');
-        this.loadProofreadModelName('openai');
+        this.loadDefaultProviderSettings('translation', 'openai');
+        this.loadDefaultProviderSettings('proofread', 'openai');
         document.getElementById('translation-prompt').value = languageManager.get('ui.settingsPanel.translationPromptDefault');
+    }
+
+    loadDefaultProviderSettings(type, provider) {
+        if (type === 'translation') {
+            this.loadApiEndpoint(provider);
+            this.loadModelName(provider);
+        } else {
+            this.loadProofreadApiEndpoint(provider);
+            this.loadProofreadModelName(provider);
+        }
     }
 
     saveSettings() {
@@ -324,47 +338,29 @@ class MarkdownTranslator {
     }
 
     onProviderChange() {
-        const provider = document.getElementById('translation-api-provider').value;
-        this.loadApiEndpoint(provider);
-        this.loadModelName(provider);
-        
-        // 加载对应provider的API Key
-        const apiKey = this.getProviderSpecificSetting('translation', provider, 'ApiKey', '');
-        document.getElementById('translation-api-key').value = apiKey;
-        
-        // 加载其他provider特定设置
-        const temperature = this.getProviderSpecificSetting('translation', provider, 'Temperature');
-        const enableThinking = this.getProviderSpecificSetting('translation', provider, 'EnableThinking', false);
-        
-        if (temperature !== undefined && temperature !== null && temperature !== '') {
-            document.getElementById('translation-temperature').value = temperature;
-        } else {
-            document.getElementById('translation-temperature').value = '';
-        }
-        document.getElementById('translation-enable-thinking').checked = enableThinking;
-        
-        this.saveSettings();
+        this.handleProviderChange('translation');
     }
 
     onProofreadProviderChange() {
-        const provider = document.getElementById('proofread-api-provider').value;
-        this.loadProofreadApiEndpoint(provider);
-        this.loadProofreadModelName(provider);
+        this.handleProviderChange('proofread');
+    }
+
+    handleProviderChange(type) {
+        const prefix = type === 'translation' ? 'translation' : 'proofread';
+        const provider = document.getElementById(`${prefix}-api-provider`).value;
         
-        // 加载对应provider的API Key
-        const apiKey = this.getProviderSpecificSetting('proofread', provider, 'ApiKey', '');
-        document.getElementById('proofread-api-key').value = apiKey;
-        
-        // 加载其他provider特定设置
-        const temperature = this.getProviderSpecificSetting('proofread', provider, 'Temperature');
-        const enableThinking = this.getProviderSpecificSetting('proofread', provider, 'EnableThinking', false);
-        
-        if (temperature !== undefined && temperature !== null && temperature !== '') {
-            document.getElementById('proofread-temperature').value = temperature;
+        // 加载endpoint和model
+        if (type === 'translation') {
+            this.loadApiEndpoint(provider);
+            this.loadModelName(provider);
         } else {
-            document.getElementById('proofread-temperature').value = '';
+            this.loadProofreadApiEndpoint(provider);
+            this.loadProofreadModelName(provider);
         }
-        document.getElementById('proofread-enable-thinking').checked = enableThinking;
+        
+        // 加载provider特定设置
+        const providerSettings = this.getProviderSettings(type, provider);
+        this.applyProviderSettings(type, providerSettings);
         
         this.saveSettings();
     }
@@ -417,48 +413,53 @@ class MarkdownTranslator {
         return type === 'translation' ? translationModels : proofreadModels;
     }
 
-    getStoredEndpoint(type, provider) {
-        return this.getProviderSpecificSetting(type, provider, 'endpoints', this.getDefaultEndpoints()[provider] ?? '');
+    loadApiSettings(type, provider, settingType) {
+        const value = this.getStoredValue(type, provider, settingType);
+        const elementId = type === 'translation' ? 
+            `translation-${settingType === 'endpoints' ? 'api-endpoint' : 'model-name'}` :
+            `proofread-${settingType === 'endpoints' ? 'api-endpoint' : 'model-name'}`;
+        document.getElementById(elementId).value = value;
     }
 
-    getStoredModel(type, provider) {
-        return this.getProviderSpecificSetting(type, provider, 'models', this.getDefaultModels(type)[provider] ?? '');
+    saveApiSettings(type, provider, settingType, value) {
+        this.saveProviderSpecificSetting(type, provider, settingType, value);
+    }
+
+    getStoredValue(type, provider, settingType) {
+        const defaultValues = settingType === 'endpoints' ? this.getDefaultEndpoints() : this.getDefaultModels(type);
+        return this.getProviderSpecificSetting(type, provider, settingType, defaultValues[provider] ?? '');
     }
 
     loadApiEndpoint(provider) {
-        const endpoint = this.getStoredEndpoint('translation', provider);
-        document.getElementById('translation-api-endpoint').value = endpoint;
+        this.loadApiSettings('translation', provider, 'endpoints');
     }
 
     saveApiEndpoint(provider, endpoint) {
-        this.saveProviderSpecificSetting('translation', provider, 'endpoints', endpoint);
+        this.saveApiSettings('translation', provider, 'endpoints', endpoint);
     }
 
     loadModelName(provider) {
-        const model = this.getStoredModel('translation', provider);
-        document.getElementById('translation-model-name').value = model;
+        this.loadApiSettings('translation', provider, 'models');
     }
 
     saveModelName(provider, modelName) {
-        this.saveProviderSpecificSetting('translation', provider, 'models', modelName);
+        this.saveApiSettings('translation', provider, 'models', modelName);
     }
 
     loadProofreadApiEndpoint(provider) {
-        const endpoint = this.getStoredEndpoint('proofread', provider);
-        document.getElementById('proofread-api-endpoint').value = endpoint;
+        this.loadApiSettings('proofread', provider, 'endpoints');
     }
 
     saveProofreadApiEndpoint(provider, endpoint) {
-        this.saveProviderSpecificSetting('proofread', provider, 'endpoints', endpoint);
+        this.saveApiSettings('proofread', provider, 'endpoints', endpoint);
     }
 
     loadProofreadModelName(provider) {
-        const model = this.getStoredModel('proofread', provider);
-        document.getElementById('proofread-model-name').value = model;
+        this.loadApiSettings('proofread', provider, 'models');
     }
 
     saveProofreadModelName(provider, modelName) {
-        this.saveProviderSpecificSetting('proofread', provider, 'models', modelName);
+        this.saveApiSettings('proofread', provider, 'models', modelName);
     }
 
     handleFileUpload(event) {
