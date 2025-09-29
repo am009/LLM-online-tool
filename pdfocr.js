@@ -607,6 +607,9 @@ class PDFOCR {
         jsonView.innerHTML = '';
         jsonView.appendChild(resultTextarea);
         
+        // 为JSON文本区域添加修复监听器
+        this.addJsonFixListener(pageNum, resultTextarea);
+        
         try {
             // 获取当前页面的图像数据
             const canvas = pageRow.querySelector('.page-image-container canvas');
@@ -715,9 +718,6 @@ class PDFOCR {
                 
                 // 创建空的分块视图
                 this.createBlocksView(pageNum, []);
-                
-                // 为JSON文本区域添加修复监听器
-                this.addJsonFixListener(pageNum, resultTextarea);
                 
                 // 更新按钮状态为部分成功（有响应但解析失败）
                 ocrButton.innerHTML = `
@@ -834,6 +834,9 @@ class PDFOCR {
                     
                     jsonView.innerHTML = '';
                     jsonView.appendChild(resultTextarea);
+                    
+                    // 为JSON文本区域添加修复监听器
+                    this.addJsonFixListener(pageNum, resultTextarea);
                     
                     // 显示标签页
                     tabsHeader.style.display = 'flex';
