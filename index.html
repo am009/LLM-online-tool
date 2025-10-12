@@ -71,13 +71,15 @@
                             <h3 class="section-header" onclick="toggleSection(this)">
                                 <svg class="section-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="6 9 12 15 18 9"></polyline>
-                                </svg> <span data-i18n="ui.settingsPanel.apiSettings">API 设置</span>
+                                </svg> <span data-i18n="ui.settingsPanel.ocrApiSettings">OCR API 设置</span>
                             </h3>
-                            <div class="setting-group">
-                                <label for="ocr-api-base" data-i18n="ui.settingsPanel.apiBaseUrl">API 基础 URL:</label>
-                                <input type="text" id="ocr-api-base" class="form-control" value="">
-                                <!-- <small class="ocr-api-deploy-hint" ></small> -->
-                                <a class="link-text" target="_blank" href="https://github.com/am009/dots.ocr" data-i18n="ui.settingsPanel.localDeploy">本地部署方式</a>
+                            <div class="section-content">
+                                <div class="setting-group">
+                                    <label for="ocr-api-base" data-i18n="ui.settingsPanel.apiBaseUrl">API 基础 URL:</label>
+                                    <input type="text" id="ocr-api-base" class="form-control" value="">
+                                    <!-- <small class="ocr-api-deploy-hint" ></small> -->
+                                    <a class="link-text" target="_blank" href="https://github.com/am009/dots.ocr" data-i18n="ui.settingsPanel.localDeploy">本地部署方式</a>
+                                </div>
                             </div>
                         </div>
                         <div class="settings-section">
@@ -86,11 +88,13 @@
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg> <span data-i18n="ui.settingsPanel.recognitionOptions">识别选项</span>
                             </h3>
-                            <div class="setting-group">
-                                <label class="checkbox-label" for="ocr-auto-scroll">
-                                    <input type="checkbox" id="ocr-auto-scroll" checked>
-                                    <span data-i18n="ui.settingsPanel.autoScrollToCurrentPage">自动识别时，滚动到当前识别页面</span>
-                                </label>
+                            <div class="section-content">
+                                <div class="setting-group">
+                                    <label class="checkbox-label" for="ocr-auto-scroll">
+                                        <input type="checkbox" id="ocr-auto-scroll" checked>
+                                        <span data-i18n="ui.settingsPanel.autoScrollToCurrentPage">自动识别时，滚动到当前识别页面</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         <div class="settings-section">

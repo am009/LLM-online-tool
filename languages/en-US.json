@@ -47,6 +47,7 @@
       "proofreadEnableThinkingHint": "Enable thinking feature for supported API providers (e.g., Ollama)",
       "proofreadPrompt": "Proofreading Prompt",
       "proofreadPromptPlaceholder": "Please proofread the following translated content...",
+      "ocrApiSettings": "OCR API Settings",
       "apiSettings": "API Settings",
       "apiBaseUrl": "API Base URL",
       "recognitionOptions": "Recognition Options",

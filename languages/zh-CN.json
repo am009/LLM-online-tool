@@ -47,6 +47,7 @@
       "proofreadEnableThinkingHint": "为支持的API提供商启用thinking功能（如Ollama）",
       "proofreadPrompt": "校对提示词",
       "proofreadPromptPlaceholder": "请校对以下翻译内容...",
+      "ocrApiSettings": "OCR API 设置",
       "apiSettings": "API 设置",
       "apiBaseUrl": "API 基础 URL",
       "recognitionOptions": "识别选项",
