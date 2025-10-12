@@ -256,21 +256,29 @@ class PDFOCR {
         // 创建图像容器
         const imageContainer = document.createElement('div');
         imageContainer.className = 'page-image-container';
-        
+
         // 渲染页面为canvas
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
-        
+
         // 计算高DPI渲染参数
-        const viewport = page.getViewport({ scale: 1.0 });
-        // 设置高分辨率渲染（300 PPI）
-        const renderScale = 2; // 300/72 ≈ 4.17
-        const renderViewport = page.getViewport({ scale: renderScale });
-        
+        // viewport的单位是pt=1/72 inch。
+        // 设置高分辨率渲染（200 PPI）
+        const baseRenderScale = 2.8; // 200/72 ≈ 2.78
+        const baseViewport = page.getViewport({ scale: baseRenderScale });
+        // console.log("页面200dpi大小约为，", baseViewport)
+
+        // 调整scale使宽度为28的倍数
+        const targetWidth = Math.round(baseViewport.width / 28) * 28;
+        const adjustedScale = baseRenderScale * (targetWidth / baseViewport.width);
+        const renderViewport = page.getViewport({ scale: adjustedScale });
+
         // 设置canvas实际尺寸（高分辨率）
+        // 确保宽度和高度都是28的倍数
         canvas.width = renderViewport.width;
-        canvas.height = renderViewport.height;
-        
+        canvas.height = Math.ceil(renderViewport.height / 28) * 28;
+        // console.log("canvas 大小设置为：", canvas.width, canvas.height)
+
         // console.log(`Canvas width ${canvas.width} height ${canvas.height}`)
         // console.log(`renderViewport width ${renderViewport.width} height ${renderViewport.height}`)
         // canvas显示尺寸将由CSS控制，实现自适应缩放
@@ -613,6 +621,10 @@ class PDFOCR {
         try {
             // 获取当前页面的图像数据
             const canvas = pageRow.querySelector('.page-image-container canvas');
+            // 检查canvas宽度或者高度如果不是28的倍数，则console.log出warning
+            if (canvas.width % 28 !== 0 || canvas.height % 28 !== 0) {
+                console.log(`Warning: Canvas dimensions (${canvas.width}x${canvas.height}) are not multiples of 28!`);
+            }
             const imageDataUrl = canvas.toDataURL('image/png');
             
             // 准备API请求
