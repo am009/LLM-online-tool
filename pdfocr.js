@@ -717,7 +717,9 @@ class PDFOCR {
                     已识别
                 `;
                 ocrButton.classList.add('success');
-                
+                // 切换标签页到分块视图
+                this.switchResultView(pageNum, 'blocks');
+
             } catch (parseError) {
                 console.error('解析最终JSON结果失败:', parseError);
                 
