@@ -38,6 +38,8 @@
 - 在没有出现问题的时候，不要用类似alert这种框，而是顶部弹出消息的形式。包括加载进度结束后的提示等都进行修改。
 - textarea的高度调高一点，自动expand现有的空间。
 - 那边pdf识别结果也实时保存？
+-  让PDF OCR的js逻辑，把header和footer作为html注释的形式，也放到导出的markdown里
+- &amp;?&gt;
 
 ### Roadmap
 

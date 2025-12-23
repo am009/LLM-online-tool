@@ -1,3 +1,11 @@
+// HTML转义函数，用于安全地将文本放入HTML注释中
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
 class PDFOCR {
     constructor() {
         // 配置 pdf.js worker
@@ -901,9 +909,12 @@ class PDFOCR {
             // 处理当前页面的每个块
             for (let i = 0; i < pageResult.length; i++) {
                 const block = pageResult[i];
-                
-                // 跳过页眉和页脚
+
+                // 将页眉和页脚作为HTML注释添加到markdown
                 if (block.category === 'Page-footer' || block.category === 'Page-header') {
+                    if (block.text && block.text.trim()) {
+                        markdown += `<!-- ${block.category}: ${escapeHtml(block.text.trim())} -->\n\n`;
+                    }
                     continue;
                 }
                 
