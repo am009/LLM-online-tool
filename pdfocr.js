@@ -981,42 +981,55 @@ class PDFOCR {
 
     // 生成图片文件
     async generateImages(images) {
-        for (const imageInfo of images) {
+        // 判断是否需要慢速下载（图片超过10个）
+        const useSlowDownload = images.length > 10;
+        const delayMs = 200;
+
+        for (let index = 0; index < images.length; index++) {
+            const imageInfo = images[index];
             try {
                 // 获取对应页面的canvas
                 const pageRow = document.querySelector(`.page-row[data-page-num="${imageInfo.pageNum}"]`);
                 if (!pageRow) continue;
-                
+
                 const canvas = pageRow.querySelector('.page-image-container canvas');
                 if (!canvas) continue;
-                
+
                 // 创建新的canvas用于裁剪
                 const cropCanvas = document.createElement('canvas');
                 const cropCtx = cropCanvas.getContext('2d');
-                
+
                 const [x1, y1, x2, y2] = imageInfo.bbox;
                 const width = x2 - x1;
                 const height = y2 - y1;
-                
+
                 // 设置裁剪canvas尺寸
                 cropCanvas.width = width;
                 cropCanvas.height = height;
-                
+
                 // 从原始canvas裁剪图像
                 cropCtx.drawImage(canvas, x1, y1, width, height, 0, 0, width, height);
-                
-                // 转换为blob并下载
-                cropCanvas.toBlob((blob) => {
-                    if (blob) {
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = imageInfo.filename;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                    }
-                }, 'image/png');
-                
+
+                // 转换为blob并下载（使用Promise包装以便await）
+                await new Promise((resolve) => {
+                    cropCanvas.toBlob((blob) => {
+                        if (blob) {
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = imageInfo.filename;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        }
+                        resolve();
+                    }, 'image/png');
+                });
+
+                // 如果启用慢速下载且不是最后一张图片，则延迟
+                if (useSlowDownload && index < images.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                }
+
             } catch (error) {
                 console.error(`生成图片 ${imageInfo.filename} 失败:`, error);
             }
