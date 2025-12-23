@@ -1,0 +1,8 @@
+# Flask API Server dependencies
+flask
+werkzeug
+
+# PDF OCR Client dependencies
+requests
+pillow
+pymupdf
