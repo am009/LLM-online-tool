@@ -72,4 +72,4 @@ monotype environment 翻译为单态类型环境
 
 ### 其他：
 
-- Ollama推荐的模型：qwen3:30b-a3b-thinking-2507-q4_K_M  （2025年9月2日）
+- 推荐的翻译模型：混元MT1.5 比如 HunYuan-MT1.5-7B

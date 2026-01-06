@@ -913,7 +913,7 @@ class PDFOCR {
                 // 将页眉和页脚作为HTML注释添加到markdown
                 if (block.category === 'Page-footer' || block.category === 'Page-header') {
                     if (block.text && block.text.trim()) {
-                        markdown += `<!-- ${block.category}: ${escapeHtml(block.text.trim())} -->\n\n`;
+                        markdown += `<!-- ${block.category}: ${escapeHtml(block.text.trim().replace(/[\r\n]+/g, ' '))} -->\n\n`;
                     }
                     continue;
                 }
@@ -935,9 +935,11 @@ class PDFOCR {
                     let caption = '';
                     if (i + 1 < pageResult.length && pageResult[i + 1].category === 'Caption') {
                         caption = pageResult[i + 1].text || '';
+                        // 清理caption中的特殊字符：删除换行符和方括号
+                        caption = caption.replace(/[\n\r]/g, ' ').replace(/[\[\]]/g, '');
                         i++; // 跳过下一个Caption块，因为已经处理了
                     }
-                    
+
                     // 在markdown中插入图片引用
                     if (caption) {
                         markdown += `![${caption}](./${imageName})\n\n`;
