@@ -52,6 +52,7 @@
       "apiBaseUrl": "API Base URL",
       "recognitionOptions": "Recognition Options",
       "autoRecognizeAfterUpload": "Auto recognize all pages after upload",
+      "autoExportAndTranslate": "Auto export and upload to translation after recognition",
       "autoScrollToCurrentPage": "Auto scroll to current page during recognition",
       "localDeploy": "Deploy local API endpoint",
       "ocrProvider": "OCR Provider",

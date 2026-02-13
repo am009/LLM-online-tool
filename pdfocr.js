@@ -31,6 +31,7 @@ class PDFOCR {
         this.progressInfo = document.getElementById('ocr-progress-info');
         this.autoScrollCheckbox = document.getElementById('ocr-auto-scroll');
         this.autoRecognizeCheckbox = document.getElementById('ocr-auto-recognize');
+        this.autoExportTranslateCheckbox = document.getElementById('ocr-auto-export-translate');
         
         // 批量识别状态变量
         this.isRecognizing = false;
@@ -132,6 +133,11 @@ class PDFOCR {
         if (this.autoRecognizeCheckbox) {
             this.autoRecognizeCheckbox.addEventListener('change', () => this.saveSettings());
         }
+
+        // 自动导出并翻译复选框
+        if (this.autoExportTranslateCheckbox) {
+            this.autoExportTranslateCheckbox.addEventListener('change', () => this.saveSettings());
+        }
     }
 
     // 切换OCR提供商设置的可见性
@@ -212,6 +218,7 @@ class PDFOCR {
             deepseekModel: document.getElementById('ocr-deepseek-model')?.value || '',
             autoScroll: this.autoScrollCheckbox?.checked || false,
             autoRecognize: this.autoRecognizeCheckbox?.checked || false,
+            autoExportTranslate: this.autoExportTranslateCheckbox?.checked || false,
             timestamp: Date.now()
         };
 
@@ -261,6 +268,11 @@ class PDFOCR {
             // 应用自动识别设置
             if (this.autoRecognizeCheckbox && typeof settings.autoRecognize === 'boolean') {
                 this.autoRecognizeCheckbox.checked = settings.autoRecognize;
+            }
+
+            // 应用自动导出并翻译设置
+            if (this.autoExportTranslateCheckbox && typeof settings.autoExportTranslate === 'boolean') {
+                this.autoExportTranslateCheckbox.checked = settings.autoExportTranslate;
             }
 
         } catch (error) {
@@ -1093,21 +1105,20 @@ class PDFOCR {
         }
     }
 
-    // 导出markdown功能
-    async generateMarkdownExport() {
+    // 生成markdown内容字符串（不下载）
+    generateMarkdownContent() {
         if (this.pageResults.size === 0) {
-            showError('请先识别至少一页内容');
-            return;
+            return null;
         }
         let markdown = '';
         let footnoteCounter = 1;
         const images = []; // 存储需要生成的图片信息
-        
+
         // 按页面顺序处理所有识别结果
         for (let pageNum = 1; pageNum <= this.currentPDF.numPages; pageNum++) {
             const pageResult = this.pageResults.get(pageNum);
             if (!pageResult || !Array.isArray(pageResult)) continue;
-            
+
             // 处理当前页面的每个块
             for (let i = 0; i < pageResult.length; i++) {
                 const block = pageResult[i];
@@ -1119,20 +1130,20 @@ class PDFOCR {
                     }
                     continue;
                 }
-                
+
                 // 处理Picture类型的块
                 if (block.category === 'Picture') {
                     const filename = this.fileInfo.textContent.replace('.pdf', '');
                     const [x1, y1, x2, y2] = block.bbox;
                     const imageName = `${filename}_page_${pageNum}_${x1}_${x2}_${y1}_${y2}.png`;
-                    
+
                     // 存储图片信息用于后续生成
                     images.push({
                         pageNum: pageNum,
                         bbox: block.bbox,
                         filename: imageName
                     });
-                    
+
                     // 检查下一个块是否是Caption
                     let caption = '';
                     if (i + 1 < pageResult.length && pageResult[i + 1].category === 'Caption') {
@@ -1150,7 +1161,7 @@ class PDFOCR {
                     }
                     continue;
                 }
-                
+
                 // 处理Footnote类型的块
                 if (block.category === 'Footnote') {
                     if (block.text) {
@@ -1159,17 +1170,32 @@ class PDFOCR {
                     }
                     continue;
                 }
-                
+
                 // 处理其他有文本内容的块
                 if (block.text && block.text.trim()) {
                     markdown += block.text + '\n\n';
                 }
             }
         }
-        
+
+        return { markdown, images };
+    }
+
+    // 导出markdown功能
+    async generateMarkdownExport() {
+        if (this.pageResults.size === 0) {
+            showError(window.languageManager.get('pdfOcr.errors.noRecognizedPages'));
+            return;
+        }
+
+        const result = this.generateMarkdownContent();
+        if (!result) return;
+
+        const { markdown, images } = result;
+
         // 生成并下载图片文件
         await this.generateImages(images);
-        
+
         // 下载markdown文件
         const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -1179,8 +1205,39 @@ class PDFOCR {
         a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
-        
+
         alert(`Markdown已导出，包含 ${images.length} 张图片`);
+    }
+
+    // 导出markdown并上传到翻译功能
+    exportToTranslation() {
+        const result = this.generateMarkdownContent();
+        if (!result) return;
+
+        const { markdown } = result;
+        const filename = this.fileInfo.textContent.replace('.pdf', '.md');
+
+        // 获取翻译器实例
+        const translator = window.markdown_translator_instance;
+        if (!translator) {
+            console.error('翻译器实例未找到');
+            return;
+        }
+
+        // 设置文件信息并加载内容
+        translator.currentFile = { name: filename };
+        translator.hasExported = false;
+        translator.clearAutoSavedProgress();
+        translator.parseContent(markdown);
+        translator.updateFileInfo();
+        translator.enableProgressButtons();
+        translator.autoSaveProgress();
+
+        // 切换到翻译标签页
+        const translationTabBtn = document.querySelector('.tab-button[data-tab="translation"]');
+        if (translationTabBtn) {
+            translationTabBtn.click();
+        }
     }
 
     // 生成图片文件
@@ -1386,6 +1443,11 @@ class PDFOCR {
             } else {
                 this.progressInfo.textContent = `批量识别完成，共 ${completedCount} 页`;
                 alert(`批量识别完成！成功识别所有 ${completedCount} 页。`);
+
+                // 如果启用了自动导出并翻译，则执行
+                if (this.autoExportTranslateCheckbox && this.autoExportTranslateCheckbox.checked) {
+                    this.exportToTranslation();
+                }
             }
             
         } catch (error) {
