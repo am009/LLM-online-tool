@@ -52,12 +52,12 @@
       "apiBaseUrl": "API Base URL",
       "recognitionOptions": "Recognition Options",
       "autoRecognizeAfterUpload": "Auto recognize all pages after upload",
-      "autoExportAndTranslate": "Auto export and upload to translation after recognition",
+      "autoExportAndTranslate": "Auto translate after recognition",
       "autoScrollToCurrentPage": "Auto scroll to current page during recognition",
       "localDeploy": "Deploy local API endpoint",
       "ocrProvider": "OCR Provider",
       "ocrDeepseekEndpoint": "API Endpoint",
-      "ocrDeepseekEndpointPlaceholder": "OpenAI-compatible API endpoint URL",
+      "ocrDeepseekEndpointPlaceholder": "OpenAI endpoint(end with /v1)",
       "ocrDeepseekApiKey": "API Key",
       "ocrDeepseekApiKeyPlaceholder": "Enter API Key",
       "ocrDeepseekModel": "Model Name",
@@ -79,6 +79,7 @@
       "selectPdf": "Select PDF",
       "exportMarkdown": "Export Markdown",
       "recognizeAll": "Recognize All",
+      "exportAndTranslate": "Send to Translation",
       "selectPdfFile": "Select PDF File"
     },
     "placeholders": {

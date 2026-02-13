@@ -32,6 +32,7 @@ class PDFOCR {
         this.autoScrollCheckbox = document.getElementById('ocr-auto-scroll');
         this.autoRecognizeCheckbox = document.getElementById('ocr-auto-recognize');
         this.autoExportTranslateCheckbox = document.getElementById('ocr-auto-export-translate');
+        this.exportTranslateBtn = document.getElementById('ocr-export-translate-btn');
         
         // 批量识别状态变量
         this.isRecognizing = false;
@@ -93,6 +94,9 @@ class PDFOCR {
                 this.recognizeAllPages();
             }
         });
+
+        // 上传到翻译并翻译按钮事件监听
+        this.exportTranslateBtn.addEventListener('click', () => this.exportToTranslation());
 
         // 设置项自动保存事件监听
         this.initSettingsAutoSave();
@@ -318,6 +322,7 @@ class PDFOCR {
             
             // 启用导出按钮
             this.exportBtn.disabled = false;
+            this.exportTranslateBtn.disabled = false;
 
             // 如果启用了自动识别，则自动开始批量识别
             if (this.autoRecognizeCheckbox && this.autoRecognizeCheckbox.checked) {
@@ -937,7 +942,9 @@ class PDFOCR {
             'table': 'Table',
             'image': 'Picture',
             'formula': 'Formula',
+            'image_caption': 'Caption',
             'caption': 'Caption',
+            'image_footnote': 'image_footnote',
             'footnote': 'Footnote',
             'page_footer': 'Page-footer',
             'page_header': 'Page-header',
@@ -1152,6 +1159,13 @@ class PDFOCR {
                         caption = caption.replace(/[\n\r]/g, ' ').replace(/[\[\]]/g, '');
                         i++; // 跳过下一个Caption块，因为已经处理了
                     }
+                    // 检查下一个是不是image_footnote
+                    if (i + 1 < pageResult.length && pageResult[i + 1].category === 'image_footnote') {
+                        let foot_note = pageResult[i + 1].text || '';
+                        // 清理caption中的特殊字符：删除换行符和方括号
+                        caption += foot_note.replace(/[\n\r]/g, ' ').replace(/[\[\]]/g, '');
+                        i++; // 跳过下一个Caption块，因为已经处理了
+                    }
 
                     // 在markdown中插入图片引用
                     if (caption) {
@@ -1209,7 +1223,7 @@ class PDFOCR {
         alert(`Markdown已导出，包含 ${images.length} 张图片`);
     }
 
-    // 导出markdown并上传到翻译功能
+    // 导出markdown并上传到翻译功能，然后触发全部翻译
     exportToTranslation() {
         const result = this.generateMarkdownContent();
         if (!result) return;
@@ -1238,6 +1252,9 @@ class PDFOCR {
         if (translationTabBtn) {
             translationTabBtn.click();
         }
+
+        // 触发全部翻译
+        translator.translateAll();
     }
 
     // 生成图片文件

@@ -79,7 +79,7 @@
                                     <label for="ocr-provider" data-i18n="ui.settingsPanel.ocrProvider">OCR 提供商:</label>
                                     <select id="ocr-provider">
                                         <option value="dots">Dots.OCR</option>
-                                        <option value="deepseek">Deepseek OCR</option>
+                                        <option value="deepseek">Deepseek OCR (OpenAI)</option>
                                     </select>
                                 </div>
                                 <div id="ocr-dots-settings">
@@ -121,7 +121,7 @@
                                 <div class="setting-group">
                                     <label class="checkbox-label" for="ocr-auto-export-translate">
                                         <input type="checkbox" id="ocr-auto-export-translate">
-                                        <span data-i18n="ui.settingsPanel.autoExportAndTranslate">识别完成后自动导出并上传到翻译</span>
+                                        <span data-i18n="ui.settingsPanel.autoExportAndTranslate">识别完成后自动上传并翻译</span>
                                     </label>
                                 </div>
                                 <div class="setting-group">
@@ -133,7 +133,11 @@
                             </div>
                         </div>
                         <div class="settings-section">
-
+                            <div class="setting-group">
+                                <button class="btn btn-primary btn-full-width" id="ocr-export-translate-btn" disabled data-i18n="ui.buttons.exportAndTranslate">
+                                    上传到翻译并翻译
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </aside>

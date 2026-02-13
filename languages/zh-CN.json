@@ -52,12 +52,12 @@
       "apiBaseUrl": "API 基础 URL",
       "recognitionOptions": "识别选项",
       "autoRecognizeAfterUpload": "上传文件后自动识别所有页面",
-      "autoExportAndTranslate": "识别完成后自动导出并上传到翻译",
+      "autoExportAndTranslate": "识别完成后自动上传并翻译",
       "autoScrollToCurrentPage": "自动识别时，滚动到当前识别页面",
       "localDeploy": "本地部署方式",
       "ocrProvider": "OCR 提供商",
       "ocrDeepseekEndpoint": "API 端点",
-      "ocrDeepseekEndpointPlaceholder": "OpenAI兼容API端点URL",
+      "ocrDeepseekEndpointPlaceholder": "OpenAI兼容(以/v1结尾)",
       "ocrDeepseekApiKey": "API Key",
       "ocrDeepseekApiKeyPlaceholder": "输入API Key",
       "ocrDeepseekModel": "模型名称",
@@ -79,6 +79,7 @@
       "selectPdf": "选择 PDF",
       "exportMarkdown": "导出markdown",
       "recognizeAll": "识别所有",
+      "exportAndTranslate": "上传到翻译并翻译",
       "selectPdfFile": "选择 PDF 文件"
     },
     "placeholders": {
