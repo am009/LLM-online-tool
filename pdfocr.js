@@ -362,15 +362,23 @@ class PDFOCR {
         const baseViewport = page.getViewport({ scale: baseRenderScale });
         // console.log("页面200dpi大小约为，", baseViewport)
 
-        // 调整scale使宽度为28的倍数
-        const targetWidth = Math.round(baseViewport.width / 28) * 28;
-        const adjustedScale = baseRenderScale * (targetWidth / baseViewport.width);
-        const renderViewport = page.getViewport({ scale: adjustedScale });
+        // Dots.OCR要求图像尺寸为28的倍数，其他API不需要
+        const provider = document.getElementById('ocr-provider').value;
+        let renderViewport;
+        if (provider === 'dots') {
+            // 调整scale使宽度为28的倍数
+            const targetWidth = Math.round(baseViewport.width / 28) * 28;
+            const adjustedScale = baseRenderScale * (targetWidth / baseViewport.width);
+            renderViewport = page.getViewport({ scale: adjustedScale });
+        } else {
+            renderViewport = page.getViewport({ scale: baseRenderScale });
+        }
 
         // 设置canvas实际尺寸（高分辨率）
-        // 确保宽度和高度都是28的倍数
         canvas.width = renderViewport.width;
-        canvas.height = Math.ceil(renderViewport.height / 28) * 28;
+        canvas.height = provider === 'dots'
+            ? Math.ceil(renderViewport.height / 28) * 28
+            : Math.ceil(renderViewport.height);
         // console.log("canvas 大小设置为：", canvas.width, canvas.height)
 
         // console.log(`Canvas width ${canvas.width} height ${canvas.height}`)
