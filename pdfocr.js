@@ -98,16 +98,43 @@ class PDFOCR {
     
     // 初始化设置项自动保存
     initSettingsAutoSave() {
-        // API 基础 URL
+        // OCR 提供商选择
+        const ocrProviderSelect = document.getElementById('ocr-provider');
+        if (ocrProviderSelect) {
+            ocrProviderSelect.addEventListener('change', () => {
+                this.toggleOcrProviderSettings();
+                this.saveSettings();
+            });
+        }
+
+        // API 基础 URL (Dots.OCR)
         const apiBaseInput = document.getElementById('ocr-api-base');
         if (apiBaseInput) {
             apiBaseInput.addEventListener('input', () => this.saveSettings());
         }
-        
+
+        // Deepseek OCR 设置
+        const deepseekFields = ['ocr-deepseek-endpoint', 'ocr-deepseek-apikey', 'ocr-deepseek-model'];
+        deepseekFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', () => this.saveSettings());
+            }
+        });
+
         // 自动滚动复选框
         if (this.autoScrollCheckbox) {
             this.autoScrollCheckbox.addEventListener('change', () => this.saveSettings());
         }
+    }
+
+    // 切换OCR提供商设置的可见性
+    toggleOcrProviderSettings() {
+        const provider = document.getElementById('ocr-provider').value;
+        const dotsSettings = document.getElementById('ocr-dots-settings');
+        const deepseekSettings = document.getElementById('ocr-deepseek-settings');
+        if (dotsSettings) dotsSettings.style.display = provider === 'dots' ? '' : 'none';
+        if (deepseekSettings) deepseekSettings.style.display = provider === 'deepseek' ? '' : 'none';
     }
     
     // 初始化拖放功能
@@ -172,11 +199,15 @@ class PDFOCR {
     // 保存设置到本地存储
     saveSettings() {
         const settings = {
+            ocrProvider: document.getElementById('ocr-provider')?.value || 'dots',
             apiBaseUrl: document.getElementById('ocr-api-base')?.value || '',
+            deepseekEndpoint: document.getElementById('ocr-deepseek-endpoint')?.value || '',
+            deepseekApiKey: document.getElementById('ocr-deepseek-apikey')?.value || '',
+            deepseekModel: document.getElementById('ocr-deepseek-model')?.value || '',
             autoScroll: this.autoScrollCheckbox?.checked || false,
             timestamp: Date.now()
         };
-        
+
         localStorage.setItem('pdf-ocr-settings', JSON.stringify(settings));
     }
     
@@ -185,20 +216,41 @@ class PDFOCR {
         try {
             const stored = localStorage.getItem('pdf-ocr-settings');
             if (!stored) return;
-            
+
             const settings = JSON.parse(stored);
-            
-            // 应用API基础URL设置
+
+            // 应用OCR提供商设置
+            const ocrProviderSelect = document.getElementById('ocr-provider');
+            if (ocrProviderSelect && settings.ocrProvider) {
+                ocrProviderSelect.value = settings.ocrProvider;
+                this.toggleOcrProviderSettings();
+            }
+
+            // 应用API基础URL设置 (Dots.OCR)
             const apiBaseInput = document.getElementById('ocr-api-base');
             if (apiBaseInput && settings.apiBaseUrl) {
                 apiBaseInput.value = settings.apiBaseUrl;
             }
-            
+
+            // 应用Deepseek OCR设置
+            const deepseekEndpoint = document.getElementById('ocr-deepseek-endpoint');
+            if (deepseekEndpoint && settings.deepseekEndpoint) {
+                deepseekEndpoint.value = settings.deepseekEndpoint;
+            }
+            const deepseekApiKey = document.getElementById('ocr-deepseek-apikey');
+            if (deepseekApiKey && settings.deepseekApiKey) {
+                deepseekApiKey.value = settings.deepseekApiKey;
+            }
+            const deepseekModel = document.getElementById('ocr-deepseek-model');
+            if (deepseekModel && settings.deepseekModel) {
+                deepseekModel.value = settings.deepseekModel;
+            }
+
             // 应用自动滚动设置
             if (this.autoScrollCheckbox && typeof settings.autoScroll === 'boolean') {
                 this.autoScrollCheckbox.checked = settings.autoScroll;
             }
-            
+
         } catch (error) {
             console.error('加载PDF OCR设置失败:', error);
         }
@@ -597,13 +649,13 @@ class PDFOCR {
         }
     }
 
-    // 执行OCR（使用dots.ocr流式API）
+    // 执行OCR（根据提供商分发）
     async performOCR(pageNum) {
         const pageRow = document.querySelector(`.page-row[data-page-num="${pageNum}"]`);
         const ocrButton = pageRow.querySelector('.btn');
-        const apiBaseUrl = document.getElementById('ocr-api-base').value;
         const jsonView = pageRow.querySelector('.json-view');
         const tabsHeader = pageRow.querySelector('.result-tabs');
+        const provider = document.getElementById('ocr-provider').value;
 
         // 显示加载状态
         ocrButton.disabled = true;
@@ -613,110 +665,59 @@ class PDFOCR {
             </svg>
             识别中...
         `;
-        
+
         // 创建实时显示的textarea放在JSON视图中
         const resultTextarea = document.createElement('textarea');
         resultTextarea.className = 'result-text';
         resultTextarea.placeholder = '正在获取识别结果...';
         resultTextarea.value = '';
-        
+
         jsonView.innerHTML = '';
         jsonView.appendChild(resultTextarea);
-        
+
         // 为JSON文本区域添加修复监听器
         this.addJsonFixListener(pageNum, resultTextarea);
-        
+
         try {
             // 获取当前页面的图像数据
             const canvas = pageRow.querySelector('.page-image-container canvas');
-            // 检查canvas宽度或者高度如果不是28的倍数，则console.log出warning
             if (canvas.width % 28 !== 0 || canvas.height % 28 !== 0) {
                 console.log(`Warning: Canvas dimensions (${canvas.width}x${canvas.height}) are not multiples of 28!`);
             }
             const imageDataUrl = canvas.toDataURL('image/png');
-            
-            // 准备API请求
-            const requestBody = {
-                image: imageDataUrl,
-                prompt_type: "prompt_layout_all_en",
-                stream: true
-            };
 
-            // 发起流式请求
-            const response = await fetch(`${apiBaseUrl}/ocr`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!response.ok) {
-                throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+            // 根据提供商调用不同的流式API
+            let combinedResponse;
+            if (provider === 'deepseek') {
+                combinedResponse = await this.streamDeepseekOCR(imageDataUrl, resultTextarea);
+            } else {
+                combinedResponse = await this.streamDotsOCR(imageDataUrl, resultTextarea);
             }
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
-            let combinedResponse = '';
-            let isStreamComplete = false;
-
-            // 读取流式响应
-            while (!isStreamComplete) {
-                const { value, done } = await reader.read();
-                
-                if (done) {
-                    break;
-                }
-
-                // 解码数据
-                buffer += decoder.decode(value, { stream: true });
-                
-                // 处理每一行JSON数据
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || ''; // 保留不完整的行
-
-                for (const line of lines) {
-                    if (line.trim() === '') continue;
-                    
-                    try {
-                        const data = JSON.parse(line);
-                        
-                        if (data.response) {
-                            combinedResponse += data.response;
-                            // 实时更新textarea显示流式结果
-                            resultTextarea.value = combinedResponse;
-                            resultTextarea.scrollTop = resultTextarea.scrollHeight;
-                        }
-                        
-                        if (data.done) {
-                            isStreamComplete = true;
-                            break;
-                        }
-                    } catch (e) {
-                        console.error('解析JSON行失败:', line, e);
-                    }
-                }
-            }
-
-            // 流式获取结束，解析最终的JSON结果
+            // 解析最终结果
             try {
-                const finalResult = JSON.parse(combinedResponse);
-                
-                // 验证结果格式
+                let finalResult;
+                if (provider === 'deepseek') {
+                    finalResult = this.parseDeepseekResponse(combinedResponse, canvas.width, canvas.height);
+                    // 将解析后的结果以JSON格式展示在textarea中
+                    resultTextarea.value = JSON.stringify(finalResult, null, 2);
+                } else {
+                    finalResult = JSON.parse(combinedResponse);
+                }
+
                 if (!Array.isArray(finalResult)) {
                     throw new Error('API返回的结果不是有效的JSON数组格式');
                 }
-                
+
                 // 保存解析后的结果
                 this.pageResults.set(pageNum, finalResult);
-                
+
                 // 显示标签页
                 tabsHeader.style.display = 'flex';
-                
+
                 // 创建分块视图
                 this.createBlocksView(pageNum, finalResult);
-                
+
                 // 更新按钮状态为成功
                 ocrButton.innerHTML = `
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -729,19 +730,14 @@ class PDFOCR {
                 this.switchResultView(pageNum, 'blocks');
 
             } catch (parseError) {
-                console.error('解析最终JSON结果失败:', parseError);
-                
-                // 显示JSON解析错误，但不阻止UI渲染
+                console.error('解析最终结果失败:', parseError);
+
                 resultTextarea.value = `JSON解析错误: ${parseError.message}\n\n原始响应:\n${combinedResponse}`;
                 resultTextarea.className = 'result-text json-error';
-                
-                // 显示标签页，让用户可以看到JSON和分栏视图
+
                 tabsHeader.style.display = 'flex';
-                
-                // 创建空的分块视图
                 this.createBlocksView(pageNum, []);
-                
-                // 更新按钮状态为部分成功（有响应但解析失败）
+
                 ocrButton.innerHTML = `
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
@@ -751,18 +747,14 @@ class PDFOCR {
                     需修复JSON
                 `;
                 ocrButton.classList.add('warning');
-                
-                // 不抛出错误，让流程继续
             }
 
         } catch (error) {
             console.error('OCR识别失败:', error);
-            
-            // 显示错误信息
+
             resultTextarea.value = `识别失败: ${error.message}`;
             resultTextarea.className = 'result-text error';
-            
-            // 恢复按钮状态
+
             ocrButton.innerHTML = `
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -775,9 +767,202 @@ class PDFOCR {
             `;
             ocrButton.classList.remove('success');
         } finally {
-            // 总是重新启用按钮
             ocrButton.disabled = false;
         }
+    }
+
+    // Dots.OCR 流式请求，返回拼接后的响应文本
+    async streamDotsOCR(imageDataUrl, resultTextarea) {
+        const apiBaseUrl = document.getElementById('ocr-api-base').value;
+
+        const requestBody = {
+            image: imageDataUrl,
+            prompt_type: "prompt_layout_all_en",
+            stream: true
+        };
+
+        const response = await fetch(`${apiBaseUrl}/ocr`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let combinedResponse = '';
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                if (line.trim() === '') continue;
+                try {
+                    const data = JSON.parse(line);
+                    if (data.response) {
+                        combinedResponse += data.response;
+                        resultTextarea.value = combinedResponse;
+                        resultTextarea.scrollTop = resultTextarea.scrollHeight;
+                    }
+                    if (data.done) {
+                        return combinedResponse;
+                    }
+                } catch (e) {
+                    console.error('解析JSON行失败:', line, e);
+                }
+            }
+        }
+
+        return combinedResponse;
+    }
+
+    // Deepseek OCR 流式请求（OpenAI兼容格式），返回拼接后的响应文本
+    async streamDeepseekOCR(imageDataUrl, resultTextarea) {
+        const endpoint = document.getElementById('ocr-deepseek-endpoint').value;
+        const apiKey = document.getElementById('ocr-deepseek-apikey').value;
+        const model = document.getElementById('ocr-deepseek-model').value;
+
+        const requestBody = {
+            model: model,
+            messages: [
+                {
+                    role: "user",
+                    content: [
+                        { type: "image_url", image_url: { url: imageDataUrl } },
+                        { type: "text", text: "\n<|grounding|>Convert the document to markdown." }
+                    ]
+                }
+            ],
+            stream: true
+        };
+
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) {
+            headers['Authorization'] = `Bearer ${apiKey}`;
+        }
+
+        const response = await fetch(`${endpoint}/chat/completions`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let combinedResponse = '';
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (trimmed === '' || trimmed === 'data: [DONE]') continue;
+                if (!trimmed.startsWith('data: ')) continue;
+
+                try {
+                    const data = JSON.parse(trimmed.substring(6));
+                    const content = data.choices?.[0]?.delta?.content;
+                    if (content) {
+                        combinedResponse += content;
+                        resultTextarea.value = combinedResponse;
+                        resultTextarea.scrollTop = resultTextarea.scrollHeight;
+                    }
+                } catch (e) {
+                    // 忽略不完整的chunk解析错误
+                }
+            }
+        }
+
+        return combinedResponse;
+    }
+
+    // 解析Deepseek OCR响应格式为内部blocks数组
+    parseDeepseekResponse(responseText, canvasWidth, canvasHeight) {
+        const blocks = [];
+        const parts = responseText.split('<|ref|>');
+
+        // Deepseek类别到内部类别的映射
+        const categoryMap = {
+            'title': 'Title',
+            'sub_title': 'Section-header',
+            'text': 'Text',
+            'table': 'Table',
+            'image': 'Picture',
+            'formula': 'Formula',
+            'caption': 'Caption',
+            'footnote': 'Footnote',
+            'page_footer': 'Page-footer',
+            'page_header': 'Page-header',
+            'list_item': 'List-item'
+        };
+
+        for (let i = 1; i < parts.length; i++) {
+            const part = parts[i];
+
+            // 提取类别
+            const refEnd = part.indexOf('<|/ref|>');
+            if (refEnd === -1) continue;
+            const rawCategory = part.substring(0, refEnd).trim();
+
+            // 提取bbox
+            const detStart = part.indexOf('<|det|>');
+            const detEnd = part.indexOf('<|/det|>');
+            if (detStart === -1 || detEnd === -1) continue;
+            const bboxStr = part.substring(detStart + 7, detEnd).trim();
+
+            let bbox;
+            try {
+                const bboxArray = JSON.parse(bboxStr);
+                bbox = Array.isArray(bboxArray[0]) ? bboxArray[0] : bboxArray;
+            } catch (e) {
+                continue;
+            }
+
+            // 将1000-bin归一化坐标转换为canvas像素坐标
+            bbox = [
+                Math.round(bbox[0] / 1000 * canvasWidth),
+                Math.round(bbox[1] / 1000 * canvasHeight),
+                Math.round(bbox[2] / 1000 * canvasWidth),
+                Math.round(bbox[3] / 1000 * canvasHeight)
+            ];
+
+            const mappedCategory = categoryMap[rawCategory.toLowerCase()] || rawCategory;
+
+            // 提取文本内容（<|/det|>之后到末尾）
+            const textContent = part.substring(detEnd + 8).trim();
+
+            const block = {
+                bbox: bbox,
+                category: mappedCategory
+            };
+
+            if (textContent && mappedCategory !== 'Picture') {
+                block.text = textContent;
+            }
+
+            blocks.push(block);
+        }
+
+        return blocks;
     }
 
     // 保存进度功能

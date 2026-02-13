@@ -52,7 +52,14 @@
       "apiBaseUrl": "API Base URL",
       "recognitionOptions": "Recognition Options",
       "autoScrollToCurrentPage": "Auto scroll to current page during recognition",
-      "localDeploy": "Deploy local API endpoint"
+      "localDeploy": "Deploy local API endpoint",
+      "ocrProvider": "OCR Provider",
+      "ocrDeepseekEndpoint": "API Endpoint",
+      "ocrDeepseekEndpointPlaceholder": "OpenAI-compatible API endpoint URL",
+      "ocrDeepseekApiKey": "API Key",
+      "ocrDeepseekApiKeyPlaceholder": "Enter API Key",
+      "ocrDeepseekModel": "Model Name",
+      "ocrDeepseekModelPlaceholder": "Enter model name"
     },
     "buttons": {
       "uploadFile": "Upload Markdown File",

@@ -52,7 +52,14 @@
       "apiBaseUrl": "API 基础 URL",
       "recognitionOptions": "识别选项",
       "autoScrollToCurrentPage": "自动识别时，滚动到当前识别页面",
-      "localDeploy": "本地部署方式"
+      "localDeploy": "本地部署方式",
+      "ocrProvider": "OCR 提供商",
+      "ocrDeepseekEndpoint": "API 端点",
+      "ocrDeepseekEndpointPlaceholder": "OpenAI兼容API端点URL",
+      "ocrDeepseekApiKey": "API Key",
+      "ocrDeepseekApiKeyPlaceholder": "输入API Key",
+      "ocrDeepseekModel": "模型名称",
+      "ocrDeepseekModelPlaceholder": "输入模型名称"
     },
     "buttons": {
       "uploadFile": "上传Markdown文件",

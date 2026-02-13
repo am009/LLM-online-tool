@@ -76,10 +76,32 @@
                             </h3>
                             <div class="section-content">
                                 <div class="setting-group">
-                                    <label for="ocr-api-base" data-i18n="ui.settingsPanel.apiBaseUrl">API 基础 URL:</label>
-                                    <input type="text" id="ocr-api-base" class="form-control" value="">
-                                    <!-- <small class="ocr-api-deploy-hint" ></small> -->
-                                    <a class="link-text" target="_blank" href="https://github.com/am009/dots.ocr" data-i18n="ui.settingsPanel.localDeploy">本地部署方式</a>
+                                    <label for="ocr-provider" data-i18n="ui.settingsPanel.ocrProvider">OCR 提供商:</label>
+                                    <select id="ocr-provider">
+                                        <option value="dots">Dots.OCR</option>
+                                        <option value="deepseek">Deepseek OCR</option>
+                                    </select>
+                                </div>
+                                <div id="ocr-dots-settings">
+                                    <div class="setting-group">
+                                        <label for="ocr-api-base" data-i18n="ui.settingsPanel.apiBaseUrl">API 基础 URL:</label>
+                                        <input type="text" id="ocr-api-base" class="form-control" value="">
+                                        <a class="link-text" target="_blank" href="https://github.com/am009/dots.ocr" data-i18n="ui.settingsPanel.localDeploy">本地部署方式</a>
+                                    </div>
+                                </div>
+                                <div id="ocr-deepseek-settings" style="display: none;">
+                                    <div class="setting-group">
+                                        <label for="ocr-deepseek-endpoint" data-i18n="ui.settingsPanel.ocrDeepseekEndpoint">API 端点:</label>
+                                        <input type="text" id="ocr-deepseek-endpoint" class="form-control" data-i18n-placeholder="ui.settingsPanel.ocrDeepseekEndpointPlaceholder" placeholder="OpenAI兼容API端点URL">
+                                    </div>
+                                    <div class="setting-group">
+                                        <label for="ocr-deepseek-apikey" data-i18n="ui.settingsPanel.ocrDeepseekApiKey">API Key:</label>
+                                        <input type="password" id="ocr-deepseek-apikey" class="form-control" data-i18n-placeholder="ui.settingsPanel.ocrDeepseekApiKeyPlaceholder" placeholder="输入API Key">
+                                    </div>
+                                    <div class="setting-group">
+                                        <label for="ocr-deepseek-model" data-i18n="ui.settingsPanel.ocrDeepseekModel">模型名称:</label>
+                                        <input type="text" id="ocr-deepseek-model" class="form-control" data-i18n-placeholder="ui.settingsPanel.ocrDeepseekModelPlaceholder" placeholder="输入模型名称">
+                                    </div>
                                 </div>
                             </div>
                         </div>
