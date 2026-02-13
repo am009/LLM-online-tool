@@ -61,7 +61,9 @@
       "ocrDeepseekApiKey": "API Key",
       "ocrDeepseekApiKeyPlaceholder": "Enter API Key",
       "ocrDeepseekModel": "Model Name",
-      "ocrDeepseekModelPlaceholder": "Enter model name"
+      "ocrDeepseekModelPlaceholder": "Enter model name",
+      "translationDelay": "Translation Delay (ms)",
+      "translationDelayHint": "Delay in milliseconds between paragraphs during batch translation to avoid API rate limits"
     },
     "buttons": {
       "uploadFile": "Upload Markdown File",

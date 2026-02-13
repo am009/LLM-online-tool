@@ -293,6 +293,12 @@
                                 </div>
 
                                 <div class="setting-group">
+                                    <label for="translation-delay" data-i18n="ui.settingsPanel.translationDelay">翻译间隔(ms):</label>
+                                    <input type="number" id="translation-delay" min="0" step="100" value="0">
+                                    <small class="setting-hint" data-i18n="ui.settingsPanel.translationDelayHint">批量翻译时每段之间的延迟毫秒数，避免API限流</small>
+                                </div>
+
+                                <div class="setting-group">
                                     <button id="translate-all-btn" class="btn btn-primary btn-full-width" disabled data-i18n="ui.buttons.translateAll">全部翻译</button>
                                 </div>
                                 <div class="setting-group">

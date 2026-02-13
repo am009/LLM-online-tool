@@ -83,6 +83,9 @@ class MarkdownTranslator {
         
         // thinking控制
         document.getElementById('translation-enable-thinking').addEventListener('change', () => this.saveSettings());
+
+        // 翻译延迟控制
+        document.getElementById('translation-delay').addEventListener('input', () => this.saveSettings());
         
         // 校对设置变更
         document.getElementById('proofread-prompt').addEventListener('input', () => this.saveSettings());
@@ -161,6 +164,7 @@ class MarkdownTranslator {
     loadGeneralSettings(settings) {
         document.getElementById('translation-context-count').value = (isNaN(settings.contextCount) ? 1 : settings.contextCount);
         document.getElementById('translation-paragraph-char-limit').value = settings.paragraphCharLimit ?? 0;
+        document.getElementById('translation-delay').value = settings.translationDelay ?? 0;
         this.sidebarCollapsed = settings.sidebarCollapsed ?? false;
     }
 
@@ -277,10 +281,12 @@ class MarkdownTranslator {
     collectGeneralSettings() {
         const contextCountValue = parseInt(document.getElementById('translation-context-count').value);
         const paragraphCharLimitValue = parseInt(document.getElementById('translation-paragraph-char-limit').value);
-        
+        const translationDelayValue = parseInt(document.getElementById('translation-delay').value);
+
         return {
             contextCount: isNaN(contextCountValue) ? 1 : contextCountValue,
             paragraphCharLimit: isNaN(paragraphCharLimitValue) ? 0 : paragraphCharLimitValue,
+            translationDelay: isNaN(translationDelayValue) ? 0 : translationDelayValue,
             sidebarCollapsed: this.sidebarCollapsed
         };
     }
@@ -1226,7 +1232,8 @@ class MarkdownTranslator {
                     await this.translateBlock(i);
                     // 添加延迟以避免API限制
                     if (this.isTranslatingAll) { // 只有在未被停止时才延迟
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        const delay = parseInt(document.getElementById('translation-delay').value) ?? 0;
+                        await new Promise(resolve => setTimeout(resolve, delay));
                     }
                 }
             }
@@ -1369,7 +1376,8 @@ class MarkdownTranslator {
                 if (this.translationBlocks[i] && this.translationBlocks[i].trim()) {
                     await this.proofreadSingleBlock(i);
                     // 添加延迟以避免API限制
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    const delay = parseInt(document.getElementById('translation-delay').value) ?? 0;
+                    await new Promise(resolve => setTimeout(resolve, delay));
                 }
             }
         } catch (error) {
