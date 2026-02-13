@@ -30,6 +30,7 @@ class PDFOCR {
         this.batchActions = document.getElementById('ocr-batch-actions');
         this.progressInfo = document.getElementById('ocr-progress-info');
         this.autoScrollCheckbox = document.getElementById('ocr-auto-scroll');
+        this.autoRecognizeCheckbox = document.getElementById('ocr-auto-recognize');
         
         // 批量识别状态变量
         this.isRecognizing = false;
@@ -126,6 +127,11 @@ class PDFOCR {
         if (this.autoScrollCheckbox) {
             this.autoScrollCheckbox.addEventListener('change', () => this.saveSettings());
         }
+
+        // 自动识别复选框
+        if (this.autoRecognizeCheckbox) {
+            this.autoRecognizeCheckbox.addEventListener('change', () => this.saveSettings());
+        }
     }
 
     // 切换OCR提供商设置的可见性
@@ -205,6 +211,7 @@ class PDFOCR {
             deepseekApiKey: document.getElementById('ocr-deepseek-apikey')?.value || '',
             deepseekModel: document.getElementById('ocr-deepseek-model')?.value || '',
             autoScroll: this.autoScrollCheckbox?.checked || false,
+            autoRecognize: this.autoRecognizeCheckbox?.checked || false,
             timestamp: Date.now()
         };
 
@@ -251,6 +258,11 @@ class PDFOCR {
                 this.autoScrollCheckbox.checked = settings.autoScroll;
             }
 
+            // 应用自动识别设置
+            if (this.autoRecognizeCheckbox && typeof settings.autoRecognize === 'boolean') {
+                this.autoRecognizeCheckbox.checked = settings.autoRecognize;
+            }
+
         } catch (error) {
             console.error('加载PDF OCR设置失败:', error);
         }
@@ -294,6 +306,11 @@ class PDFOCR {
             
             // 启用导出按钮
             this.exportBtn.disabled = false;
+
+            // 如果启用了自动识别，则自动开始批量识别
+            if (this.autoRecognizeCheckbox && this.autoRecognizeCheckbox.checked) {
+                this.recognizeAllPages();
+            }
             
         } catch (error) {
             console.error('加载PDF失败:', error);

@@ -51,6 +51,7 @@
       "apiSettings": "API 设置",
       "apiBaseUrl": "API 基础 URL",
       "recognitionOptions": "识别选项",
+      "autoRecognizeAfterUpload": "上传文件后自动识别所有页面",
       "autoScrollToCurrentPage": "自动识别时，滚动到当前识别页面",
       "localDeploy": "本地部署方式",
       "ocrProvider": "OCR 提供商",

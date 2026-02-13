@@ -51,6 +51,7 @@
       "apiSettings": "API Settings",
       "apiBaseUrl": "API Base URL",
       "recognitionOptions": "Recognition Options",
+      "autoRecognizeAfterUpload": "Auto recognize all pages after upload",
       "autoScrollToCurrentPage": "Auto scroll to current page during recognition",
       "localDeploy": "Deploy local API endpoint",
       "ocrProvider": "OCR Provider",
