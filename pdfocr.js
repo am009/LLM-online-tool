@@ -1459,11 +1459,12 @@ class PDFOCR {
                 alert(`批量识别完成！成功识别 ${completedCount} 页，${failedCount} 页失败。请查看具体页面的错误信息。`);
             } else {
                 this.progressInfo.textContent = `批量识别完成，共 ${completedCount} 页`;
-                alert(`批量识别完成！成功识别所有 ${completedCount} 页。`);
 
                 // 如果启用了自动导出并翻译，则执行
                 if (this.autoExportTranslateCheckbox && this.autoExportTranslateCheckbox.checked) {
                     this.exportToTranslation();
+                } else {
+                    alert(`批量识别完成！成功识别所有 ${completedCount} 页。`);
                 }
             }
             
