@@ -63,7 +63,9 @@
       "ocrDeepseekModel": "模型名称",
       "ocrDeepseekModelPlaceholder": "输入模型名称",
       "translationDelay": "翻译间隔(ms)",
-      "translationDelayHint": "批量翻译时每段之间的延迟毫秒数，避免API限流"
+      "translationDelayHint": "批量翻译时每段之间的延迟毫秒数，避免API限流",
+      "imageFileSystem": "图片",
+      "noImages": "未上传图片"
     },
     "buttons": {
       "uploadFile": "上传Markdown文件",
@@ -82,7 +84,9 @@
       "exportMarkdown": "导出markdown",
       "recognizeAll": "识别所有",
       "exportAndTranslate": "上传到翻译并翻译",
-      "selectPdfFile": "选择 PDF 文件"
+      "selectPdfFile": "选择 PDF 文件",
+      "uploadImages": "上传图片",
+      "downloadImagesZip": "下载图片 (ZIP)"
     },
     "placeholders": {
       "selectPrompt": "请选择Markdown/Latex文件以开始翻译",

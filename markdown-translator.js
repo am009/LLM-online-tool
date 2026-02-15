@@ -1,3 +1,61 @@
+// Image file system - stores images in memory as blobs
+class ImageStore {
+    constructor() {
+        this.images = new Map(); // filename -> { blob, objectUrl }
+        this._callbacks = [];
+    }
+
+    addImage(filename, blob) {
+        // Remove existing image with same name
+        if (this.images.has(filename)) {
+            URL.revokeObjectURL(this.images.get(filename).objectUrl);
+        }
+        const objectUrl = URL.createObjectURL(blob);
+        this.images.set(filename, { blob, objectUrl });
+        this._notify();
+    }
+
+    removeImage(filename) {
+        const entry = this.images.get(filename);
+        if (entry) {
+            URL.revokeObjectURL(entry.objectUrl);
+            this.images.delete(filename);
+            this._notify();
+        }
+    }
+
+    getUrl(filename) {
+        const entry = this.images.get(filename);
+        return entry ? entry.objectUrl : null;
+    }
+
+    getBlob(filename) {
+        const entry = this.images.get(filename);
+        return entry ? entry.blob : null;
+    }
+
+    getAllFilenames() {
+        return Array.from(this.images.keys());
+    }
+
+    clear() {
+        this.images.forEach(entry => URL.revokeObjectURL(entry.objectUrl));
+        this.images.clear();
+        this._notify();
+    }
+
+    onChange(callback) {
+        this._callbacks.push(callback);
+    }
+
+    _notify() {
+        this._callbacks.forEach(cb => cb());
+    }
+}
+
+// Global image store instance
+window.imageStore = new ImageStore();
+
 class MarkdownTranslator {
     constructor() {
         this.originalBlocks = [];
@@ -31,6 +89,7 @@ class MarkdownTranslator {
         this.setupSidebar();
         this.setupBeforeUnloadWarning();
         this.initLanguageSettings();
+        this.renderImageFileList();
         this.loadAutoSavedProgress();
     }
 
@@ -105,6 +164,14 @@ class MarkdownTranslator {
         
         // 侧边栏折叠
         document.getElementById('translation-collapse-btn').addEventListener('click', () => this.toggleSidebar());
+
+        // 图片文件系统
+        document.getElementById('image-upload-btn').addEventListener('click', () => {
+            document.getElementById('image-upload-input').click();
+        });
+        document.getElementById('image-upload-input').addEventListener('change', (e) => this.handleImageUpload(e));
+        document.getElementById('image-download-zip-btn').addEventListener('click', () => this.downloadImagesAsZip());
+        window.imageStore.onChange(() => this.onImagesChanged());
     }
 
 
@@ -542,6 +609,10 @@ class MarkdownTranslator {
             const pairDiv = this.createTextBlockPair(block, this.translationBlocks[index], index);
             contentContainer.appendChild(pairDiv);
         });
+
+        // Refresh image URLs in all editors
+        const allEditors = [...this.originalEditors, ...this.translationEditors];
+        window.tiptapRefreshImages(allEditors);
     }
 
     createTextBlockPair(originalContent, translationContent, index) {
@@ -1458,6 +1529,103 @@ class MarkdownTranslator {
     }
 
     
+    // ===== 图片文件系统方法 =====
+
+    handleImageUpload(event) {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        for (const file of files) {
+            window.imageStore.addImage(file.name, file);
+        }
+
+        // Reset input so same file can be uploaded again
+        event.target.value = '';
+    }
+
+    renderImageFileList() {
+        const listEl = document.getElementById('image-file-list');
+        const filenames = window.imageStore.getAllFilenames();
+
+        if (filenames.length === 0) {
+            listEl.innerHTML = `<div class="setting-hint" data-i18n="ui.settingsPanel.noImages">${languageManager.get('ui.settingsPanel.noImages')}</div>`;
+            document.getElementById('image-download-zip-btn').disabled = true;
+            return;
+        }
+
+        document.getElementById('image-download-zip-btn').disabled = false;
+        listEl.innerHTML = '';
+
+        filenames.forEach(filename => {
+            const item = document.createElement('div');
+            item.className = 'image-file-item';
+
+            const thumb = document.createElement('img');
+            thumb.className = 'image-file-thumbnail';
+            thumb.src = window.imageStore.getUrl(filename);
+            thumb.alt = filename;
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'image-file-name';
+            nameSpan.textContent = filename;
+            nameSpan.title = filename;
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'image-file-delete-btn';
+            deleteBtn.textContent = '\u00d7';
+            deleteBtn.title = filename;
+            deleteBtn.addEventListener('click', () => {
+                window.imageStore.removeImage(filename);
+            });
+
+            item.appendChild(thumb);
+            item.appendChild(nameSpan);
+            item.appendChild(deleteBtn);
+            listEl.appendChild(item);
+        });
+    }
+
+    onImagesChanged() {
+        this.renderImageFileList();
+        // Refresh all editors to update image URLs
+        const allEditors = [...this.originalEditors, ...this.translationEditors];
+        window.tiptapRefreshImages(allEditors);
+    }
+
+    async downloadImagesAsZip() {
+        const filenames = window.imageStore.getAllFilenames();
+        if (filenames.length === 0) return;
+
+        // Dynamically load JSZip if not already loaded
+        if (typeof JSZip === 'undefined') {
+            await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        const zip = new JSZip();
+        filenames.forEach(filename => {
+            const blob = window.imageStore.getBlob(filename);
+            if (blob) {
+                zip.file(filename, blob);
+            }
+        });
+
+        const content = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(content);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'images.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
     setupBeforeUnloadWarning() {
         window.addEventListener('beforeunload', (e) => {
             // 检查是否有翻译内容且未导出

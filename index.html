@@ -232,6 +232,28 @@
                             </div>
                         </div>
 
+                        <!-- 图片文件系统折叠区域 -->
+                        <div class="settings-section">
+                            <h3 class="section-header collapsed" onclick="toggleSection(this)">
+                                <svg class="section-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                                <span data-i18n="ui.settingsPanel.imageFileSystem">图片</span>
+                            </h3>
+                            <div id="image-file-settings" class="section-content collapsed">
+                                <input type="file" id="image-upload-input" accept="image/*" multiple hidden>
+                                <div class="setting-group">
+                                    <button id="image-upload-btn" class="btn btn-secondary btn-full-width" data-i18n="ui.buttons.uploadImages">上传图片</button>
+                                </div>
+                                <div id="image-file-list" class="image-file-list">
+                                    <div class="setting-hint" data-i18n="ui.settingsPanel.noImages">未上传图片</div>
+                                </div>
+                                <div class="setting-group">
+                                    <button id="image-download-zip-btn" class="btn btn-secondary btn-full-width" disabled data-i18n="ui.buttons.downloadImagesZip">下载图片 (ZIP)</button>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- 翻译设置折叠区域 -->
                         <div class="settings-section">
                             <h3 class="section-header" onclick="toggleSection(this)">

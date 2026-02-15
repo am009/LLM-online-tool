@@ -63,7 +63,9 @@
       "ocrDeepseekModel": "Model Name",
       "ocrDeepseekModelPlaceholder": "Enter model name",
       "translationDelay": "Translation Delay (ms)",
-      "translationDelayHint": "Delay in milliseconds between paragraphs during batch translation to avoid API rate limits"
+      "translationDelayHint": "Delay in milliseconds between paragraphs during batch translation to avoid API rate limits",
+      "imageFileSystem": "Images",
+      "noImages": "No images uploaded"
     },
     "buttons": {
       "uploadFile": "Upload Markdown File",
@@ -82,7 +84,9 @@
       "exportMarkdown": "Export Markdown",
       "recognizeAll": "Recognize All",
       "exportAndTranslate": "Send to Translation",
-      "selectPdfFile": "Select PDF File"
+      "selectPdfFile": "Select PDF File",
+      "uploadImages": "Upload Images",
+      "downloadImagesZip": "Download Images (ZIP)"
     },
     "placeholders": {
       "selectPrompt": "Please select a Markdown/Latex file to start translation",

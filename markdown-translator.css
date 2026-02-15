@@ -215,3 +215,85 @@
     animation: spin 1s linear infinite;
     margin-right: 8px;
 }
+
+/* 图片文件系统样式 */
+.image-file-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 8px 0;
+}
+
+.image-file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.image-file-thumbnail {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.image-file-name {
+    flex: 1;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.image-file-delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #999;
+    padding: 2px 6px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: color 0.2s;
+}
+
+.image-file-delete-btn:hover {
+    color: #e74c3c;
+}
+
+/* 编辑器内图片样式 */
+.editor-container .tiptap img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.editor-container .tiptap img[src=""] {
+    display: inline-block;
+    min-width: 100px;
+    min-height: 30px;
+    background: #f0f0f0;
+    border: 1px dashed #ccc;
+}
+
+/* 深色模式适配 - 图片文件系统 */
+@media (prefers-color-scheme: dark) {
+    .image-file-item {
+        border-bottom-color: #4a5c6a;
+    }
+
+    .image-file-name {
+        color: #ecf0f1;
+    }
+
+    .image-file-delete-btn {
+        color: #aaa;
+    }
+
+    .editor-container .tiptap img[src=""] {
+        background: #3a4a5a;
+        border-color: #5a6a7a;
+    }
+}

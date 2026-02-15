@@ -1232,11 +1232,11 @@ class PDFOCR {
     }
 
     // 导出markdown并上传到翻译功能，然后触发全部翻译
-    exportToTranslation() {
+    async exportToTranslation() {
         const result = this.generateMarkdownContent();
         if (!result) return;
 
-        const { markdown } = result;
+        const { markdown, images } = result;
         const filename = this.fileInfo.textContent.replace('.pdf', '.md');
 
         // 获取翻译器实例
@@ -1244,6 +1244,37 @@ class PDFOCR {
         if (!translator) {
             console.error('翻译器实例未找到');
             return;
+        }
+
+        // 将图片提取并上传到 ImageStore
+        if (window.imageStore && images.length > 0) {
+            for (const imageInfo of images) {
+                try {
+                    const pageRow = document.querySelector(`.page-row[data-page-num="${imageInfo.pageNum}"]`);
+                    if (!pageRow) continue;
+
+                    const canvas = pageRow.querySelector('.page-image-container canvas');
+                    if (!canvas) continue;
+
+                    const cropCanvas = document.createElement('canvas');
+                    const cropCtx = cropCanvas.getContext('2d');
+                    const [x1, y1, x2, y2] = imageInfo.bbox;
+                    const width = x2 - x1;
+                    const height = y2 - y1;
+                    cropCanvas.width = width;
+                    cropCanvas.height = height;
+                    cropCtx.drawImage(canvas, x1, y1, width, height, 0, 0, width, height);
+
+                    const blob = await new Promise(resolve => {
+                        cropCanvas.toBlob(resolve, 'image/png');
+                    });
+                    if (blob) {
+                        window.imageStore.addImage(imageInfo.filename, blob);
+                    }
+                } catch (error) {
+                    console.error(`生成图片 ${imageInfo.filename} 失败:`, error);
+                }
+            }
         }
 
         // 设置文件信息并加载内容
