@@ -14,6 +14,7 @@ class PDFOCR {
         // 实例变量
         this.currentPDF = null;
         this.pageResults = new Map(); // 存储每页的OCR结果
+        this.pageProviders = new Map(); // 存储每页使用的OCR提供商
         
         // DOM元素
         this.pdfInput = document.getElementById('ocr-pdf-input');
@@ -424,7 +425,7 @@ class PDFOCR {
         
         const jsonTab = document.createElement('button');
         jsonTab.className = 'result-tab active';
-        jsonTab.textContent = 'JSON';
+        jsonTab.textContent = 'RAW';
         jsonTab.onclick = () => this.switchResultView(pageNum, 'json');
         
         const blocksTab = document.createElement('button');
@@ -617,57 +618,70 @@ class PDFOCR {
         }
     }
 
-    // 更新JSON视图显示
+    // 更新RAW视图显示（仅dots.ocr同步，deepseek保留原始输出）
     updateJsonView(pageNum) {
+        // deepseek的RAW视图保留模型原始输出，不从blocks同步
+        if (this.pageProviders.get(pageNum) === 'deepseek') {
+            return;
+        }
         const pageRow = document.querySelector(`.page-row[data-page-num="${pageNum}"]`);
         const jsonView = pageRow.querySelector('.json-view');
         const textarea = jsonView.querySelector('.result-text');
-        
+
         if (textarea) {
             const result = this.pageResults.get(pageNum);
             textarea.value = JSON.stringify(result, null, 2);
         }
     }
 
-    // 为JSON文本区域添加修复监听器
-    addJsonFixListener(pageNum, textarea) {
+    // 为RAW文本区域添加修复监听器
+    addRawFixListener(pageNum, textarea, provider) {
         let fixTimeout;
-        
+
         textarea.addEventListener('input', () => {
             // 清除之前的定时器
             if (fixTimeout) {
                 clearTimeout(fixTimeout);
             }
-            
+
             // 延迟500ms执行解析，避免频繁解析
             fixTimeout = setTimeout(() => {
-                this.tryFixJson(pageNum, textarea);
+                this.tryFixRaw(pageNum, textarea, provider);
             }, 500);
         });
     }
 
-    // 尝试修复JSON并更新分块视图
-    tryFixJson(pageNum, textarea) {
+    // 尝试解析RAW内容并更新分块视图
+    tryFixRaw(pageNum, textarea, provider) {
+        const pageRow = document.querySelector(`.page-row[data-page-num="${pageNum}"]`);
         try {
-            const jsonContent = textarea.value;
-            const parsed = JSON.parse(jsonContent);
-            
+            const rawContent = textarea.value;
+            let parsed;
+
+            if (provider === 'deepseek') {
+                // deepseek: 使用parseDeepseekResponse解析原始格式
+                const canvas = pageRow.querySelector('.page-image-container canvas');
+                parsed = this.parseDeepseekResponse(rawContent, canvas.width, canvas.height);
+            } else {
+                // dots.ocr: JSON解析
+                parsed = JSON.parse(rawContent);
+            }
+
             // 验证解析后的数据格式
             if (!Array.isArray(parsed)) {
                 throw new Error('数据格式必须是数组');
             }
-            
+
             // 解析成功，更新页面状态
             this.pageResults.set(pageNum, parsed);
-            
+
             // 移除错误样式
             textarea.className = 'result-text';
-            
+
             // 重新创建分块视图
             this.createBlocksView(pageNum, parsed);
-            
+
             // 更新按钮状态为成功
-            const pageRow = document.querySelector(`.page-row[data-page-num="${pageNum}"]`);
             const ocrButton = pageRow.querySelector('.btn');
             ocrButton.innerHTML = `
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -677,17 +691,16 @@ class PDFOCR {
             `;
             ocrButton.classList.remove('warning');
             ocrButton.classList.add('success');
-            
+
         } catch (parseError) {
             // 解析仍然失败，保持错误状态
             if (!textarea.className.includes('json-error')) {
                 textarea.className = 'result-text json-error';
             }
-            
+
             // 清空分块视图或显示错误提示
-            const pageRow = document.querySelector(`.page-row[data-page-num="${pageNum}"]`);
             const blocksView = pageRow.querySelector('.blocks-view');
-            blocksView.innerHTML = '<div class="result-placeholder">JSON格式不正确，请修复后重试</div>';
+            blocksView.innerHTML = '<div class="result-placeholder">RAW内容格式不正确，请修复后重试</div>';
         }
     }
 
@@ -717,13 +730,13 @@ class PDFOCR {
         jsonView.innerHTML = '';
         jsonView.appendChild(resultTextarea);
 
-        // 为JSON文本区域添加修复监听器
-        this.addJsonFixListener(pageNum, resultTextarea);
+        // 为文本区域添加修复监听器
+        this.addRawFixListener(pageNum, resultTextarea, provider);
 
         try {
             // 获取当前页面的图像数据
             const canvas = pageRow.querySelector('.page-image-container canvas');
-            if (canvas.width % 28 !== 0 || canvas.height % 28 !== 0) {
+            if (provider === 'dots' && canvas.width % 28 !== 0 || canvas.height % 28 !== 0) {
                 console.log(`Warning: Canvas dimensions (${canvas.width}x${canvas.height}) are not multiples of 28!`);
             }
             const imageDataUrl = canvas.toDataURL('image/png');
@@ -741,8 +754,7 @@ class PDFOCR {
                 let finalResult;
                 if (provider === 'deepseek') {
                     finalResult = this.parseDeepseekResponse(combinedResponse, canvas.width, canvas.height);
-                    // 将解析后的结果以JSON格式展示在textarea中
-                    resultTextarea.value = JSON.stringify(finalResult, null, 2);
+                    // deepseek: 保留模型原始输出在textarea中，不覆盖为JSON
                 } else {
                     finalResult = JSON.parse(combinedResponse);
                 }
@@ -751,8 +763,9 @@ class PDFOCR {
                     throw new Error('API返回的结果不是有效的JSON数组格式');
                 }
 
-                // 保存解析后的结果
+                // 保存解析后的结果和提供商信息
                 this.pageResults.set(pageNum, finalResult);
+                this.pageProviders.set(pageNum, provider);
 
                 // 显示标签页
                 tabsHeader.style.display = 'flex';
@@ -774,7 +787,7 @@ class PDFOCR {
             } catch (parseError) {
                 console.error('解析最终结果失败:', parseError);
 
-                resultTextarea.value = `JSON解析错误: ${parseError.message}\n\n原始响应:\n${combinedResponse}`;
+                resultTextarea.value = `解析错误: ${parseError.message}\n\n原始响应:\n${combinedResponse}`;
                 resultTextarea.className = 'result-text json-error';
 
                 tabsHeader.style.display = 'flex';
@@ -786,7 +799,7 @@ class PDFOCR {
                         <line x1="12" y1="9" x2="12" y2="13"/>
                         <line x1="12" y1="17" x2="12.01" y2="17"/>
                     </svg>
-                    需修复JSON
+                    需修复RAW
                 `;
                 ocrButton.classList.add('warning');
             }
@@ -981,25 +994,29 @@ class PDFOCR {
                 continue;
             }
 
-            // 将1000-bin归一化坐标转换为canvas像素坐标
+            // 将999-bin归一化坐标转换为canvas像素坐标
             bbox = [
-                Math.round(bbox[0] / 1000 * canvasWidth),
-                Math.round(bbox[1] / 1000 * canvasHeight),
-                Math.round(bbox[2] / 1000 * canvasWidth),
-                Math.round(bbox[3] / 1000 * canvasHeight)
+                Math.round(bbox[0] / 999 * canvasWidth),
+                Math.round(bbox[1] / 999 * canvasHeight),
+                Math.round(bbox[2] / 999 * canvasWidth),
+                Math.round(bbox[3] / 999 * canvasHeight)
             ];
 
-            const mappedCategory = categoryMap[rawCategory.toLowerCase()] || rawCategory;
+            let mappedCategory = categoryMap[rawCategory.toLowerCase()] || rawCategory;
 
             // 提取文本内容（<|/det|>之后到末尾）
             const textContent = part.substring(detEnd + 8).trim();
+            if (textContent === '' && mappedCategory !== 'Picture') {
+                console.log("Warning: No text extracted! Set Category to Picture:", part);
+                mappedCategory = 'Picture';
+            }
 
             const block = {
                 bbox: bbox,
                 category: mappedCategory
             };
 
-            if (textContent && mappedCategory !== 'Picture') {
+            if (textContent) {
                 block.text = textContent;
             }
 
@@ -1086,8 +1103,8 @@ class PDFOCR {
                     jsonView.innerHTML = '';
                     jsonView.appendChild(resultTextarea);
                     
-                    // 为JSON文本区域添加修复监听器
-                    this.addJsonFixListener(pageNum, resultTextarea);
+                    // 为文本区域添加修复监听器（加载的进度始终为JSON格式）
+                    this.addRawFixListener(pageNum, resultTextarea, 'dots');
                     
                     // 显示标签页
                     tabsHeader.style.display = 'flex';

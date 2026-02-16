@@ -45,4 +45,4 @@ This string is a mix of:
 * **Custom Tags:** The format uses a set of unique tags to provide additional metadata:
 * `<|ref|>` and `<|/ref|>`: These tags appear to act as "reference" or "type" markers. They enclose a word that categorizes the succeeding content, such as `title`, `text`, or `table`.
 * `<|det|>` and `<|/det|>`: These tags likely stand for "details" or "detection" and enclose what appear to be coordinates `[[45, 90, 380, 114]]`. These represent the bounding box or location of the corresponding element on an original document page.
-All coordinates are normalized into 1000 bins.
+All coordinates are normalized into 999 bins.
