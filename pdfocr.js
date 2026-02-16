@@ -468,6 +468,55 @@ class PDFOCR {
         const highlightOverlay = document.createElement('div');
         highlightOverlay.className = 'page-highlight-overlay';
         imageContainer.appendChild(highlightOverlay);
+
+        // 添加坐标显示tooltip
+        const coordTooltip = document.createElement('div');
+        coordTooltip.className = 'page-coord-tooltip';
+        imageContainer.appendChild(coordTooltip);
+
+        // 鼠标移动时显示坐标
+        imageContainer.addEventListener('mousemove', (e) => {
+            const canvasRect = canvas.getBoundingClientRect();
+            // 鼠标相对于canvas显示区域的位置
+            const mouseX = e.clientX - canvasRect.left;
+            const mouseY = e.clientY - canvasRect.top;
+            // 缩放到canvas实际像素坐标
+            const scaleX = canvas.width / canvasRect.width;
+            const scaleY = canvas.height / canvasRect.height;
+            const pixelX = Math.round(mouseX * scaleX);
+            const pixelY = Math.round(mouseY * scaleY);
+
+            const currentProvider = document.getElementById('ocr-provider').value;
+            let label;
+            if (currentProvider === 'deepseek') {
+                const binX = Math.round(pixelX / canvas.width * 999);
+                const binY = Math.round(pixelY / canvas.height * 999);
+                label = `(${binX}, ${binY})`;
+            } else {
+                label = `(${pixelX}, ${pixelY})`;
+            }
+
+            coordTooltip.textContent = label;
+            coordTooltip.style.display = 'block';
+
+            // tooltip位置：跟随鼠标，相对于imageContainer
+            const containerRect = imageContainer.getBoundingClientRect();
+            let tooltipX = e.clientX - containerRect.left + 12;
+            let tooltipY = e.clientY - containerRect.top + 12;
+
+            // 防止tooltip超出容器右侧
+            const tooltipWidth = coordTooltip.offsetWidth;
+            if (tooltipX + tooltipWidth > containerRect.width) {
+                tooltipX = e.clientX - containerRect.left - tooltipWidth - 4;
+            }
+
+            coordTooltip.style.left = tooltipX + 'px';
+            coordTooltip.style.top = tooltipY + 'px';
+        });
+
+        imageContainer.addEventListener('mouseleave', () => {
+            coordTooltip.style.display = 'none';
+        });
         
         // 组装页面行
         pageRow.appendChild(imageContainer);

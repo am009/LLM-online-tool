@@ -31,6 +31,22 @@
     width: 100%;
     height: auto;
     display: block;
+    cursor: crosshair;
+}
+
+/* 坐标显示 */
+.page-coord-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 12px;
+    padding: 3px 6px;
+    border-radius: 3px;
+    pointer-events: none;
+    z-index: 10;
+    white-space: nowrap;
+    display: none;
 }
 
 .action-container {
