@@ -474,48 +474,143 @@ class PDFOCR {
         coordTooltip.className = 'page-coord-tooltip';
         imageContainer.appendChild(coordTooltip);
 
-        // 鼠标移动时显示坐标
-        imageContainer.addEventListener('mousemove', (e) => {
+        // 添加框选矩形
+        const selectionBox = document.createElement('div');
+        selectionBox.className = 'page-selection-box';
+        imageContainer.appendChild(selectionBox);
+
+        // 框选状态
+        let isDragging = false;
+        let dragStartPixel = null; // canvas像素坐标
+
+        // 将鼠标事件坐标转换为canvas像素坐标
+        const mouseToPixel = (e) => {
             const canvasRect = canvas.getBoundingClientRect();
-            // 鼠标相对于canvas显示区域的位置
             const mouseX = e.clientX - canvasRect.left;
             const mouseY = e.clientY - canvasRect.top;
-            // 缩放到canvas实际像素坐标
             const scaleX = canvas.width / canvasRect.width;
             const scaleY = canvas.height / canvasRect.height;
-            const pixelX = Math.round(mouseX * scaleX);
-            const pixelY = Math.round(mouseY * scaleY);
+            return {
+                x: Math.round(mouseX * scaleX),
+                y: Math.round(mouseY * scaleY)
+            };
+        };
 
+        // 将canvas像素坐标转换为provider坐标
+        const pixelToCoord = (px, py) => {
             const currentProvider = document.getElementById('ocr-provider').value;
-            let label;
             if (currentProvider === 'deepseek') {
-                const binX = Math.round(pixelX / canvas.width * 999);
-                const binY = Math.round(pixelY / canvas.height * 999);
-                label = `(${binX}, ${binY})`;
+                return [
+                    Math.round(px / canvas.width * 999),
+                    Math.round(py / canvas.height * 999)
+                ];
+            }
+            return [px, py];
+        };
+
+        // 将canvas像素坐标转换为显示坐标（相对于imageContainer）
+        const pixelToDisplay = (px, py) => {
+            const canvasRect = canvas.getBoundingClientRect();
+            const containerRect = imageContainer.getBoundingClientRect();
+            return {
+                x: px / canvas.width * canvasRect.width + (canvasRect.left - containerRect.left),
+                y: py / canvas.height * canvasRect.height + (canvasRect.top - containerRect.top)
+            };
+        };
+
+        // 鼠标移动时显示坐标 + 框选绘制
+        imageContainer.addEventListener('mousemove', (e) => {
+            const pixel = mouseToPixel(e);
+            const coord = pixelToCoord(pixel.x, pixel.y);
+
+            // 框选中：更新选区和tooltip
+            if (isDragging && dragStartPixel) {
+                const startCoord = pixelToCoord(dragStartPixel.x, dragStartPixel.y);
+                const bboxCoord = [
+                    Math.min(startCoord[0], coord[0]),
+                    Math.min(startCoord[1], coord[1]),
+                    Math.max(startCoord[0], coord[0]),
+                    Math.max(startCoord[1], coord[1])
+                ];
+                coordTooltip.textContent = `[${bboxCoord.join(', ')}]`;
+
+                // 更新选区矩形（用显示坐标）
+                const startDisplay = pixelToDisplay(dragStartPixel.x, dragStartPixel.y);
+                const curDisplay = pixelToDisplay(pixel.x, pixel.y);
+                selectionBox.style.display = 'block';
+                selectionBox.style.left = Math.min(startDisplay.x, curDisplay.x) + 'px';
+                selectionBox.style.top = Math.min(startDisplay.y, curDisplay.y) + 'px';
+                selectionBox.style.width = Math.abs(curDisplay.x - startDisplay.x) + 'px';
+                selectionBox.style.height = Math.abs(curDisplay.y - startDisplay.y) + 'px';
             } else {
-                label = `(${pixelX}, ${pixelY})`;
+                coordTooltip.textContent = `(${coord[0]}, ${coord[1]})`;
             }
 
-            coordTooltip.textContent = label;
             coordTooltip.style.display = 'block';
 
-            // tooltip位置：跟随鼠标，相对于imageContainer
+            // tooltip位置：跟随鼠标
             const containerRect = imageContainer.getBoundingClientRect();
             let tooltipX = e.clientX - containerRect.left + 12;
             let tooltipY = e.clientY - containerRect.top + 12;
-
-            // 防止tooltip超出容器右侧
             const tooltipWidth = coordTooltip.offsetWidth;
             if (tooltipX + tooltipWidth > containerRect.width) {
                 tooltipX = e.clientX - containerRect.left - tooltipWidth - 4;
             }
-
             coordTooltip.style.left = tooltipX + 'px';
             coordTooltip.style.top = tooltipY + 'px';
         });
 
+        imageContainer.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return; // 只响应左键
+            isDragging = true;
+            dragStartPixel = mouseToPixel(e);
+            selectionBox.style.display = 'none';
+            e.preventDefault(); // 防止选中文字
+        });
+
+        imageContainer.addEventListener('mouseup', (e) => {
+            if (!isDragging || !dragStartPixel) return;
+            isDragging = false;
+
+            const endPixel = mouseToPixel(e);
+            const startCoord = pixelToCoord(dragStartPixel.x, dragStartPixel.y);
+            const endCoord = pixelToCoord(endPixel.x, endPixel.y);
+            const bboxCoord = [
+                Math.min(startCoord[0], endCoord[0]),
+                Math.min(startCoord[1], endCoord[1]),
+                Math.max(startCoord[0], endCoord[0]),
+                Math.max(startCoord[1], endCoord[1])
+            ];
+
+            dragStartPixel = null;
+
+            // 选区太小则忽略（避免单击误触发）
+            if (Math.abs(bboxCoord[2] - bboxCoord[0]) < 3 && Math.abs(bboxCoord[3] - bboxCoord[1]) < 3) {
+                selectionBox.style.display = 'none';
+                return;
+            }
+
+            // 复制到剪贴板
+            const text = `[${bboxCoord.join(', ')}]`;
+            navigator.clipboard.writeText(text).then(() => {
+                coordTooltip.textContent = `${text} ✓`;
+            }).catch(() => {
+                coordTooltip.textContent = text;
+            });
+
+            // 2秒后隐藏选区
+            setTimeout(() => {
+                selectionBox.style.display = 'none';
+            }, 2000);
+        });
+
         imageContainer.addEventListener('mouseleave', () => {
             coordTooltip.style.display = 'none';
+            if (isDragging) {
+                isDragging = false;
+                dragStartPixel = null;
+                selectionBox.style.display = 'none';
+            }
         });
         
         // 组装页面行
@@ -556,7 +651,6 @@ class PDFOCR {
     createBlocksView(pageNum, ocrResult) {
         const pageRow = document.querySelector(`.page-row[data-page-num="${pageNum}"]`);
         const blocksView = pageRow.querySelector('.blocks-view');
-        const canvas = pageRow.querySelector('.page-image-container canvas');
         
         // 清空现有内容
         blocksView.innerHTML = '';
@@ -627,7 +721,6 @@ class PDFOCR {
         // 计算高亮框位置
         const [x1, y1, x2, y2] = bbox;
         const canvasRect = canvas.getBoundingClientRect();
-        const containerRect = overlay.parentElement.getBoundingClientRect();
         
         // 计算缩放比例
         const scaleX = canvasRect.width / canvas.width;

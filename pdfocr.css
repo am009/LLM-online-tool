@@ -49,6 +49,16 @@
     display: none;
 }
 
+/* 框选矩形 */
+.page-selection-box {
+    position: absolute;
+    border: 2px dashed #0366d6;
+    background: rgba(3, 102, 214, 0.15);
+    pointer-events: none;
+    z-index: 8;
+    display: none;
+}
+
 .action-container {
     flex: 0 0 10%;
     display: flex;
