@@ -590,13 +590,18 @@ class PDFOCR {
                 return;
             }
 
-            // 复制到剪贴板
+            // 复制到剪贴板并显示到进度信息
             const text = `[${bboxCoord.join(', ')}]`;
-            navigator.clipboard.writeText(text).then(() => {
-                coordTooltip.textContent = `${text} ✓`;
-            }).catch(() => {
+            this.progressInfo.textContent = text;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    coordTooltip.textContent = `${text} ✓`;
+                }).catch(() => {
+                    coordTooltip.textContent = text;
+                });
+            } else {
                 coordTooltip.textContent = text;
-            });
+            }
 
             // 2秒后隐藏选区
             setTimeout(() => {
@@ -684,7 +689,7 @@ class PDFOCR {
             blockDiv.appendChild(header);
             
             // 对于Picture类型的块，只显示header，不添加文本框
-            if (block.category !== 'Picture') {
+            if (block.category !== 'Picture' && block.category !== 'image') {
                 const content = document.createElement('div');
                 content.className = 'markdown-block-content';
                 
@@ -1100,18 +1105,9 @@ class PDFOCR {
         // Deepseek类别到内部类别的映射
         const categoryMap = {
             'title': 'Title',
-            'sub_title': 'Section-header',
-            'text': 'Text',
-            'table': 'Table',
-            'image': 'Picture',
-            'formula': 'Formula',
             'image_caption': 'Caption',
             'caption': 'Caption',
-            'image_footnote': 'image_footnote',
-            'footnote': 'Footnote',
-            'page_footer': 'Page-footer',
-            'page_header': 'Page-header',
-            'list_item': 'List-item'
+            'footnote': 'Footnote'
         };
 
         for (let i = 1; i < parts.length; i++) {
@@ -1148,9 +1144,9 @@ class PDFOCR {
 
             // 提取文本内容（<|/det|>之后到末尾）
             const textContent = part.substring(detEnd + 8).trim();
-            if (textContent === '' && mappedCategory !== 'Picture') {
-                console.log("Warning: No text extracted! Set Category to Picture:", part);
-                mappedCategory = 'Picture';
+            if (textContent === '' && mappedCategory !== 'Picture' && mappedCategory !== 'image') {
+                console.log("Warning: No text extracted! Set Category to image:", part);
+                mappedCategory = 'image';
             }
 
             const block = {
@@ -1306,7 +1302,7 @@ class PDFOCR {
                 }
 
                 // 处理Picture类型的块
-                if (block.category === 'Picture') {
+                if (block.category === 'Picture' || block.category === 'image') {
                     const filename = this.fileInfo.textContent.replace('.pdf', '');
                     const [x1, y1, x2, y2] = block.bbox;
                     const imageName = `${filename}_page_${pageNum}_${x1}_${x2}_${y1}_${y2}.png`;

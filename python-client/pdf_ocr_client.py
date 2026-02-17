@@ -329,7 +329,7 @@ class PDFOCRClient:
                     continue
 
                 # Handle Picture blocks
-                if block.get('category') == 'Picture':
+                if block.get('category') == 'Picture' or block.get('category') == 'image':
                     bbox = block.get('bbox')
                     if bbox and len(bbox) == 4:
                         x1, y1, x2, y2 = bbox
