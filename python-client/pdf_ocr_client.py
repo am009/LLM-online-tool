@@ -19,8 +19,6 @@ import sys
 import json
 import re
 import argparse
-import tempfile
-import shutil
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 import requests
@@ -67,9 +65,6 @@ class PDFOCRClient:
 
         # Initialize output cleaner
         self.cleaner = OutputCleaner()
-
-        # Temporary folder for images
-        self.temp_folder = None
 
         print(f"📄 PDF: {self.pdf_path.name}")
         print(f"📁 Output folder: {self.output_folder}")
@@ -136,51 +131,29 @@ class PDFOCRClient:
         except Exception as e:
             print(f"❌ Failed to save progress: {e}")
 
-    def convert_pdf_to_images(self) -> List[Tuple[int, Image.Image, Tuple[int, int]]]:
+    def convert_page_to_image(self, page) -> Tuple[Image.Image, Tuple[int, int]]:
         """
-        Convert PDF pages to images with dimensions that are multiples of 28
+        Convert a single PDF page to image with dimensions that are multiples of 28
+
+        Args:
+            page: fitz page object
 
         Returns:
-            List of tuples: (page_num, original_image, (resized_width, resized_height))
+            Tuple of (original_image, (resized_width, resized_height))
         """
-        print(f"\n📄 Converting PDF to images...")
+        # Convert page to image
+        image = fitz_doc_to_image(page, target_dpi=200)
 
-        # Create temporary folder
-        self.temp_folder = tempfile.mkdtemp(prefix="pdf_ocr_")
-        print(f"📁 Temporary folder: {self.temp_folder}")
+        # Calculate resized dimensions (multiples of 28)
+        resized_height, resized_width = smart_resize(
+            image.height,
+            image.width,
+            factor=28,
+            min_pixels=3136,
+            max_pixels=11289600
+        )
 
-        images_info = []
-
-        # Load PDF
-        doc = fitz.open(self.pdf_path)
-        total_pages = doc.page_count
-        print(f"📊 Total pages: {total_pages}")
-
-        for page_num in range(1, total_pages + 1):
-            page = doc[page_num - 1]  # fitz uses 0-based indexing
-
-            # Convert page to image
-            image = fitz_doc_to_image(page, target_dpi=200)
-
-            # Calculate resized dimensions (multiples of 28)
-            resized_height, resized_width = smart_resize(
-                image.height,
-                image.width,
-                factor=28,
-                min_pixels=3136,
-                max_pixels=11289600
-            )
-
-            # Save original image to temp folder
-            image_path = os.path.join(self.temp_folder, f"page_{page_num}.png")
-            image.save(image_path)
-
-            images_info.append((page_num, image, (resized_width, resized_height)))
-
-            print(f"  Page {page_num}/{total_pages}: {image.width}x{image.height} -> {resized_width}x{resized_height}")
-
-        doc.close()
-        return images_info
+        return image, (resized_width, resized_height)
 
     def recognize_page(self, page_num: int, image: Image.Image, target_size: Tuple[int, int]) -> Optional[List[Dict]]:
         """
@@ -276,15 +249,21 @@ class PDFOCRClient:
         # Automatically load existing progress
         self.load_progress()
 
-        # Convert PDF to images
-        images_info = self.convert_pdf_to_images()
+        # Open PDF and process pages one by one
+        doc = fitz.open(self.pdf_path)
+        total_pages = doc.page_count
+        print(f"\n📊 Total pages: {total_pages}")
 
-        # Recognize each page
-        for page_num, image, target_size in images_info:
+        for page_num in range(1, total_pages + 1):
             # Skip if already recognized
             if page_num in self.page_results:
                 print(f"\n⏭️  Skipping page {page_num} (already recognized)")
                 continue
+
+            # Convert this page to image
+            page = doc[page_num - 1]  # fitz uses 0-based indexing
+            image, target_size = self.convert_page_to_image(page)
+            print(f"  Page {page_num}/{total_pages}: {image.width}x{image.height} -> {target_size[0]}x{target_size[1]}")
 
             # Recognize page
             result = self.recognize_page(page_num, image, target_size)
@@ -296,6 +275,7 @@ class PDFOCRClient:
             else:
                 print(f"⚠️  Page {page_num} recognition failed, skipping...")
 
+        doc.close()
         print(f"\n✅ Recognition complete: {len(self.page_results)} pages")
 
     def export_to_markdown(self):
@@ -453,12 +433,7 @@ class PDFOCRClient:
 
     def cleanup(self):
         """Clean up temporary files"""
-        if self.temp_folder and os.path.exists(self.temp_folder):
-            try:
-                shutil.rmtree(self.temp_folder)
-                print(f"🧹 Cleaned up temporary folder")
-            except Exception as e:
-                print(f"⚠️  Failed to clean up temporary folder: {e}")
+        pass
 
     def run(self):
         """
