@@ -361,21 +361,27 @@ class PDFOCRClient:
                     i += 1
                     continue
 
-                # Handle Footnote blocks
+                # Handle Footnote blocks (may contain multiple merged footnotes)
                 if block.get('category') == 'Footnote':
                     text = block.get('text', '').strip()
                     if text:
-                        # Extract leading superscript digits as prefix
-                        prefix = ''
-                        idx = 0
-                        while idx < len(text) and text[idx] in footnote_chars:
-                            prefix += text[idx]
-                            idx += 1
-                        if prefix:
-                            footnote_map[prefix] = footnote_counter
-                            text = text[idx:].lstrip()
-                        markdown += f"[^{footnote_counter}]: {text}\n\n"
-                        footnote_counter += 1
+                        # Split merged footnotes: e.g. "⁹text1\n¹⁰text2" -> ["⁹text1", "¹⁰text2"]
+                        parts = re.split(f'\n(?=[{footnote_chars}])', text)
+                        for part in parts:
+                            part = part.strip()
+                            if not part:
+                                continue
+                            # Extract leading superscript digits as prefix
+                            prefix = ''
+                            idx = 0
+                            while idx < len(part) and part[idx] in footnote_chars:
+                                prefix += part[idx]
+                                idx += 1
+                            if prefix:
+                                footnote_map[prefix] = footnote_counter
+                                part = part[idx:].lstrip()
+                            markdown += f"[^{footnote_counter}]: {part}\n\n"
+                            footnote_counter += 1
                     i += 1
                     continue
 
