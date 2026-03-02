@@ -307,6 +307,9 @@ class PDFOCRClient:
 
         markdown = ""
         footnote_counter = 1
+        footnote_chars = '⁰¹²³⁴⁵⁶⁷⁸⁹'
+        # TODO 对每个footnote，匹配开头是否有连续的footnote_chars，是的话，就把匹配到的前缀映射到它的footnote下标编号，放到下面的footnote_map里，并去掉前缀。最后导出markdown的时候，把对应的正文中的前缀，替换为对应的footnote应用。比如[^2]这样。先随着生成过程收集完所有的footnote map，然后再单独遍历替换，因为footnote和正文引用的出现顺序不确定。要注意如果出现两位数的应用，比如12：¹²，不要替换²的时候给替换错了。即替换的时候，footnote_chars看作一个整体。
+        footnote_map = {}
         images_to_extract = []
 
         # Get total pages
@@ -441,9 +444,9 @@ class PDFOCRClient:
         """
         try:
             # Check API health
-            if not self.check_api_health():
-                print("❌ API is not available, please start the OCR server first")
-                return False
+            # if not self.check_api_health():
+            #     print("❌ API is not available, please start the OCR server first")
+            #     return False
 
             # Recognize all pages
             self.recognize_all_pages()
