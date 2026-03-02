@@ -699,11 +699,41 @@ class MarkdownTranslator {
         };
     }
 
+    // 检测段落是否是以 ``` 包裹的代码块
+    isCodeBlock(text) {
+        const stripped = text.trim();
+        return stripped.startsWith('```') && stripped.endsWith('```') && stripped.split('```').length - 1 === 2;
+    }
+
+    // 检测段落是否仅包含 $$...$$ 包裹的公式
+    isPureFormulaBlock(text) {
+        const stripped = text.trim();
+        if (!stripped.startsWith('$$') || !stripped.endsWith('$$')) return false;
+        const inner = stripped.slice(2, -2);
+        return !inner.includes('$$');
+    }
+
+    // 检测段落是否无需翻译（纯公式块或代码块）
+    isSkipBlock(text) {
+        return this.isPureFormulaBlock(text) || this.isCodeBlock(text);
+    }
+
     async translateBlock(index) {
         const translateBtn = document.querySelector(`[data-index="${index}"] .translate-button`);
         const originalContent = this.originalBlocks[index];
-        
+
         if (!originalContent) return;
+
+        // 纯公式块或代码块无需翻译，直接复制原文
+        if (this.isSkipBlock(originalContent)) {
+            this.translationBlocks[index] = originalContent;
+            const editor = this.translationEditors[index];
+            if (editor) {
+                editor.commands.setContent(window.tiptapTextToHtml(originalContent), false);
+            }
+            this.autoSaveProgress();
+            return;
+        }
 
         // 如果已有正在进行的翻译，则中断它
         if (this.activeTranslations.has(index)) {

@@ -5,12 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "translate-py-client",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/python-client/translate_markdown.py",
+            "console": "integratedTerminal",
+            "args": "out/MLstruct.md -o out/MLstruct_zh_alt.md --alternating",
+            "cwd": "${workspaceFolder}/python-client"
+        },
+        {
             "name": "ocr-py-client",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/python-client/pdf_ocr_client.py",
             "console": "integratedTerminal",
-            "args": "${workspaceFolder}/python-client/MLstruct.pdf ${workspaceFolder}/out"
+            "args": "${workspaceFolder}/python-client/MLstruct.pdf ${workspaceFolder}/out",
+            "cwd": "${workspaceFolder}/python-client"
         }
     ]
 }
