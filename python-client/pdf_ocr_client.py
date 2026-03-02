@@ -489,8 +489,9 @@ Note: The script automatically resumes from existing .ocr_progress.json file if 
 
     parser.add_argument('pdf_path', help='Path to the PDF file')
     parser.add_argument('output_folder', help='Path to the output folder')
-    parser.add_argument('--api-base', default='http://localhost:5123',
-                        help='Base URL for the OCR API (default: http://localhost:5123)')
+    default_api_base = os.environ.get('DOTS_OCR_API_BASE', 'http://172.19.193.39:5123')
+    parser.add_argument('--api-base', default=default_api_base,
+                        help=f'Base URL for the OCR API (default: {default_api_base})')
 
     args = parser.parse_args()
 
