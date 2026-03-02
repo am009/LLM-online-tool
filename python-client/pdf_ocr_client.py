@@ -26,9 +26,7 @@ from PIL import Image
 import fitz  # PyMuPDF
 
 # Import utility functions
-from utils.image_utils import smart_resize, PILimage_to_base64
-from utils.doc_utils import fitz_doc_to_image
-from utils.output_cleaner import OutputCleaner
+from ocr_utils import smart_resize, PILimage_to_base64, fitz_doc_to_image, OutputCleaner
 
 
 class PDFOCRClient:

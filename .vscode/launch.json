@@ -19,7 +19,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/python-client/pdf_ocr_client.py",
             "console": "integratedTerminal",
-            "args": "${workspaceFolder}/python-client/MLstruct.pdf ${workspaceFolder}/out",
+            "args": "${workspaceFolder}/python-client/MLstruct.pdf ${workspaceFolder}/python-client/out1",
             "cwd": "${workspaceFolder}/python-client"
         }
     ]
