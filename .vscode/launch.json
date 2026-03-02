@@ -8,9 +8,9 @@
             "name": "ocr-py-client",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "program": "${workspaceFolder}/python-client/pdf_ocr_client.py",
             "console": "integratedTerminal",
-            "args": "${command:pickArgs}"
+            "args": "${workspaceFolder}/python-client/MLstruct.pdf ${workspaceFolder}/out"
         }
     ]
 }

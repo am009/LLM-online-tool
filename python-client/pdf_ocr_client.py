@@ -17,6 +17,7 @@ Usage:
 import os
 import sys
 import json
+import re
 import argparse
 import tempfile
 import shutil
@@ -308,7 +309,7 @@ class PDFOCRClient:
         markdown = ""
         footnote_counter = 1
         footnote_chars = '⁰¹²³⁴⁵⁶⁷⁸⁹'
-        # TODO 对每个footnote，匹配开头是否有连续的footnote_chars，是的话，就把匹配到的前缀映射到它的footnote下标编号，放到下面的footnote_map里，并去掉前缀。最后导出markdown的时候，把对应的正文中的前缀，替换为对应的footnote应用。比如[^2]这样。先随着生成过程收集完所有的footnote map，然后再单独遍历替换，因为footnote和正文引用的出现顺序不确定。要注意如果出现两位数的应用，比如12：¹²，不要替换²的时候给替换错了。即替换的时候，footnote_chars看作一个整体。
+        # Maps superscript prefix (e.g. '¹²') -> footnote number (e.g. 12)
         footnote_map = {}
         images_to_extract = []
 
@@ -364,6 +365,15 @@ class PDFOCRClient:
                 if block.get('category') == 'Footnote':
                     text = block.get('text', '').strip()
                     if text:
+                        # Extract leading superscript digits as prefix
+                        prefix = ''
+                        idx = 0
+                        while idx < len(text) and text[idx] in footnote_chars:
+                            prefix += text[idx]
+                            idx += 1
+                        if prefix:
+                            footnote_map[prefix] = footnote_counter
+                            text = text[idx:].lstrip()
                         markdown += f"[^{footnote_counter}]: {text}\n\n"
                         footnote_counter += 1
                     i += 1
@@ -375,6 +385,14 @@ class PDFOCRClient:
                     markdown += text + '\n\n'
 
                 i += 1
+
+        # Replace superscript prefixes in body text with footnote references.
+        # Sort by length descending so '¹²' is replaced before '²'.
+        # Use lookaround to ensure the match is not part of a longer superscript sequence.
+        for prefix in sorted(footnote_map.keys(), key=len, reverse=True):
+            fn_num = footnote_map[prefix]
+            pattern = f'(?<![{footnote_chars}]){re.escape(prefix)}(?![{footnote_chars}])'
+            markdown = re.sub(pattern, f'[^{fn_num}]', markdown)
 
         # Save markdown file
         markdown_path = self.output_folder / f"{self.pdf_path.stem}.md"
