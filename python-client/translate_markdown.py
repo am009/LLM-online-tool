@@ -49,6 +49,29 @@ def is_pure_formula_block(text: str) -> bool:
     return True
 
 
+def is_footnote_block(text: str) -> bool:
+    """检测段落是否是脚标定义块，即每行都以 [^xxx]: 开头。"""
+    lines = [l for l in text.strip().splitlines() if l.strip()]
+    if not lines:
+        return False
+    return all(re.match(r"\[\^[^\]]+\]:", line) for line in lines)
+
+
+def collect_footnote_names(text: str) -> list[str]:
+    """收集文本中所有脚标定义名称（[^xxx]: 格式）。"""
+    return re.findall(r"\[\^([^\]]+)\]:", text)
+
+
+def rename_footnotes_in_text(text: str, footnote_map: dict[str, str]) -> str:
+    """将文本中的脚标引用和定义按映射替换，同时将紧跟的中文冒号替换为英文冒号加空格。"""
+    def replacer(m: re.Match) -> str:
+        name = m.group(1)
+        new_name = footnote_map.get(name, name)
+        suffix = ": " if m.group(2) else ""
+        return f"[^{new_name}]{suffix}"
+    return re.sub(r"\[\^([^\]]+)\](：)?", replacer, text)
+
+
 def parse_blocks(content: str) -> list[str]:
     """按照两个及以上连续换行分割段落，与JS端逻辑一致。"""
     # 将CRLF转为LF，将只有空白的行转为空行
@@ -203,40 +226,57 @@ def main():
     for i, block in enumerate(blocks):
         # 检查缓存（按原文内容匹配）
         if block in text_cache:
-            print(f"[{i + 1}/{total}] 使用缓存", file=sys.stderr)
+            # print(f"[{i + 1}/{total}] 使用缓存", file=sys.stderr)
             translation = text_cache[block]
-            translated_blocks.append(translation)
-            blocks_data.append({"original_text": block, "translated_text": translation})
-            continue
+        else:
+            if is_skip_block(block):
+                translation = block
+            else:
+                print(f"[{i + 1}/{total}] 翻译中...", file=sys.stderr)
+                translation = translate_block_streaming(
+                    text=block,
+                    prompt=args.prompt,
+                    api_key=api_key,
+                    endpoint=args.endpoint,
+                    model=args.model,
+                    temperature=args.temperature,
+                    max_tokens=args.max_tokens,
+                )
+                print("\n", file=sys.stderr)
 
-        if is_skip_block(block):
-            translated_blocks.append(block)
-            blocks_data.append({"original_text": block, "translated_text": block})
-            save_progress(progress_path, args.input, blocks_data)
-            continue
-
-        print(f"[{i + 1}/{total}] 翻译中...", file=sys.stderr)
-        translation = translate_block_streaming(
-            text=block,
-            prompt=args.prompt,
-            api_key=api_key,
-            endpoint=args.endpoint,
-            model=args.model,
-            temperature=args.temperature,
-            max_tokens=args.max_tokens,
-        )
-        print("\n", file=sys.stderr)
+        assert(len(translated_blocks) == i)
         translated_blocks.append(translation)
         blocks_data.append({"original_text": block, "translated_text": translation})
 
         # 每翻译完一段就保存进度
         save_progress(progress_path, args.input, blocks_data)
 
+    footnote_map: dict[str, str] = {}  # 交替模式下的脚标映射: 原名 -> 原名trans
+
+    # 交替模式下，对脚标定义块的翻译结果加trans后缀
+    if args.alternating:
+        for i, block in enumerate(blocks):
+            translation = translated_blocks[i]
+            if is_footnote_block(block):
+                orig_names = collect_footnote_names(block)
+                # 构建临时映射，将原脚标名替换为带trans后缀的版本
+                temp_map = {name: name + "trans" for name in orig_names}
+                renamed = rename_footnotes_in_text(translation, temp_map)
+                if renamed != translation:
+                    translated_blocks[i] = renamed
+                    footnote_map.update(temp_map)
+
     # 构建输出内容
     translated_content = "\n\n".join(b.strip() for b in translated_blocks) + "\n"
     alternating_content = None
 
     if args.alternating:
+        # 交替模式下，根据脚标映射替换所有译文中的脚标引用
+        if footnote_map:
+            print(f"脚标映射: {footnote_map}", file=sys.stderr)
+            translated_blocks = [
+                rename_footnotes_in_text(b, footnote_map) for b in translated_blocks
+            ]
         output_parts: list[str] = []
         for i in range(total):
             original = blocks[i].strip()
